@@ -1,1 +1,1 @@
-command: ["python3", "start.py"]
+command: ["sh", "-c", "source .venv/bin/activate && python start.py"]
