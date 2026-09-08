@@ -30,6 +30,23 @@ except FileNotFoundError:
     # Already in the right directory or frontend is at root
     pass
 
+print("🏗️  Installing Node.js dependencies...")
+print()
+
+# First, install npm packages
+install_result = subprocess.run(
+    ["npm", "install"],
+    capture_output=False,
+    text=True
+)
+
+if install_result.returncode != 0:
+    print("❌ npm install failed!")
+    sys.exit(1)
+
+print()
+print("✅ Dependencies installed!")
+print()
 print("🏗️  Building Next.js application...")
 print()
 
