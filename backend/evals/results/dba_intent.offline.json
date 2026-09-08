@@ -1,0 +1,152 @@
+{
+  "aggregate": {
+    "across_case_stdev": 0.0,
+    "max_case_mean": 1.0,
+    "max_case_stdev": 0.0,
+    "mean": 1.0,
+    "mean_case_stdev": 0.0,
+    "min_case_mean": 1.0,
+    "n_cases": 4,
+    "n_errors": 0,
+    "n_samples": 4,
+    "pass_rate": 1.0
+  },
+  "by_tag": {
+    "healthcare": {
+      "case_ids": [
+        "dba_intent_002_healthcare_data_mart"
+      ],
+      "mean": 1.0,
+      "n_cases": 1,
+      "n_passed": 1
+    },
+    "hr": {
+      "case_ids": [
+        "dba_intent_003_hr_etl_warehouse"
+      ],
+      "mean": 1.0,
+      "n_cases": 1,
+      "n_passed": 1
+    },
+    "logistics": {
+      "case_ids": [
+        "dba_intent_004_logistics_fact_table"
+      ],
+      "mean": 1.0,
+      "n_cases": 1,
+      "n_passed": 1
+    },
+    "migrated_from_inline_eval_set": {
+      "case_ids": [
+        "dba_intent_001_retail_schema_design",
+        "dba_intent_002_healthcare_data_mart",
+        "dba_intent_003_hr_etl_warehouse",
+        "dba_intent_004_logistics_fact_table"
+      ],
+      "mean": 1.0,
+      "n_cases": 4,
+      "n_passed": 4
+    },
+    "retail": {
+      "case_ids": [
+        "dba_intent_001_retail_schema_design"
+      ],
+      "mean": 1.0,
+      "n_cases": 1,
+      "n_passed": 1
+    },
+    "schema_design": {
+      "case_ids": [
+        "dba_intent_001_retail_schema_design",
+        "dba_intent_002_healthcare_data_mart",
+        "dba_intent_003_hr_etl_warehouse",
+        "dba_intent_004_logistics_fact_table"
+      ],
+      "mean": 1.0,
+      "n_cases": 4,
+      "n_passed": 4
+    }
+  },
+  "cases": [
+    {
+      "detail": "intent='schema_design'",
+      "error": "",
+      "id": "dba_intent_001_retail_schema_design",
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n": 1,
+      "pass_rate": 1.0,
+      "scores": [
+        1.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "schema_design",
+        "retail",
+        "migrated_from_inline_eval_set"
+      ]
+    },
+    {
+      "detail": "intent='schema_design'",
+      "error": "",
+      "id": "dba_intent_002_healthcare_data_mart",
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n": 1,
+      "pass_rate": 1.0,
+      "scores": [
+        1.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "schema_design",
+        "healthcare",
+        "migrated_from_inline_eval_set"
+      ]
+    },
+    {
+      "detail": "intent='schema_design'",
+      "error": "",
+      "id": "dba_intent_003_hr_etl_warehouse",
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n": 1,
+      "pass_rate": 1.0,
+      "scores": [
+        1.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "schema_design",
+        "hr",
+        "migrated_from_inline_eval_set"
+      ]
+    },
+    {
+      "detail": "intent='schema_design'",
+      "error": "",
+      "id": "dba_intent_004_logistics_fact_table",
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n": 1,
+      "pass_rate": 1.0,
+      "scores": [
+        1.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "schema_design",
+        "logistics",
+        "migrated_from_inline_eval_set"
+      ]
+    }
+  ],
+  "mode": "offline",
+  "model": "none",
+  "repeats": 1,
+  "suite": "dba_intent"
+}

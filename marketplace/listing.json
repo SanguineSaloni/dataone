@@ -1,0 +1,255 @@
+{
+  "name": "DataOne",
+  "display_name": "DataOne - Multi-Source Data Integration Platform",
+  "version": "1.0.0",
+  "provider": {
+    "name": "Veltris Technologies",
+    "email": "support@veltris.com",
+    "website": "https://veltris.com",
+    "support_url": "https://docs.dataone.app/support",
+    "privacy_policy_url": "https://veltris.com/privacy",
+    "terms_of_service_url": "https://veltris.com/terms"
+  },
+  "description": {
+    "short": "Connect, map, and query data across Databricks Unity Catalog, PostgreSQL, MySQL, Snowflake, and more with AI-powered schema mapping.",
+    "long": "DataOne is a comprehensive data integration platform that brings together multiple data sources into a unified interface. Seamlessly connect to Databricks Unity Catalog alongside traditional databases like PostgreSQL, MySQL, and Snowflake. Use AI-powered schema mapping to automatically align schemas across sources, execute federated queries, and maintain data lineage - all while respecting Unity Catalog permissions and governance policies.\n\nKey Features:\n• **Multi-Source Connectivity**: Native Databricks Unity Catalog integration plus support for 10+ database types\n• **AI-Powered Schema Mapping**: LLM-assisted mapping suggestions with confidence scores and explanations\n• **Federated Query Studio**: Write and execute queries across multiple data sources in one place\n• **Unity Catalog Delegation**: Leverage Unity Catalog's native lineage, classification, and RBAC\n• **Real-Time Drift Detection**: Automatic monitoring of schema changes across all sources\n• **Role-Based Access Control**: OAuth-based authentication with Unity Catalog permission inheritance\n• **Audit Trail**: Complete history of all data operations and transformations\n\nDataOne follows a 4R modernization strategy:\n• **Retire**: Eliminates redundant metadata storage by delegating to Unity Catalog\n• **Delegate**: Uses Unity Catalog for lineage, PII classification, and access control\n• **Adapt**: Extends Unity Catalog metadata with cross-source mapping capabilities\n• **Keep**: Maintains multi-source support for heterogeneous environments"
+  },
+  "category": "Data Integration & ETL",
+  "subcategories": [
+    "Data Catalog",
+    "Schema Management",
+    "Query Tools",
+    "Data Governance"
+  ],
+  "tags": [
+    "data-integration",
+    "etl",
+    "schema-mapping",
+    "multi-source",
+    "unity-catalog",
+    "ai-powered",
+    "data-lineage",
+    "federated-query",
+    "postgresql",
+    "mysql",
+    "snowflake",
+    "governance"
+  ],
+  "icon": "https://veltris.com/assets/dataone-icon.png",
+  "screenshots": [
+    {
+      "url": "https://veltris.com/assets/screenshots/dashboard.png",
+      "caption": "DataOne Dashboard - Manage connections across Unity Catalog and external sources",
+      "order": 1
+    },
+    {
+      "url": "https://veltris.com/assets/screenshots/schema-mapper.png",
+      "caption": "AI-Powered Schema Mapping with LLM suggestions and confidence scores",
+      "order": 2
+    },
+    {
+      "url": "https://veltris.com/assets/screenshots/query-studio.png",
+      "caption": "Query Studio - Execute federated queries across multiple data sources",
+      "order": 3
+    },
+    {
+      "url": "https://veltris.com/assets/screenshots/unity-catalog-integration.png",
+      "caption": "Native Unity Catalog integration with automatic lineage and classification",
+      "order": 4
+    }
+  ],
+  "video_url": "https://www.youtube.com/watch?v=EXAMPLE_VIDEO_ID",
+  "documentation_url": "https://docs.dataone.app",
+  "pricing": {
+    "model": "free_trial",
+    "trial_days": 30,
+    "plans": [
+      {
+        "name": "Community",
+        "price": 0,
+        "billing_period": "month",
+        "description": "Free for development and testing",
+        "features": [
+          "Up to 3 data sources",
+          "Basic schema mapping",
+          "Unity Catalog read access",
+          "Community support"
+        ]
+      },
+      {
+        "name": "Professional",
+        "price": 499,
+        "billing_period": "month",
+        "description": "For teams and production workloads",
+        "features": [
+          "Unlimited data sources",
+          "AI-powered schema mapping",
+          "Full Unity Catalog delegation",
+          "Drift detection & monitoring",
+          "Email support",
+          "99.5% SLA"
+        ]
+      },
+      {
+        "name": "Enterprise",
+        "price": "Contact Sales",
+        "billing_period": "month",
+        "description": "For large organizations with custom needs",
+        "features": [
+          "Everything in Professional",
+          "Advanced governance features",
+          "Custom integrations",
+          "Dedicated support",
+          "Training & onboarding",
+          "99.9% SLA"
+        ]
+      }
+    ]
+  },
+  "requirements": {
+    "databricks": {
+      "min_version": "13.0",
+      "required_features": [
+        "unity_catalog",
+        "sql_warehouses",
+        "oauth"
+      ]
+    },
+    "resources": {
+      "min_cpu": 4,
+      "min_memory_gb": 8,
+      "min_storage_gb": 20,
+      "recommended_cpu": 8,
+      "recommended_memory_gb": 16,
+      "recommended_storage_gb": 50
+    }
+  },
+  "permissions": {
+    "workspace": [
+      {
+        "scope": "apps:read",
+        "description": "Read application configuration"
+      },
+      {
+        "scope": "apps:write",
+        "description": "Update application state"
+      }
+    ],
+    "unity_catalog": [
+      {
+        "scope": "catalogs:read",
+        "description": "List and read Unity Catalog catalogs"
+      },
+      {
+        "scope": "schemas:read",
+        "description": "List and read schemas within catalogs"
+      },
+      {
+        "scope": "tables:read",
+        "description": "Read table and column metadata"
+      },
+      {
+        "scope": "views:read",
+        "description": "Read view definitions"
+      },
+      {
+        "scope": "functions:read",
+        "description": "Read function metadata"
+      }
+    ],
+    "sql": [
+      {
+        "scope": "warehouses:use",
+        "description": "Execute queries on SQL warehouses"
+      },
+      {
+        "scope": "queries:create",
+        "description": "Create and view query history"
+      }
+    ]
+  },
+  "security": {
+    "data_handling": {
+      "stores_customer_data": true,
+      "data_location": "within_databricks_workspace",
+      "encryption_at_rest": true,
+      "encryption_in_transit": true,
+      "data_retention_policy": "Customer configurable (default: 90 days for audit logs)"
+    },
+    "authentication": {
+      "methods": ["oauth2", "databricks_sso"],
+      "mfa_supported": true,
+      "sso_providers": ["databricks"]
+    },
+    "compliance": {
+      "certifications": ["SOC 2 Type II (in progress)", "GDPR Compliant"],
+      "audit_logging": true,
+      "access_controls": "Unity Catalog RBAC delegation"
+    },
+    "third_party_services": [
+      {
+        "name": "None",
+        "purpose": "DataOne operates entirely within the Databricks workspace",
+        "data_shared": "N/A"
+      }
+    ]
+  },
+  "installation": {
+    "type": "lakehouse_app",
+    "deployment_time_minutes": 10,
+    "configuration_required": true,
+    "post_install_steps": [
+      "Configure OAuth credentials",
+      "Add external data source connections (optional)",
+      "Invite team members",
+      "Set up initial schema mappings"
+    ]
+  },
+  "support": {
+    "channels": [
+      {
+        "type": "email",
+        "contact": "support@veltris.com",
+        "response_time": "24 hours"
+      },
+      {
+        "type": "documentation",
+        "url": "https://docs.dataone.app"
+      },
+      {
+        "type": "community",
+        "url": "https://community.dataone.app"
+      }
+    ],
+    "sla": {
+      "professional": "99.5% uptime, 4-hour response time",
+      "enterprise": "99.9% uptime, 1-hour response time, dedicated support engineer"
+    }
+  },
+  "changelog": [
+    {
+      "version": "1.0.0",
+      "date": "2026-09-08",
+      "changes": [
+        "Initial marketplace release",
+        "Native Unity Catalog integration",
+        "OAuth2 authentication",
+        "Multi-source connectivity (PostgreSQL, MySQL, Snowflake)",
+        "AI-powered schema mapping",
+        "Federated query studio",
+        "Automatic drift detection",
+        "Comprehensive audit trail"
+      ]
+    }
+  ],
+  "metadata": {
+    "app_type": "lakehouse_app",
+    "runtime": "docker",
+    "architecture": "microservices",
+    "languages": ["Python", "TypeScript"],
+    "frameworks": ["FastAPI", "Next.js", "React"],
+    "databases": ["PostgreSQL", "Redis"],
+    "license": "Proprietary",
+    "source_code_available": false
+  }
+}

@@ -1,0 +1,329 @@
+<title>Modularize Once, Swap Backends Forever</title>
+<style>
+:root{
+  --bg:#EEF0F3; --surface:#FFFFFF; --surface-2:#E4E7EC;
+  --ink:#1B222C; --ink-dim:#525C6B; --ink-faint:#7A8393;
+  --line:#D3D8DF;
+  --asis:#B4711F; --asis-soft:#F3E4CD;
+  --native:#1E8C84; --native-soft:#D9F0ED;
+  --mono: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", Menlo, Consolas, monospace;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Noto Serif", serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#10141A; --surface:#171D25; --surface-2:#1E2530;
+    --ink:#E4E7EC; --ink-dim:#A6AEBB; --ink-faint:#707A89;
+    --line:#2B3340;
+    --asis:#D99A4E; --asis-soft:#2C2413;
+    --native:#4FD1C5; --native-soft:#12302E;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10141A; --surface:#171D25; --surface-2:#1E2530;
+  --ink:#E4E7EC; --ink-dim:#A6AEBB; --ink-faint:#707A89;
+  --line:#2B3340;
+  --asis:#D99A4E; --asis-soft:#2C2413;
+  --native:#4FD1C5; --native-soft:#12302E;
+}
+:root[data-theme="light"]{
+  --bg:#EEF0F3; --surface:#FFFFFF; --surface-2:#E4E7EC;
+  --ink:#1B222C; --ink-dim:#525C6B; --ink-faint:#7A8393;
+  --line:#D3D8DF;
+  --asis:#B4711F; --asis-soft:#F3E4CD;
+  --native:#1E8C84; --native-soft:#D9F0ED;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--serif); line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{ background:var(--native-soft); }
+a{ color:inherit; }
+.wrap{ max-width:960px; margin:0 auto; padding:3.5rem 1.5rem 6rem; }
+
+.eyebrow{
+  font-family:var(--mono); font-size:0.72rem; letter-spacing:0.14em; text-transform:uppercase;
+  color:var(--ink-faint); margin:0 0 0.9rem;
+}
+h1{
+  font-family:var(--mono); font-weight:700; letter-spacing:-0.01em;
+  font-size:clamp(1.7rem, 4vw, 2.5rem); line-height:1.15; margin:0 0 0.7rem;
+  text-wrap:balance;
+}
+.sub{ color:var(--ink-dim); font-size:1.05rem; max-width:62ch; margin:0 0 2.6rem; }
+
+h2{
+  font-family:var(--mono); font-size:0.95rem; letter-spacing:0.04em; text-transform:uppercase;
+  color:var(--ink); border-bottom:1px solid var(--line); padding-bottom:0.6rem;
+  margin:3.2rem 0 1.3rem;
+}
+h2 .num{ color:var(--ink-faint); font-weight:400; margin-right:0.6rem; }
+
+p{ margin:0 0 1rem; max-width:68ch; }
+.lede{ font-size:1.05rem; }
+
+/* --- Refined prompt card --- */
+.prompt-card{
+  background:var(--surface); border:1px solid var(--line); border-radius:4px;
+  padding:1.8rem 2rem; position:relative; box-shadow:0 1px 0 var(--line);
+}
+.prompt-card::before{
+  content:"REFINED PROMPT — PLEASE CONFIRM";
+  position:absolute; top:-0.65rem; left:1.6rem; background:var(--bg);
+  padding:0 0.6rem; font-family:var(--mono); font-size:0.68rem; letter-spacing:0.12em;
+  color:var(--native); font-weight:700;
+}
+.prompt-card p{ max-width:none; }
+.prompt-card .quote{ font-style:italic; color:var(--ink-dim); font-size:0.95rem; margin-bottom:1.4rem; }
+.prompt-card .body-copy{ font-size:1rem; }
+.prompt-card ul{ margin:0.8rem 0 0; padding-left:1.2rem; }
+.prompt-card li{ margin-bottom:0.5rem; }
+.confirm-qs{
+  margin-top:1.6rem; padding-top:1.4rem; border-top:1px dashed var(--line);
+}
+.confirm-qs .label{
+  font-family:var(--mono); font-size:0.7rem; letter-spacing:0.1em; text-transform:uppercase;
+  color:var(--ink-faint); margin-bottom:0.7rem; display:block;
+}
+.confirm-qs ol{ margin:0; padding-left:1.3rem; }
+.confirm-qs li{ margin-bottom:0.55rem; }
+.confirm-qs b{ color:var(--ink); }
+
+/* --- diagram --- */
+.diagram-wrap{ overflow-x:auto; background:var(--surface); border:1px solid var(--line); border-radius:4px; padding:1.2rem; }
+
+/* --- legend --- */
+.legend{ display:flex; gap:1.6rem; margin:1rem 0 1.6rem; flex-wrap:wrap; }
+.legend span{ font-family:var(--mono); font-size:0.78rem; display:flex; align-items:center; gap:0.5rem; color:var(--ink-dim); }
+.legend i{ width:0.7rem; height:0.7rem; border-radius:2px; display:inline-block; }
+.legend .i-asis{ background:var(--asis); }
+.legend .i-native{ background:var(--native); }
+
+/* --- module rack --- */
+.rack{ display:flex; flex-direction:column; gap:0.9rem; }
+.slot{
+  display:grid; grid-template-columns:1fr 1fr; gap:0; border:1px solid var(--line);
+  border-radius:4px; overflow:hidden; background:var(--surface);
+}
+.slot-head{
+  grid-column:1 / -1; padding:0.7rem 1.1rem; background:var(--surface-2);
+  display:flex; align-items:baseline; justify-content:space-between; gap:1rem;
+  border-bottom:1px solid var(--line); flex-wrap:wrap;
+}
+.slot-head .cap{ font-family:var(--mono); font-weight:700; font-size:0.92rem; }
+.slot-head .size{ font-family:var(--mono); font-size:0.72rem; color:var(--ink-faint); letter-spacing:0.06em; }
+.card{ padding:1rem 1.1rem; }
+.card + .card{ border-left:1px solid var(--line); }
+.card .tag{
+  font-family:var(--mono); font-size:0.65rem; letter-spacing:0.1em; text-transform:uppercase;
+  font-weight:700; margin-bottom:0.5rem; display:inline-block; padding:0.15rem 0.5rem; border-radius:2px;
+}
+.card.asis{ border-left:3px solid var(--asis); }
+.card.asis .tag{ color:var(--asis); background:var(--asis-soft); }
+.card.native{ border-left:3px solid var(--native); }
+.card.native .tag{ color:var(--native); background:var(--native-soft); }
+.card code{
+  font-family:var(--mono); font-size:0.78rem; background:var(--surface-2);
+  padding:0.1rem 0.35rem; border-radius:3px; word-break:break-all;
+}
+.card p{ font-size:0.88rem; color:var(--ink-dim); margin:0.5rem 0 0; max-width:none; }
+
+@media (max-width:640px){
+  .slot{ grid-template-columns:1fr; }
+  .card + .card{ border-left:none; border-top:1px solid var(--line); }
+}
+
+/* --- open questions --- */
+.qgrid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:0.9rem; }
+.qcard{
+  background:var(--surface); border:1px solid var(--line); border-radius:4px; padding:1rem 1.1rem;
+}
+.qcard .flag{ font-family:var(--mono); font-size:0.72rem; color:var(--ink-faint); margin-bottom:0.4rem; display:block; }
+.qcard p{ font-size:0.9rem; margin:0; max-width:none; color:var(--ink-dim); }
+
+/* --- footer / next step --- */
+.next{
+  margin-top:3rem; padding:1.5rem 1.8rem; border:1px dashed var(--native);
+  border-radius:4px; background:var(--native-soft);
+}
+.next .label{ font-family:var(--mono); font-size:0.7rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--native); margin-bottom:0.4rem; display:block; }
+.next p{ max-width:none; color:var(--ink); font-size:0.95rem; margin:0; }
+
+table.filemap{ width:100%; border-collapse:collapse; font-size:0.85rem; }
+table.filemap th, table.filemap td{ text-align:left; padding:0.55rem 0.8rem; border-bottom:1px solid var(--line); vertical-align:top; }
+table.filemap th{ font-family:var(--mono); font-size:0.68rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-faint); font-weight:600; }
+table.filemap code{ font-family:var(--mono); font-size:0.78rem; background:var(--surface-2); padding:0.1rem 0.3rem; border-radius:3px; }
+.tablewrap{ overflow-x:auto; background:var(--surface); border:1px solid var(--line); border-radius:4px; }
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">DataOne × Databricks — modularization brief · 2026-07-27</p>
+  <h1>Modularize once, swap backends forever</h1>
+  <p class="sub">A reflection of the ask behind <code>DATABRICKS_NATIVE_ASSESSMENT.md</code>, turned into a concrete module boundary — plus the exact points I need you to confirm before any code moves.</p>
+
+  <h2><span class="num">01</span>Refined prompt</h2>
+  <div class="prompt-card">
+    <p class="quote">"Share the design to modularize this existing changes that can be leveraged AS IS and Databricks Native."</p>
+    <div class="body-copy">
+      <p>Here's what I understand you're asking for — <strong>not</strong> the Phase 1/2/3 rewrite roadmap the assessment already lays out, but the architectural precondition for it: split every capability DataOne owns today into a <strong>stable interface</strong> plus <strong>two implementations behind it</strong> —</p>
+      <ul>
+        <li><strong>AS-IS module</strong> — today's working code (in-process query exec, Celery pipelines, app-owned catalog, local JWT), untouched, just moved behind an interface it doesn't currently have.</li>
+        <li><strong>Databricks-native module</strong> — a new, additive sibling implementation (SQL Warehouse exec, Spark/Delta push-down, Unity Catalog reader, workspace OAuth) selected at runtime per source/tenant, never replacing the AS-IS path.</li>
+      </ul>
+      <p>The point: DataOne keeps serving Postgres/MySQL/Oracle customers exactly as it does today, while a Databricks-connected customer gets the native path — same UI, same routers, same agentic-DBA/mapper/autopilot layer on top, different card plugged into the same slot underneath.</p>
+    </div>
+    <div class="confirm-qs">
+      <span class="label">Confirm before I draft interfaces</span>
+      <ol>
+        <li><b>Scope for this pass</b> — all 7 capability rows below, or just Connectors + Query Execution (the low-risk Rung A slice)?</li>
+        <li><b>Selection mechanism</b> — per-connector config (a source is "Databricks" → native path auto-selected), or a workspace/tenant-level mode flag?</li>
+        <li><b>Interface style</b> — Python <code>Protocol</code>/ABC extracted now with only the AS-IS implementation behind it (Databricks side stubbed/deferred), or wait and design the interface once the Databricks side is being built?</li>
+        <li><b>Non-negotiable</b> — should the multi-source fallback (§7.3 of the assessment) be a hard constraint on every interface, i.e. no interface may assume Databricks-only fields?</li>
+      </ol>
+    </div>
+  </div>
+
+  <h2><span class="num">02</span>Shape of the module boundary</h2>
+  <p>Three layers, not two. The top and bottom stay fixed; only the middle strip is swappable per capability.</p>
+  <div class="diagram-wrap">
+
+```mermaid
+flowchart TB
+  subgraph CORE["PORTABLE CORE — unchanged, AS-IS, no rewrite"]
+    direction LR
+    UX["Dashboard IA<br/>Schema Mapper UX"]
+    AGENT["Agentic-DBA engine<br/>Autopilot governance"]
+    RBAC["RBAC · Audit trail"]
+    LLMIF["AIService swap point"]
+  end
+
+  subgraph PORTS["INTERFACE LAYER — extracted, one Protocol per capability"]
+    direction LR
+    P1["ConnectorPort"]
+    P2["QueryExecPort"]
+    P3["PipelinePort"]
+    P4["CatalogPort"]
+    P5["OrchestrationPort"]
+    P6["AuthPort"]
+  end
+
+  subgraph ASIS["AS-IS IMPLEMENTATIONS — today's code, kept"]
+    direction LR
+    A1["psycopg2 / pymysql / oracledb"]
+    A2["fetchall in ThreadPoolExecutor"]
+    A3["pipeline_executor row batches"]
+    A4["schema_catalog_service (Postgres)"]
+    A5["Celery + Beat"]
+    A6["local HS256 JWT"]
+  end
+
+  subgraph NATIVE["DATABRICKS-NATIVE IMPLEMENTATIONS — new, additive"]
+    direction LR
+    N1["databricks-sql-connector"]
+    N2["SQL Warehouse async statements"]
+    N3["Spark SQL / DLT push-down"]
+    N4["Unity Catalog reader"]
+    N5["Databricks Workflows submitter"]
+    N6["Workspace OAuth"]
+  end
+
+  CORE --> PORTS
+  P1 --- A1
+  P1 --- N1
+  P2 --- A2
+  P2 --- N2
+  P3 --- A3
+  P3 --- N3
+  P4 --- A4
+  P4 --- N4
+  P5 --- A5
+  P5 --- N5
+  P6 --- A6
+  P6 --- N6
+```
+
+  </div>
+
+  <h2><span class="num">03</span>Module rack — one slot per capability</h2>
+  <div class="legend">
+    <span><i class="i-asis"></i>AS-IS — kept exactly as it runs today</span>
+    <span><i class="i-native"></i>Databricks-native — new sibling module</span>
+  </div>
+
+  <div class="rack">
+
+    <div class="slot">
+      <div class="slot-head"><span class="cap">Connectors</span><span class="size">M · 2–4 pw · additive only</span></div>
+      <div class="card asis"><span class="tag">AS-IS</span><code>backend/app/connectors/</code><p>psycopg2 / pymysql / oracledb / sqlite3 drivers, registered in <code>connector_catalog.py</code>. No changes.</p></div>
+      <div class="card native"><span class="tag">Native — new</span><code>backend/app/connectors/databricks.py</code><p>New <code>BaseConnector</code> implementation on <code>databricks-sql-connector</code>; registers alongside existing types, same catalog file.</p></div>
+    </div>
+
+    <div class="slot">
+      <div class="slot-head"><span class="cap">Query execution</span><span class="size">M · 3–5 pw · depends on Connectors</span></div>
+      <div class="card asis"><span class="tag">AS-IS</span><code>query_execution_service.py</code><p>DB-API <code>fetchall()</code> in a thread pool, 30s timeout, 5000-row cap. Stays the path for every non-Databricks source.</p></div>
+      <div class="card native"><span class="tag">Native — new</span><code>query_execution_service_databricks.py</code><p>Async SQL Warehouse statement submission + chunked fetch. Selected only when the source connector is Databricks.</p></div>
+    </div>
+
+    <div class="slot">
+      <div class="slot-head"><span class="cap">Pipelines / ETL</span><span class="size">XL · 8–14 pw · largest rewrite</span></div>
+      <div class="card asis"><span class="tag">AS-IS</span><code>pipeline_executor.py</code>, <code>transformation_grammar.py</code><p>In-process row batching + per-row Python transform, unchanged for OLTP-to-OLTP pipelines.</p></div>
+      <div class="card native"><span class="tag">Native — new</span><code>pipeline_executor_spark.py</code><p>Grammar becomes a Spark SQL / <code>MERGE</code> / DLT-spec code-gen target; lands in Delta under Unity Catalog.</p></div>
+    </div>
+
+    <div class="slot">
+      <div class="slot-head"><span class="cap">Catalog / lineage / classification</span><span class="size">M–L · 4–7 pw · dual-mode by design</span></div>
+      <div class="card asis"><span class="tag">AS-IS</span><code>schema_catalog_service.py</code>, <code>profiling_enrichment.py</code>, <code>diff_service.py</code><p>App-owned catalog in Postgres — the permanent fallback for every non-Databricks source, not a bridge to delete later.</p></div>
+      <div class="card native"><span class="tag">Native — new</span><code>catalog_service_unity.py</code><p>Reads UC <code>information_schema</code> + lineage API; mirrors UC tags into DataOne classifications rather than duplicating scoring logic.</p></div>
+    </div>
+
+    <div class="slot">
+      <div class="slot-head"><span class="cap">Orchestration / scheduling</span><span class="size">L · 5–8 pw · depends on Query exec</span></div>
+      <div class="card asis"><span class="tag">AS-IS</span><code>celery_app.py</code>, <code>scheduler.py</code><p>Keeps owning every app-tier async task (suggestions, health checks, audit flush) — no change in scope.</p></div>
+      <div class="card native"><span class="tag">Native — new</span><code>orchestration_workflows.py</code><p><code>scheduler.py</code> becomes a thin submitter to Databricks Workflows/Jobs SDK for data-plane runs only; polls job state back in.</p></div>
+    </div>
+
+    <div class="slot">
+      <div class="slot-head"><span class="cap">Auth / identity / tenancy</span><span class="size">L–XL · 6–12 pw · highest risk</span></div>
+      <div class="card asis"><span class="tag">AS-IS</span><code>rbac_service.py</code><p>Local HS256 JWT + 3-role RBAC stays the entire auth model in standalone mode. Untouched.</p></div>
+      <div class="card native"><span class="tag">Native — new</span><code>auth_workspace_oauth.py</code><p>Workspace OAuth / on-behalf-of identity, only inside Databricks-App mode; maps UC grants → DataOne roles — needs security sign-off before this ships (§9 <code>[!]</code> in the assessment).</p></div>
+    </div>
+
+    <div class="slot">
+      <div class="slot-head"><span class="cap">LLM inference</span><span class="size">S · 1–2 pw · already one swap point</span></div>
+      <div class="card asis"><span class="tag">AS-IS</span><code>ai_service.py</code><p><code>get_ollama_url()</code> behind a circuit breaker — the interface essentially already exists here.</p></div>
+      <div class="card native"><span class="tag">Native — new</span><code>ai_service.py</code> (provider branch)<p>Add a <code>DATABRICKS_SERVING</code> provider option in the same file via <code>Settings</code>; nothing above <code>AIService</code> changes.</p></div>
+    </div>
+
+  </div>
+
+  <h2><span class="num">04</span>What never moves</h2>
+  <p class="lede">These stay above the interface layer, called identically regardless of which card is plugged in underneath — this is the "leveraged AS IS" part in the literal sense:</p>
+  <div class="tablewrap">
+    <table class="filemap">
+      <tr><th>Module</th><th>File</th><th>Why it's exempt from swapping</th></tr>
+      <tr><td>Agentic-DBA copilot</td><td><code>agentic_dba_engine.py</code></td><td>No Databricks equivalent — the differentiator, not infrastructure.</td></tr>
+      <tr><td>Schema Mapper workbench</td><td><code>schema_mapper_service.py</code></td><td>Mapping/versioning UX has no direct Databricks primitive to delegate to.</td></tr>
+      <tr><td>Autopilot governance loop</td><td><code>autopilot_engine.py</code></td><td>Human-in-the-loop approval flow sits above whichever backend executes the change.</td></tr>
+      <tr><td>NL2SQL / AskData</td><td><code>nl2sql_service.py</code>, <code>askdata_service.py</code></td><td>Kept as our surface; Genie becomes an optional backend, not a replacement.</td></tr>
+      <tr><td>Semantic / metrics layer</td><td><code>semantic_service.py</code>, <code>semantic_resolver.py</code></td><td>Adapts by syncing definitions to UC Metric Views — doesn't disappear.</td></tr>
+      <tr><td>App audit trail</td><td><code>audit_helper.py</code>, routers/audit.py</td><td>App-action audit is ours regardless of backend; only data-access audit delegates to UC.</td></tr>
+      <tr><td>Dashboard IA</td><td><code>frontend/src/app/dashboard/layout.tsx</code></td><td>No feature-level UI rewrite required per §5.8 — only the API-origin resolution moves from build-time to runtime.</td></tr>
+    </table>
+  </div>
+
+  <h2><span class="num">05</span>Sequencing questions still open</h2>
+  <div class="qgrid">
+    <div class="qcard"><span class="flag">[?] scope</span><p>Do we extract interfaces for <em>all seven</em> rows in one pass, or ship Connectors + Query Execution first and extract the rest only once a Databricks pipeline actually needs it?</p></div>
+    <div class="qcard"><span class="flag">[?] mode switch</span><p>Is backend selection resolved per-connector (today's model) or does it need a workspace-level override for customers who want everything routed to Databricks by default?</p></div>
+    <div class="qcard"><span class="flag">[!] governance</span><p>Auth/tenancy interface can't be finalized without the UC-grant ↔ DataOne-role mapping decision — flagged in the assessment as needing security sign-off first.</p></div>
+    <div class="qcard"><span class="flag">[?] fallback contract</span><p>Should every Port interface be typed so a caller literally cannot tell which implementation answered — i.e. no Databricks-only fields leak into the Core Shell's contracts?</p></div>
+  </div>
+
+  <div class="next">
+    <span class="label">Next step, once you confirm §01</span>
+    <p>I'll write the actual Python <code>Protocol</code> definitions for the confirmed-scope capabilities (signatures only, zero behavior change), then move the current AS-IS implementations behind them in a single mechanical PR — no Databricks code yet, just the seam.</p>
+  </div>
+
+</div>

@@ -1,0 +1,326 @@
+"use client";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { api } from "@/lib/api";
+import { ActivityFeed } from "./components/ActivityFeed";
+import { DashboardWidget } from "./components/DashboardWidget";
+import { DemoDataBanner } from "./components/DemoDataBanner";
+import { KPITile } from "./components/KPITile";
+import { TimeRangeFilter } from "./components/TimeRangeFilter";
+import { useWidgetData } from "./hooks/useWidgetData";
+import type { DashboardSummary, DashboardView, TimeRange } from "./types";
+import { Card } from "./components/Card";
+
+interface DriftAlert {
+  id: number;
+  connection_name: string | null;
+  created_at: string;
+  payload: Record<string, unknown> | null;
+}
+
+interface Connector {
+  id: number;
+  name: string;
+  type: string;
+}
+
+type TestStatus = "testing" | "connected" | "failed";
+
+const TYPE_ICONS: Record<string, string> = {
+  sqlite: "💾",
+  postgres: "🐘",
+  mysql: "🐬",
+  oracle: "🏛️",
+  jdbc: "🔌",
+  databricks: "🧱",
+};
+
+const RANGE_STORAGE_KEY = "dashboard_time_range";
+const VIEW_STORAGE_KEY = "dashboard_view";
+
+const POLL_INTERVAL_MS = Number(
+  process.env.NEXT_PUBLIC_DASHBOARD_POLL_INTERVAL_MS ?? 30_000,
+);
+
+const EXECUTIVE_KPI_LABELS = [
+  "Total Schemas",
+  "Total Tables",
+  "Data Assets",
+  "Mapped Assets %",
+  "PII Columns",
+  "Migration Readiness",
+  "Critical Risks",
+  "Data Quality Score",
+  "Governance Compliance Score",
+] as const;
+
+const SKELETON_TILE_COUNT = 17; // 8 operational + 9 executive KPIs
+
+export default function DashboardPage() {
+  const [range, setRange] = useState<TimeRange>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem(RANGE_STORAGE_KEY);
+      if (stored === "24h" || stored === "7d" || stored === "30d") return stored;
+    }
+    return "7d";
+  });
+  const [dashboardView, setDashboardView] = useState<DashboardView>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem(VIEW_STORAGE_KEY);
+      if (stored === "combined" || stored === "executive" || stored === "operational") {
+        return stored;
+      }
+    }
+    return "combined";
+  });
+
+  const summary = useWidgetData<DashboardSummary>(
+    (signal) => api.get<DashboardSummary>(`/api/v1/dashboard/summary?range=${range}`, { signal }),
+    [range],
+  );
+
+  const drift = useWidgetData<DriftAlert[]>(
+    (signal) => api.get<DriftAlert[]>("/api/v1/audit/?event_type=schema_drift_detected&page_size=5", { signal }),
+    [],
+  );
+
+  const connectors = useWidgetData<Connector[]>(
+    (signal) => api.get<Connector[]>("/api/v1/connectors/", { signal }),
+    [],
+  );
+  const [testResults, setTestResults] = useState<Record<number, TestStatus>>({});
+
+  useEffect(() => {
+    const list = connectors.data;
+    if (!list) return;
+    list.forEach((c) => {
+      api
+        .post<{ status: string }>(`/api/v1/connectors/${c.id}/test`, {})
+        .then((r) =>
+          setTestResults((prev) => ({
+            ...prev,
+            [c.id]: r.status === "connected" ? "connected" : "failed",
+          })),
+        )
+        .catch(() => setTestResults((prev) => ({ ...prev, [c.id]: "failed" })));
+    });
+  }, [connectors.data]);
+
+  const { refetch, isLoading } = summary;
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (document.hidden || isLoading) return;
+      refetch();
+    }, POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [refetch, isLoading]);
+
+  const handleRangeChange = (next: TimeRange) => {
+    setRange(next);
+    localStorage.setItem(RANGE_STORAGE_KEY, next);
+  };
+
+  const availableViews = summary.data?.available_views ?? [];
+  const activeView = availableViews.includes(dashboardView)
+    ? dashboardView
+    : availableViews[0] ?? dashboardView;
+
+  const handleViewChange = (next: DashboardView) => {
+    if (!availableViews.includes(next)) return;
+    setDashboardView(next);
+    localStorage.setItem(VIEW_STORAGE_KEY, next);
+  };
+
+  // Extract executive KPIs from the summary data
+  const kpis = summary.data?.kpis ?? [];
+  const execKpis = kpis.filter((k) =>
+    EXECUTIVE_KPI_LABELS.includes(k.label as (typeof EXECUTIVE_KPI_LABELS)[number])
+  );
+  const operationalKpis = kpis.filter((k) =>
+    !EXECUTIVE_KPI_LABELS.includes(k.label as (typeof EXECUTIVE_KPI_LABELS)[number])
+  );
+
+  return (
+    <div className="p-6 flex flex-col gap-6 overflow-y-auto">
+      {/* Header */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-fg">Executive Command Center</h1>
+          <p className="mt-1 text-xs text-fg-muted">
+            {summary.data
+              ? `Updated ${new Date(summary.data.generated_at).toLocaleString()}`
+              : "Loading the latest platform activity…"}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          {availableViews.length > 1 && (
+            <div
+              className="flex rounded-lg border border-border bg-surface-elevated p-1"
+              role="radiogroup"
+              aria-label="Dashboard view"
+            >
+              {availableViews.map((view) => (
+                <button
+                  key={view}
+                  type="button"
+                  role="radio"
+                  aria-label={`${view.charAt(0).toUpperCase()}${view.slice(1)}`}
+                  aria-checked={activeView === view}
+                  onClick={() => handleViewChange(view)}
+                  className={`rounded-md px-3 py-1.5 text-xs font-semibold capitalize transition-colors ${
+                    activeView === view
+                      ? "bg-accent text-accent-fg"
+                      : "text-fg-subtle hover:text-fg"
+                  }`}
+                >
+                  {view}
+                </button>
+              ))}
+            </div>
+          )}
+          <TimeRangeFilter value={range} onChange={handleRangeChange} disabled={summary.isLoading} />
+        </div>
+      </div>
+
+      <DemoDataBanner
+        onChange={() => {
+          summary.refetch();
+          connectors.refetch();
+        }}
+      />
+
+      {/* ── Executive KPI row (E03) ── */}
+      {summary.isError ? (
+        <Card variant="default" padding="md" className="border-red-500/30">
+          <p className="text-sm text-red-400">
+            Failed to load dashboard summary{summary.errorMessage ? ` — ${summary.errorMessage}` : ""}.
+          </p>
+          <button
+            onClick={summary.refetch}
+            className="mt-2 px-3 py-1.5 text-xs font-semibold rounded-lg border border-red-500/30 text-red-300 hover:bg-red-500/10 transition-colors"
+          >
+            Retry
+          </button>
+        </Card>
+      ) : (
+        <>
+          {/* Executive KPIs */}
+          {(activeView === "combined" || activeView === "executive") && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" data-dashboard-section="executive">
+            {summary.data
+              ? execKpis.map((tile) => <KPITile key={tile.label} tile={tile} />)
+              : Array.from({ length: EXECUTIVE_KPI_LABELS.length }, (_, i) => (
+                  <KPITile
+                    key={i}
+                    isLoading
+                    tile={{ label: "", value: 0, link_url: "", module: "", status: "loaded" }}
+                  />
+                ))}
+          </div>
+          )}
+
+          {/* Operational KPIs */}
+          {(activeView === "combined" || activeView === "operational") && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" data-dashboard-section="operational">
+            {summary.data
+              ? operationalKpis.map((tile) => <KPITile key={tile.label} tile={tile} />)
+              : Array.from({ length: SKELETON_TILE_COUNT - EXECUTIVE_KPI_LABELS.length }, (_, i) => (
+                  <KPITile
+                    key={i}
+                    isLoading
+                    tile={{ label: "", value: 0, link_url: "", module: "", status: "loaded" }}
+                  />
+                ))}
+          </div>
+          )}
+        </>
+      )}
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: "Visualize Schema", icon: "🌐", href: "/dashboard/visualize/topology", color: "from-blue-500/10 to-indigo-500/10 border-blue-500/20 hover:border-blue-500/40" },
+          { label: "Query Workspace", icon: "💬", href: "/dashboard/query-workspace", color: "from-emerald-500/10 to-teal-500/10 border-emerald-500/20 hover:border-emerald-500/40" },
+          { label: "Manage Connections", icon: "🔌", href: "/dashboard/connectors", color: "from-violet-500/10 to-purple-500/10 border-violet-500/20 hover:border-violet-500/40" },
+          { label: "Schema Mapper", icon: "🗺️", href: "/dashboard/schema-mapper", color: "from-amber-500/10 to-orange-500/10 border-amber-500/20 hover:border-amber-500/40" },
+        ].map((a, i) => (
+          <Link key={i} href={a.href} className={`p-4 rounded-xl bg-gradient-to-br ${a.color} border backdrop-blur-sm flex items-center gap-3 transition-all group`}>
+            <span className="text-2xl group-hover:scale-110 transition-transform">{a.icon}</span>
+            <span className="text-sm font-semibold text-fg-muted">{a.label}</span>
+          </Link>
+        ))}
+      </div>
+
+      {/* Schema Drift Alerts */}
+      {!drift.isError && (drift.data?.length ?? 0) > 0 && (
+        <div className="p-4 rounded-2xl bg-red-500/5 border border-red-500/20">
+          <h3 className="font-semibold text-red-400 mb-3 flex items-center gap-2">⚠️ Schema Drift Detected</h3>
+          <div className="flex flex-col gap-2">
+            {drift.data!.map((alert) => (
+              <div key={alert.id} className="flex items-center justify-between p-3 rounded-xl bg-red-500/5 border border-red-500/10">
+                <div>
+                  <span className="text-sm font-medium text-fg-muted">{alert.connection_name ?? "Unknown connection"}</span>
+                  <span className="text-xs text-fg-subtle ml-2">schema changed</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-fg-subtle">{new Date(alert.created_at).toLocaleString()}</span>
+                  <Link href="/dashboard/schema" className="text-xs text-blue-400 hover:text-blue-300">Inspect →</Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <ActivityFeed
+          className="lg:col-span-2"
+          items={summary.data?.feed ?? []}
+          isLoading={summary.isLoading && !summary.data}
+          isError={summary.isError}
+          errorMessage={summary.errorMessage}
+          onRetry={summary.refetch}
+        />
+
+        <DashboardWidget
+          title="Connection Health"
+          isLoading={connectors.isLoading}
+          isError={connectors.isError}
+          errorMessage={connectors.errorMessage}
+          onRetry={connectors.refetch}
+          isEmpty={(connectors.data?.length ?? 0) === 0}
+          emptyMessage="No connections yet."
+          emptyAction={{ label: "Add one", href: "/dashboard/connectors" }}
+        >
+          <div className="flex flex-col gap-3">
+            {connectors.data?.map((db) => {
+              const status = testResults[db.id] ?? "testing";
+              return (
+                <div key={db.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-overlay transition-colors">
+                  <span className="text-lg">{TYPE_ICONS[db.type] ?? "🔌"}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-medium text-fg-muted truncate">{db.name}</div>
+                    <div className="text-[10px] text-fg-subtle">{db.type}</div>
+                  </div>
+                  {status === "testing" ? (
+                    <span className="text-[10px] text-fg-subtle font-semibold flex items-center gap-1">
+                      <span className="w-2.5 h-2.5 border border-border-strong border-t-transparent rounded-full animate-spin" />
+                      testing
+                    </span>
+                  ) : status === "connected" ? (
+                    <span className="text-[10px] text-emerald-400 font-semibold">● Connected</span>
+                  ) : (
+                    <span className="text-[10px] text-red-400 font-semibold">● Failed</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <Link href="/dashboard/visualize/topology" className="mt-4 w-full py-2 bg-accent text-accent-fg hover:opacity-90 transition-opacity rounded-xl text-sm font-semibold text-center block">
+            Open Visualizer →
+          </Link>
+        </DashboardWidget>
+      </div>
+    </div>
+  );
+}

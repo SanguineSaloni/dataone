@@ -1,0 +1,872 @@
+{
+  "aggregate": {
+    "across_case_stdev": 0.0,
+    "max_case_mean": 0.0,
+    "max_case_stdev": 0.0,
+    "mean": 0.0,
+    "mean_case_stdev": 0.0,
+    "min_case_mean": 0.0,
+    "n_cases": 39,
+    "n_errors": 0,
+    "n_samples": 39,
+    "pass_rate": 0.0
+  },
+  "by_tag": {
+    "aggregate": {
+      "case_ids": [
+        "nl2sql_aggregate_001_count_customers",
+        "nl2sql_aggregate_002_paid_revenue",
+        "nl2sql_aggregate_003_average_order_total",
+        "nl2sql_aggregate_004_pending_count",
+        "nl2sql_aggregate_005_highest_price",
+        "nl2sql_aggregate_006_total_units_sold",
+        "nl2sql_aggregate_007_distinct_cities",
+        "nl2sql_group_005_avg_total_by_status",
+        "nl2sql_date_001_july_order_count",
+        "nl2sql_date_004_q2_order_value",
+        "nl2sql_date_005_signups_in_2025"
+      ],
+      "mean": 0.0,
+      "n_cases": 11,
+      "n_passed": 0
+    },
+    "anti_join": {
+      "case_ids": [
+        "nl2sql_join_003_never_ordered_products",
+        "nl2sql_join_004_customers_without_orders"
+      ],
+      "mean": 0.0,
+      "n_cases": 2,
+      "n_passed": 0
+    },
+    "boolean_column": {
+      "case_ids": [
+        "nl2sql_filter_004_out_of_stock"
+      ],
+      "mean": 0.0,
+      "n_cases": 1,
+      "n_passed": 0
+    },
+    "date": {
+      "case_ids": [
+        "nl2sql_date_001_july_order_count",
+        "nl2sql_date_002_signups_before_march",
+        "nl2sql_date_003_orders_from_july_onwards",
+        "nl2sql_date_004_q2_order_value",
+        "nl2sql_date_005_signups_in_2025",
+        "nl2sql_date_006_june_orders",
+        "nl2sql_order_004_five_most_recent_orders"
+      ],
+      "mean": 0.0,
+      "n_cases": 7,
+      "n_passed": 0
+    },
+    "distinct": {
+      "case_ids": [
+        "nl2sql_aggregate_007_distinct_cities",
+        "nl2sql_join_006_ada_categories"
+      ],
+      "mean": 0.0,
+      "n_cases": 2,
+      "n_passed": 0
+    },
+    "filter": {
+      "case_ids": [
+        "nl2sql_filter_001_emails_in_london",
+        "nl2sql_filter_002_products_over_200",
+        "nl2sql_filter_003_cancelled_orders",
+        "nl2sql_filter_004_out_of_stock",
+        "nl2sql_filter_005_uk_customers",
+        "nl2sql_filter_006_orders_above_400",
+        "nl2sql_filter_007_accessories_category",
+        "nl2sql_aggregate_002_paid_revenue",
+        "nl2sql_aggregate_004_pending_count",
+        "nl2sql_join_005_paid_order_customer_and_total",
+        "nl2sql_date_002_signups_before_march",
+        "nl2sql_date_003_orders_from_july_onwards",
+        "nl2sql_date_006_june_orders"
+      ],
+      "mean": 0.0,
+      "n_cases": 13,
+      "n_passed": 0
+    },
+    "group": {
+      "case_ids": [
+        "nl2sql_group_001_customers_per_country",
+        "nl2sql_group_002_revenue_per_category",
+        "nl2sql_group_003_orders_per_customer_including_none",
+        "nl2sql_group_004_orders_by_status",
+        "nl2sql_group_005_avg_total_by_status",
+        "nl2sql_group_006_products_per_category",
+        "nl2sql_group_007_units_per_ordered_product",
+        "nl2sql_order_001_top_3_spenders",
+        "nl2sql_order_003_best_selling_product",
+        "nl2sql_order_005_top_revenue_category"
+      ],
+      "mean": 0.0,
+      "n_cases": 10,
+      "n_passed": 0
+    },
+    "join": {
+      "case_ids": [
+        "nl2sql_group_002_revenue_per_category",
+        "nl2sql_group_003_orders_per_customer_including_none",
+        "nl2sql_group_007_units_per_ordered_product",
+        "nl2sql_join_001_monitor_buyers",
+        "nl2sql_join_002_products_in_order_1",
+        "nl2sql_join_003_never_ordered_products",
+        "nl2sql_join_004_customers_without_orders",
+        "nl2sql_join_005_paid_order_customer_and_total",
+        "nl2sql_join_006_ada_categories",
+        "nl2sql_join_007_customers_buying_expensive_products",
+        "nl2sql_order_001_top_3_spenders",
+        "nl2sql_order_003_best_selling_product",
+        "nl2sql_order_005_top_revenue_category"
+      ],
+      "mean": 0.0,
+      "n_cases": 13,
+      "n_passed": 0
+    },
+    "numeric_predicate": {
+      "case_ids": [
+        "nl2sql_filter_002_products_over_200",
+        "nl2sql_filter_006_orders_above_400",
+        "nl2sql_join_007_customers_buying_expensive_products"
+      ],
+      "mean": 0.0,
+      "n_cases": 3,
+      "n_passed": 0
+    },
+    "order_limit": {
+      "case_ids": [
+        "nl2sql_order_001_top_3_spenders",
+        "nl2sql_order_002_most_expensive_product",
+        "nl2sql_order_003_best_selling_product",
+        "nl2sql_order_004_five_most_recent_orders",
+        "nl2sql_order_005_top_revenue_category"
+      ],
+      "mean": 0.0,
+      "n_cases": 5,
+      "n_passed": 0
+    },
+    "outer_join": {
+      "case_ids": [
+        "nl2sql_group_003_orders_per_customer_including_none"
+      ],
+      "mean": 0.0,
+      "n_cases": 1,
+      "n_passed": 0
+    },
+    "three_table": {
+      "case_ids": [
+        "nl2sql_join_001_monitor_buyers",
+        "nl2sql_join_006_ada_categories",
+        "nl2sql_join_007_customers_buying_expensive_products"
+      ],
+      "mean": 0.0,
+      "n_cases": 3,
+      "n_passed": 0
+    }
+  },
+  "cases": [
+    {
+      "detail": "shape mismatch: returned 6 column(s) \u00d7 9 row(s), reference has 1 \u00d7 3. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_filter_001_emails_in_london",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "filter"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 5 column(s) \u00d7 9 row(s), reference has 1 \u00d7 3. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_filter_002_products_over_200",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "filter",
+        "numeric_predicate"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 5 column(s) \u00d7 15 row(s), reference has 1 \u00d7 1. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_filter_003_cancelled_orders",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "filter"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 5 column(s) \u00d7 9 row(s), reference has 1 \u00d7 2. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_filter_004_out_of_stock",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "filter",
+        "boolean_column"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 6 column(s) \u00d7 9 row(s), reference has 1 \u00d7 4. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_filter_005_uk_customers",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "filter"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 5 column(s) \u00d7 15 row(s), reference has 1 \u00d7 2. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_filter_006_orders_above_400",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "filter",
+        "numeric_predicate"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 5 column(s) \u00d7 9 row(s), reference has 1 \u00d7 2. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_filter_007_accessories_category",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "filter"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 6 column(s) \u00d7 9 row(s), reference has 1 \u00d7 1. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_aggregate_001_count_customers",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "aggregate"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 5 column(s) \u00d7 15 row(s), reference has 1 \u00d7 1. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_aggregate_002_paid_revenue",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "aggregate",
+        "filter"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 6 column(s) \u00d7 9 row(s), reference has 1 \u00d7 1. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_aggregate_003_average_order_total",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "aggregate"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 5 column(s) \u00d7 15 row(s), reference has 1 \u00d7 1. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_aggregate_004_pending_count",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "aggregate",
+        "filter"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 6 column(s) \u00d7 9 row(s), reference has 1 \u00d7 1. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_aggregate_005_highest_price",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "aggregate"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 6 column(s) \u00d7 9 row(s), reference has 1 \u00d7 1. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_aggregate_006_total_units_sold",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "aggregate"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 6 column(s) \u00d7 9 row(s), reference has 1 \u00d7 1. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_aggregate_007_distinct_cities",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "aggregate",
+        "distinct"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 1 column(s) \u00d7 1 row(s), reference has 2 \u00d7 4. Not the answer asked for",
+      "error": "",
+      "id": "nl2sql_group_001_customers_per_country",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "group"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 6 column(s) \u00d7 9 row(s), reference has 2 \u00d7 6. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_group_002_revenue_per_category",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "group",
+        "join"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 6 column(s) \u00d7 9 row(s), reference has 2 \u00d7 9. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_group_003_orders_per_customer_including_none",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "group",
+        "join",
+        "outer_join"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 5 column(s) \u00d7 15 row(s), reference has 2 \u00d7 4. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_group_004_orders_by_status",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "group"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 6 column(s) \u00d7 9 row(s), reference has 2 \u00d7 4. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_group_005_avg_total_by_status",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "group",
+        "aggregate"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 5 column(s) \u00d7 9 row(s), reference has 2 \u00d7 6. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_group_006_products_per_category",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "group"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 6 column(s) \u00d7 9 row(s), reference has 2 \u00d7 8. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_group_007_units_per_ordered_product",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "group",
+        "join"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 6 column(s) \u00d7 9 row(s), reference has 1 \u00d7 3. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_join_001_monitor_buyers",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "join",
+        "three_table"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 5 column(s) \u00d7 9 row(s), reference has 1 \u00d7 2. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_join_002_products_in_order_1",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "join"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 5 column(s) \u00d7 9 row(s), reference has 1 \u00d7 1. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_join_003_never_ordered_products",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "join",
+        "anti_join"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 6 column(s) \u00d7 9 row(s), reference has 1 \u00d7 1. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_join_004_customers_without_orders",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "join",
+        "anti_join"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 6 column(s) \u00d7 9 row(s), reference has 2 \u00d7 11. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_join_005_paid_order_customer_and_total",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "join",
+        "filter"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 6 column(s) \u00d7 9 row(s), reference has 1 \u00d7 2. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_join_006_ada_categories",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "join",
+        "three_table",
+        "distinct"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 6 column(s) \u00d7 9 row(s), reference has 1 \u00d7 4. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_join_007_customers_buying_expensive_products",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "join",
+        "three_table",
+        "numeric_predicate"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 5 column(s) \u00d7 15 row(s), reference has 1 \u00d7 1. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_date_001_july_order_count",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "date",
+        "aggregate"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 6 column(s) \u00d7 9 row(s), reference has 1 \u00d7 3. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_date_002_signups_before_march",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "date",
+        "filter"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 5 column(s) \u00d7 15 row(s), reference has 1 \u00d7 5. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_date_003_orders_from_july_onwards",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "date",
+        "filter"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 5 column(s) \u00d7 15 row(s), reference has 1 \u00d7 1. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_date_004_q2_order_value",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "date",
+        "aggregate"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 6 column(s) \u00d7 9 row(s), reference has 1 \u00d7 1. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_date_005_signups_in_2025",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "date",
+        "aggregate"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 5 column(s) \u00d7 15 row(s), reference has 1 \u00d7 3. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_date_006_june_orders",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "date",
+        "filter"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 6 column(s) \u00d7 9 row(s), reference has 2 \u00d7 3. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_order_001_top_3_spenders",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "order_limit",
+        "group",
+        "join"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 6 column(s) \u00d7 9 row(s), reference has 1 \u00d7 1. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_order_002_most_expensive_product",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "order_limit"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 6 column(s) \u00d7 9 row(s), reference has 1 \u00d7 1. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_order_003_best_selling_product",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "order_limit",
+        "group",
+        "join"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 5 column(s) \u00d7 15 row(s), reference has 1 \u00d7 5. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_order_004_five_most_recent_orders",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "order_limit",
+        "date"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 6 column(s) \u00d7 9 row(s), reference has 1 \u00d7 1. Not the answer asked for [cost: select_star]",
+      "error": "",
+      "id": "nl2sql_order_005_top_revenue_category",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "order_limit",
+        "group",
+        "join"
+      ]
+    }
+  ],
+  "mode": "offline",
+  "model": "none",
+  "repeats": 1,
+  "suite": "nl2sql_template"
+}

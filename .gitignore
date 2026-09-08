@@ -1,0 +1,38 @@
+# Node / Next.js
+node_modules/
+.next/
+out/
+build/
+.env*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+env/
+venv/
+ENV/
+.pytest_cache/
+
+# Databases & local state
+*.db
+*.sqlite
+.data/
+
+# OS/System
+.DS_Store
+Thumbs.db
+
+# Keeper Secrets Manager bootstrap config (requirements-specs-v5) — never commit
+ksm_config*.json
+vendor/aci/
+
+requirements-specs/*
+!requirements-specs/v1.1/
+!requirements-specs/v1.1/**
+requirements-specs-v2/*
+requirements-specs-v3/*
+requirements-specs-v4/*
+requirements-specs-v5/*

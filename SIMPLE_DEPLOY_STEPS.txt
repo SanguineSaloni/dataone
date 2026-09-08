@@ -1,0 +1,104 @@
+================================================================================
+DEPLOY DATAONE TO DATABRICKS - SIMPLE STEPS
+================================================================================
+
+The Databricks UI you showed doesn't support multi-service apps yet.
+We need to wait for Databricks to add full Lakehouse Apps support OR use one of
+these alternatives:
+
+================================================================================
+OPTION A: WAIT FOR MARKETPLACE SUBMISSION (RECOMMENDED)
+================================================================================
+
+Since you have Partner Access pending, the BEST approach is:
+
+1. Take screenshots of DataOne running LOCALLY (already done in Phase 1)
+2. Document the app.yml configuration (already done)
+3. Submit to Databricks Partner Portal when you get partner access
+4. Databricks will deploy it in THEIR test environment for review
+5. After approval, it appears in Marketplace
+6. Users install from Marketplace with one click
+
+This is the PROPER marketplace path and doesn't require you to deploy yourself.
+
+================================================================================
+OPTION B: RUN LOCALLY, CONNECT TO YOUR DATABRICKS (WORKS NOW)
+================================================================================
+
+What you ALREADY have working from Phase 1:
+
+1. Start DataOne locally:
+   cd /Users/salonisidheshwar/Desktop/dataone/DataOne-main\ 2
+   docker-compose up -d
+
+2. Access at: http://localhost:3011
+
+3. Login: admin@dataplane.ai / admin123
+
+4. Create Databricks connection with your credentials:
+   {
+     "server_hostname": "dbc-67a1a5fa-9eb9.cloud.databricks.com",
+     "http_path": "/sql/1.0/warehouses/65d4f8c97b119b38",
+     "access_token": "dapi00971ed2dfe28de3031633e30dfd6700",
+     "catalog": "main",
+     "schema": "default"
+   }
+
+5. Browse Unity Catalog, run queries, test schema mapping
+
+THIS WORKS RIGHT NOW and is perfect for development/testing!
+
+================================================================================
+OPTION C: SIMPLIFIED SINGLE-SERVICE DEPLOYMENT (WORKAROUND)
+================================================================================
+
+If you MUST deploy to Databricks Apps right now, we need to:
+
+1. Combine backend + frontend into ONE container
+2. Use SQLite instead of PostgreSQL (simpler)  
+3. Skip Redis/Celery (no background jobs)
+4. Deploy as single-service app
+
+This is a DEMO VERSION, not production-ready.
+
+Would you like me to create this simplified version?
+
+================================================================================
+RECOMMENDATION
+================================================================================
+
+For YOUR use case (free Databricks edition, want marketplace listing):
+
+✅ BEST: Continue with Option B (local Docker) for testing
+✅ BEST: Take screenshots and prepare marketplace submission
+✅ BEST: Submit when you get partner access
+✅ BEST: Let Databricks handle the actual marketplace deployment
+
+The images you built (docker.io/salonisidheshwar/dataone-*:v1.0.0) are ready
+for marketplace submission. The app.yml is ready. Documentation is ready.
+
+You don't NEED to deploy to your free workspace - the marketplace submission
+process handles that!
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+1. Request partner access at partner.databricks.com
+2. While waiting, use DataOne locally (docker-compose up -d)
+3. Take 4-5 screenshots:
+   - Dashboard with Databricks connection
+   - Schema mapper with AI suggestions  
+   - Query studio executing SQL
+   - Unity Catalog browsing
+4. When partner access is approved, submit to marketplace with:
+   - app.yml
+   - Screenshots
+   - listing.json
+   - Documentation
+5. Databricks deploys and tests it for you
+6. After approval, users can install from marketplace
+
+================================================================================
+
+Want me to help with any of these options?

@@ -1,0 +1,872 @@
+{
+  "aggregate": {
+    "across_case_stdev": 0.486504,
+    "max_case_mean": 1.0,
+    "max_case_stdev": 0.0,
+    "mean": 0.615385,
+    "mean_case_stdev": 0.0,
+    "min_case_mean": 0.0,
+    "n_cases": 39,
+    "n_errors": 0,
+    "n_samples": 39,
+    "pass_rate": 0.615385
+  },
+  "by_tag": {
+    "aggregate": {
+      "case_ids": [
+        "nl2sql_aggregate_001_count_customers",
+        "nl2sql_aggregate_002_paid_revenue",
+        "nl2sql_aggregate_003_average_order_total",
+        "nl2sql_aggregate_004_pending_count",
+        "nl2sql_aggregate_005_highest_price",
+        "nl2sql_aggregate_006_total_units_sold",
+        "nl2sql_aggregate_007_distinct_cities",
+        "nl2sql_group_005_avg_total_by_status",
+        "nl2sql_date_001_july_order_count",
+        "nl2sql_date_004_q2_order_value",
+        "nl2sql_date_005_signups_in_2025"
+      ],
+      "mean": 0.818182,
+      "n_cases": 11,
+      "n_passed": 9
+    },
+    "anti_join": {
+      "case_ids": [
+        "nl2sql_join_003_never_ordered_products",
+        "nl2sql_join_004_customers_without_orders"
+      ],
+      "mean": 0.5,
+      "n_cases": 2,
+      "n_passed": 1
+    },
+    "boolean_column": {
+      "case_ids": [
+        "nl2sql_filter_004_out_of_stock"
+      ],
+      "mean": 1.0,
+      "n_cases": 1,
+      "n_passed": 1
+    },
+    "date": {
+      "case_ids": [
+        "nl2sql_date_001_july_order_count",
+        "nl2sql_date_002_signups_before_march",
+        "nl2sql_date_003_orders_from_july_onwards",
+        "nl2sql_date_004_q2_order_value",
+        "nl2sql_date_005_signups_in_2025",
+        "nl2sql_date_006_june_orders",
+        "nl2sql_order_004_five_most_recent_orders"
+      ],
+      "mean": 0.571429,
+      "n_cases": 7,
+      "n_passed": 4
+    },
+    "distinct": {
+      "case_ids": [
+        "nl2sql_aggregate_007_distinct_cities",
+        "nl2sql_join_006_ada_categories"
+      ],
+      "mean": 0.5,
+      "n_cases": 2,
+      "n_passed": 1
+    },
+    "filter": {
+      "case_ids": [
+        "nl2sql_filter_001_emails_in_london",
+        "nl2sql_filter_002_products_over_200",
+        "nl2sql_filter_003_cancelled_orders",
+        "nl2sql_filter_004_out_of_stock",
+        "nl2sql_filter_005_uk_customers",
+        "nl2sql_filter_006_orders_above_400",
+        "nl2sql_filter_007_accessories_category",
+        "nl2sql_aggregate_002_paid_revenue",
+        "nl2sql_aggregate_004_pending_count",
+        "nl2sql_join_005_paid_order_customer_and_total",
+        "nl2sql_date_002_signups_before_march",
+        "nl2sql_date_003_orders_from_july_onwards",
+        "nl2sql_date_006_june_orders"
+      ],
+      "mean": 0.692308,
+      "n_cases": 13,
+      "n_passed": 9
+    },
+    "group": {
+      "case_ids": [
+        "nl2sql_group_001_customers_per_country",
+        "nl2sql_group_002_revenue_per_category",
+        "nl2sql_group_003_orders_per_customer_including_none",
+        "nl2sql_group_004_orders_by_status",
+        "nl2sql_group_005_avg_total_by_status",
+        "nl2sql_group_006_products_per_category",
+        "nl2sql_group_007_units_per_ordered_product",
+        "nl2sql_order_001_top_3_spenders",
+        "nl2sql_order_003_best_selling_product",
+        "nl2sql_order_005_top_revenue_category"
+      ],
+      "mean": 0.6,
+      "n_cases": 10,
+      "n_passed": 6
+    },
+    "join": {
+      "case_ids": [
+        "nl2sql_group_002_revenue_per_category",
+        "nl2sql_group_003_orders_per_customer_including_none",
+        "nl2sql_group_007_units_per_ordered_product",
+        "nl2sql_join_001_monitor_buyers",
+        "nl2sql_join_002_products_in_order_1",
+        "nl2sql_join_003_never_ordered_products",
+        "nl2sql_join_004_customers_without_orders",
+        "nl2sql_join_005_paid_order_customer_and_total",
+        "nl2sql_join_006_ada_categories",
+        "nl2sql_join_007_customers_buying_expensive_products",
+        "nl2sql_order_001_top_3_spenders",
+        "nl2sql_order_003_best_selling_product",
+        "nl2sql_order_005_top_revenue_category"
+      ],
+      "mean": 0.384615,
+      "n_cases": 13,
+      "n_passed": 5
+    },
+    "numeric_predicate": {
+      "case_ids": [
+        "nl2sql_filter_002_products_over_200",
+        "nl2sql_filter_006_orders_above_400",
+        "nl2sql_join_007_customers_buying_expensive_products"
+      ],
+      "mean": 0.333333,
+      "n_cases": 3,
+      "n_passed": 1
+    },
+    "order_limit": {
+      "case_ids": [
+        "nl2sql_order_001_top_3_spenders",
+        "nl2sql_order_002_most_expensive_product",
+        "nl2sql_order_003_best_selling_product",
+        "nl2sql_order_004_five_most_recent_orders",
+        "nl2sql_order_005_top_revenue_category"
+      ],
+      "mean": 0.0,
+      "n_cases": 5,
+      "n_passed": 0
+    },
+    "outer_join": {
+      "case_ids": [
+        "nl2sql_group_003_orders_per_customer_including_none"
+      ],
+      "mean": 0.0,
+      "n_cases": 1,
+      "n_passed": 0
+    },
+    "three_table": {
+      "case_ids": [
+        "nl2sql_join_001_monitor_buyers",
+        "nl2sql_join_006_ada_categories",
+        "nl2sql_join_007_customers_buying_expensive_products"
+      ],
+      "mean": 0.333333,
+      "n_cases": 3,
+      "n_passed": 1
+    }
+  },
+  "cases": [
+    {
+      "detail": "3 row(s) match (unordered) [cost: unfiltered_scan]",
+      "error": "",
+      "id": "nl2sql_filter_001_emails_in_london",
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n": 1,
+      "pass_rate": 1.0,
+      "scores": [
+        1.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "filter"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 3 column(s) \u00d7 3 row(s), reference has 1 \u00d7 3. Not the answer asked for [cost: unfiltered_scan]",
+      "error": "",
+      "id": "nl2sql_filter_002_products_over_200",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "filter",
+        "numeric_predicate"
+      ]
+    },
+    {
+      "detail": "1 row(s) match (unordered) [cost: unfiltered_scan]",
+      "error": "",
+      "id": "nl2sql_filter_003_cancelled_orders",
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n": 1,
+      "pass_rate": 1.0,
+      "scores": [
+        1.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "filter"
+      ]
+    },
+    {
+      "detail": "2 row(s) match (unordered) [cost: unfiltered_scan]",
+      "error": "",
+      "id": "nl2sql_filter_004_out_of_stock",
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n": 1,
+      "pass_rate": 1.0,
+      "scores": [
+        1.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "filter",
+        "boolean_column"
+      ]
+    },
+    {
+      "detail": "4 row(s) match (unordered)",
+      "error": "",
+      "id": "nl2sql_filter_005_uk_customers",
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n": 1,
+      "pass_rate": 1.0,
+      "scores": [
+        1.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "filter"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 5 column(s) \u00d7 2 row(s), reference has 1 \u00d7 2. Not the answer asked for [cost: select_star, unfiltered_scan]",
+      "error": "",
+      "id": "nl2sql_filter_006_orders_above_400",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "filter",
+        "numeric_predicate"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 2 column(s) \u00d7 2 row(s), reference has 1 \u00d7 2. Not the answer asked for",
+      "error": "",
+      "id": "nl2sql_filter_007_accessories_category",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "filter"
+      ]
+    },
+    {
+      "detail": "1 row(s) match (unordered)",
+      "error": "",
+      "id": "nl2sql_aggregate_001_count_customers",
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n": 1,
+      "pass_rate": 1.0,
+      "scores": [
+        1.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "aggregate"
+      ]
+    },
+    {
+      "detail": "1 row(s) match (unordered)",
+      "error": "",
+      "id": "nl2sql_aggregate_002_paid_revenue",
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n": 1,
+      "pass_rate": 1.0,
+      "scores": [
+        1.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "aggregate",
+        "filter"
+      ]
+    },
+    {
+      "detail": "1 row(s) match (unordered)",
+      "error": "",
+      "id": "nl2sql_aggregate_003_average_order_total",
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n": 1,
+      "pass_rate": 1.0,
+      "scores": [
+        1.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "aggregate"
+      ]
+    },
+    {
+      "detail": "1 row(s) match (unordered)",
+      "error": "",
+      "id": "nl2sql_aggregate_004_pending_count",
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n": 1,
+      "pass_rate": 1.0,
+      "scores": [
+        1.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "aggregate",
+        "filter"
+      ]
+    },
+    {
+      "detail": "1 row(s) match (unordered)",
+      "error": "",
+      "id": "nl2sql_aggregate_005_highest_price",
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n": 1,
+      "pass_rate": 1.0,
+      "scores": [
+        1.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "aggregate"
+      ]
+    },
+    {
+      "detail": "1 row(s) match (unordered)",
+      "error": "",
+      "id": "nl2sql_aggregate_006_total_units_sold",
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n": 1,
+      "pass_rate": 1.0,
+      "scores": [
+        1.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "aggregate"
+      ]
+    },
+    {
+      "detail": "1 row(s) match (unordered)",
+      "error": "",
+      "id": "nl2sql_aggregate_007_distinct_cities",
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n": 1,
+      "pass_rate": 1.0,
+      "scores": [
+        1.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "aggregate",
+        "distinct"
+      ]
+    },
+    {
+      "detail": "4 row(s) match (unordered)",
+      "error": "",
+      "id": "nl2sql_group_001_customers_per_country",
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n": 1,
+      "pass_rate": 1.0,
+      "scores": [
+        1.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "group"
+      ]
+    },
+    {
+      "detail": "6 row(s) match (unordered)",
+      "error": "",
+      "id": "nl2sql_group_002_revenue_per_category",
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n": 1,
+      "pass_rate": 1.0,
+      "scores": [
+        1.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "group",
+        "join"
+      ]
+    },
+    {
+      "detail": "9 row(s) returned vs 9 expected (unordered): missing [('Ada Lovelace', 3.0), ('Grace Hopper', 3.0), ('Alan Turing', 2.0)] \u2026(+6 more); unexpected [(1.0, 3.0), (2.0, 3.0), (3.0, 2.0)] \u2026(+6 more)",
+      "error": "",
+      "id": "nl2sql_group_003_orders_per_customer_including_none",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "group",
+        "join",
+        "outer_join"
+      ]
+    },
+    {
+      "detail": "4 row(s) match (unordered)",
+      "error": "",
+      "id": "nl2sql_group_004_orders_by_status",
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n": 1,
+      "pass_rate": 1.0,
+      "scores": [
+        1.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "group"
+      ]
+    },
+    {
+      "detail": "4 row(s) match (unordered)",
+      "error": "",
+      "id": "nl2sql_group_005_avg_total_by_status",
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n": 1,
+      "pass_rate": 1.0,
+      "scores": [
+        1.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "group",
+        "aggregate"
+      ]
+    },
+    {
+      "detail": "6 row(s) match (unordered)",
+      "error": "",
+      "id": "nl2sql_group_006_products_per_category",
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n": 1,
+      "pass_rate": 1.0,
+      "scores": [
+        1.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "group"
+      ]
+    },
+    {
+      "detail": "8 row(s) match (unordered)",
+      "error": "",
+      "id": "nl2sql_group_007_units_per_ordered_product",
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n": 1,
+      "pass_rate": 1.0,
+      "scores": [
+        1.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "group",
+        "join"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 2 column(s) \u00d7 3 row(s), reference has 1 \u00d7 3. Not the answer asked for",
+      "error": "",
+      "id": "nl2sql_join_001_monitor_buyers",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "join",
+        "three_table"
+      ]
+    },
+    {
+      "detail": "2 row(s) match (unordered) [cost: unfiltered_scan]",
+      "error": "",
+      "id": "nl2sql_join_002_products_in_order_1",
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n": 1,
+      "pass_rate": 1.0,
+      "scores": [
+        1.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "join"
+      ]
+    },
+    {
+      "detail": "1 row(s) match (unordered)",
+      "error": "",
+      "id": "nl2sql_join_003_never_ordered_products",
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n": 1,
+      "pass_rate": 1.0,
+      "scores": [
+        1.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "join",
+        "anti_join"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 6 column(s) \u00d7 1 row(s), reference has 1 \u00d7 1. Not the answer asked for [cost: unfiltered_scan]",
+      "error": "",
+      "id": "nl2sql_join_004_customers_without_orders",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "join",
+        "anti_join"
+      ]
+    },
+    {
+      "detail": "1 row(s) returned vs 11 expected (unordered): missing [('Ada Lovelace', 137.5), ('Grace Hopper', 310.0), ('Ada Lovelace', 42.5)] \u2026(+8 more); unexpected [('Ada Lovelace', 2254.0)]",
+      "error": "",
+      "id": "nl2sql_join_005_paid_order_customer_and_total",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "join",
+        "filter"
+      ]
+    },
+    {
+      "detail": "4 row(s) returned vs 2 expected (unordered): missing []; unexpected [('Peripherals',), ('Accessories',)] [cost: unfiltered_scan]",
+      "error": "",
+      "id": "nl2sql_join_006_ada_categories",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "join",
+        "three_table",
+        "distinct"
+      ]
+    },
+    {
+      "detail": "4 row(s) match (unordered)",
+      "error": "",
+      "id": "nl2sql_join_007_customers_buying_expensive_products",
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n": 1,
+      "pass_rate": 1.0,
+      "scores": [
+        1.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "join",
+        "three_table",
+        "numeric_predicate"
+      ]
+    },
+    {
+      "detail": "1 row(s) match (unordered)",
+      "error": "",
+      "id": "nl2sql_date_001_july_order_count",
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n": 1,
+      "pass_rate": 1.0,
+      "scores": [
+        1.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "date",
+        "aggregate"
+      ]
+    },
+    {
+      "detail": "3 row(s) match (unordered) [cost: unfiltered_scan]",
+      "error": "",
+      "id": "nl2sql_date_002_signups_before_march",
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n": 1,
+      "pass_rate": 1.0,
+      "scores": [
+        1.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "date",
+        "filter"
+      ]
+    },
+    {
+      "detail": "5 row(s) match (unordered) [cost: unfiltered_scan]",
+      "error": "",
+      "id": "nl2sql_date_003_orders_from_july_onwards",
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n": 1,
+      "pass_rate": 1.0,
+      "scores": [
+        1.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "date",
+        "filter"
+      ]
+    },
+    {
+      "detail": "1 row(s) returned vs 1 expected (unordered): missing [(2043.5,)]; unexpected [(None,)]",
+      "error": "",
+      "id": "nl2sql_date_004_q2_order_value",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "date",
+        "aggregate"
+      ]
+    },
+    {
+      "detail": "generated SQL failed to execute: OperationalError: near \"FROM\": syntax error",
+      "error": "",
+      "id": "nl2sql_date_005_signups_in_2025",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "date",
+        "aggregate"
+      ]
+    },
+    {
+      "detail": "3 row(s) match (unordered) [cost: unfiltered_scan]",
+      "error": "",
+      "id": "nl2sql_date_006_june_orders",
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n": 1,
+      "pass_rate": 1.0,
+      "scores": [
+        1.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "date",
+        "filter"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 3 column(s) \u00d7 3 row(s), reference has 2 \u00d7 3. Not the answer asked for",
+      "error": "",
+      "id": "nl2sql_order_001_top_3_spenders",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "order_limit",
+        "group",
+        "join"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 2 column(s) \u00d7 1 row(s), reference has 1 \u00d7 1. Not the answer asked for",
+      "error": "",
+      "id": "nl2sql_order_002_most_expensive_product",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "order_limit"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 2 column(s) \u00d7 1 row(s), reference has 1 \u00d7 1. Not the answer asked for",
+      "error": "",
+      "id": "nl2sql_order_003_best_selling_product",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "order_limit",
+        "group",
+        "join"
+      ]
+    },
+    {
+      "detail": "shape mismatch: returned 5 column(s) \u00d7 5 row(s), reference has 1 \u00d7 5. Not the answer asked for [cost: select_star, unfiltered_scan]",
+      "error": "",
+      "id": "nl2sql_order_004_five_most_recent_orders",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "order_limit",
+        "date"
+      ]
+    },
+    {
+      "detail": "generated SQL failed to execute: OperationalError: no such column: c.category",
+      "error": "",
+      "id": "nl2sql_order_005_top_revenue_category",
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 1,
+      "pass_rate": 0.0,
+      "scores": [
+        0.0
+      ],
+      "stdev": 0.0,
+      "tags": [
+        "order_limit",
+        "group",
+        "join"
+      ]
+    }
+  ],
+  "mode": "offline",
+  "model": "llama3",
+  "repeats": 1,
+  "suite": "nl2sql"
+}
