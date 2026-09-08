@@ -31,10 +31,16 @@ print(f"   Backend URL: {os.environ['BACKEND_URL']}")
 print(f"   Databricks Native Mode: {os.environ['DATABRICKS_NATIVE_MODE']}")
 print()
 
-# Change to backend directory
+# Add backend directory to Python path so imports work
+backend_path = os.path.join(os.getcwd(), "backend")
+sys.path.insert(0, backend_path)
+
+# Change to backend directory (for relative file paths like database)
 os.chdir("backend")
 
 print("🚀 Starting FastAPI server on port 8080...")
+print(f"   Python path: {backend_path}")
+print(f"   Working dir: {os.getcwd()}")
 print()
 
 # Import and run uvicorn
@@ -47,9 +53,11 @@ try:
         log_level="info"
     )
 except ImportError as e:
-    print(f"❌ Error: {e}")
-    print("uvicorn is not installed. Check that requirements.txt was processed during build.")
+    print(f"❌ Import Error: {e}")
+    print(f"   Python sys.path: {sys.path}")
     sys.exit(1)
 except Exception as e:
     print(f"❌ Failed to start server: {e}")
+    import traceback
+    traceback.print_exc()
     sys.exit(1)
