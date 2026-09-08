@@ -65,6 +65,10 @@ print()
 print("✅ Build completed successfully!")
 print()
 print("🚀 Starting Next.js production server on port 8080...")
+print("   Expected URLs:")
+print(f"   - Health: http://0.0.0.0:8080/api/health")
+print(f"   - Login: http://0.0.0.0:8080/login") 
+print(f"   - Home: http://0.0.0.0:8080/")
 print()
 
 # Start the Next.js production server
