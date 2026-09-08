@@ -15,12 +15,12 @@ print("Starting DataOne Frontend in Databricks Apps mode")
 print("=" * 60)
 print(f"✅ Environment configured")
 print(f"   Backend API URL: {backend_url}")
-print(f"   Frontend Port: 3000")
+print(f"   Frontend Port: 8080")
 print()
 
 # Set Next.js environment variables
 os.environ["NEXT_PUBLIC_API_URL"] = backend_url
-os.environ["PORT"] = "3000" 
+os.environ["PORT"] = "8080" 
 os.environ["HOSTNAME"] = "0.0.0.0"
 
 # Change to frontend directory
@@ -64,7 +64,7 @@ if build_result.returncode != 0:
 print()
 print("✅ Build completed successfully!")
 print()
-print("🚀 Starting Next.js production server on port 3000...")
+print("🚀 Starting Next.js production server on port 8080...")
 print()
 
 # Start the Next.js production server
@@ -73,7 +73,7 @@ try:
     subprocess.run([
         "npm", "run", "start", "--", 
         "--hostname", "0.0.0.0",
-        "--port", "3000"
+        "--port", "8080"
     ], check=True)
 except KeyboardInterrupt:
     print("\n👋 Shutting down...")
