@@ -45,7 +45,8 @@ echo "🚀 Starting FastAPI server..."
 echo ""
 
 # Start uvicorn - the app will initialize database on first startup
-exec python -m uvicorn app.main:app \
+# Use python3 explicitly (Databricks uses python3, not python)
+exec python3 -m uvicorn app.main:app \
   --host 0.0.0.0 \
   --port 8080 \
   --log-level info
