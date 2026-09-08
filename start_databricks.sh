@@ -3,21 +3,49 @@
 
 set -e
 
-echo "Starting DataOne in Databricks Apps mode..."
+echo "========================================="
+echo "Starting DataOne in Databricks Apps mode"
+echo "========================================="
 
-# Set environment variables for Databricks deployment
+# Core application settings - use SQLite instead of PostgreSQL
 export DATABASE_URL="sqlite:///./dataone.db"
-export CELERY_BROKER_URL="memory://"  # In-memory broker (no Redis needed)
+
+# Use memory broker instead of Redis (Celery won't actually work but won't crash)
+export CELERY_BROKER_URL="memory://"
 export CELERY_RESULT_BACKEND="memory://"
-export LOG_LEVEL="INFO"
-export SECRET_KEY="databricks-dataone-secret-$(date +%s)"
+
+# Basic security settings
+export SECRET_KEY="databricks-dataone-secret-change-in-production-$(openssl rand -hex 16)"
 export ADMIN_DEFAULT_PASSWORD="admin123"
+
+# Logging
+export LOG_LEVEL="INFO"
+
+# URLs
 export BACKEND_URL="${APP_URL:-http://localhost:8080}"
 export FRONTEND_URL="${APP_URL:-http://localhost:8080}"
+export FRONTEND_LOGIN_URL="${APP_URL:-http://localhost:8080}/login"
+
+# Databricks settings
+export DATABRICKS_NATIVE_MODE="true"
+export ENABLE_UNITY_CATALOG="true"
+export ENABLE_EXTERNAL_CONNECTORS="true"
+
+# Disable optional integrations that require external services
+export DATABRICKS_USE_LLM="false"
 export OLLAMA_HOST="http://localhost:11434"
 
-# Navigate to backend directory
-cd backend
+echo "✅ Environment configured"
+echo ""
 
-# Start the FastAPI application
-exec uvicorn app.main:app --host 0.0.0.0 --port 8080
+# Navigate to backend directory
+cd backend || { echo "❌ Backend directory not found"; exit 1; }
+
+echo "🚀 Starting FastAPI server..."
+echo ""
+
+# Start uvicorn - the app will initialize database on first startup
+exec python -m uvicorn app.main:app \
+  --host 0.0.0.0 \
+  --port 8080 \
+  --log-level info
