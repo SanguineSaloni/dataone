@@ -20,7 +20,7 @@ print()
 
 # Set Next.js environment variables
 os.environ["NEXT_PUBLIC_API_URL"] = backend_url
-os.environ["PORT"] = "3000"
+os.environ["PORT"] = "3000" 
 os.environ["HOSTNAME"] = "0.0.0.0"
 
 # Change to frontend directory
@@ -69,10 +69,12 @@ print()
 
 # Start the Next.js production server
 try:
-    subprocess.run(
-        ["npm", "run", "start"],
-        check=True
-    )
+    # Start with explicit host and port for Databricks Apps
+    subprocess.run([
+        "npm", "run", "start", "--", 
+        "--hostname", "0.0.0.0",
+        "--port", "3000"
+    ], check=True)
 except KeyboardInterrupt:
     print("\n👋 Shutting down...")
     sys.exit(0)
