@@ -44,9 +44,16 @@ cd backend || { echo "❌ Backend directory not found"; exit 1; }
 echo "🚀 Starting FastAPI server..."
 echo ""
 
-# Start uvicorn - the app will initialize database on first startup
-# Use python3 explicitly (Databricks uses python3, not python)
-exec python3 -m uvicorn app.main:app \
-  --host 0.0.0.0 \
-  --port 8080 \
-  --log-level info
+# Try to find uvicorn - it might be in ~/.local/bin or virtualenv
+# Databricks installs packages but sometimes they're not in the module path
+if command -v uvicorn &> /dev/null; then
+    echo "Found uvicorn command"
+    exec uvicorn app.main:app --host 0.0.0.0 --port 8080 --log-level info
+elif python3 -c "import uvicorn" 2>/dev/null; then
+    echo "Found uvicorn module"
+    exec python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8080 --log-level info
+else
+    echo "⚠️  uvicorn not found, installing..."
+    pip3 install --user uvicorn[standard] fastapi
+    exec python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8080 --log-level info
+fi
