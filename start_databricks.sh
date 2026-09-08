@@ -38,42 +38,34 @@ export OLLAMA_HOST="http://localhost:11434"
 echo "✅ Environment configured"
 echo ""
 
+# Check if uvicorn is available
+echo "🔍 Checking for uvicorn..."
+if ! python3 -c "import uvicorn" 2>/dev/null; then
+    echo "⚠️  uvicorn not found - installing dependencies from requirements.txt"
+    echo "This should have been done by Databricks build, but doing it now as fallback..."
+    
+    # Install to user site-packages (doesn't require root)
+    python3 -m pip install --user --no-cache-dir -r requirements.txt
+    
+    # Add user site-packages to PATH
+    export PATH="$HOME/.local/bin:$PATH"
+    
+    echo "✅ Dependencies installed"
+else
+    echo "✅ uvicorn found"
+fi
+
 # Navigate to backend directory
 cd backend || { echo "❌ Backend directory not found"; exit 1; }
 
-echo "🚀 Starting FastAPI server..."
+echo "🚀 Starting FastAPI server on port 8080..."
 echo ""
 
-# Databricks Apps installs packages in a virtualenv during build
-# We need to find and activate it, or add it to PATH
-# Common locations: /databricks/python3, /.venv, /app/.venv, or installed globally
-
-# Try to find the virtualenv
-if [ -d "/.venv" ]; then
-    echo "Found virtualenv at /.venv"
-    source /.venv/bin/activate
-elif [ -d "/app/.venv" ]; then
-    echo "Found virtualenv at /app/.venv"
-    source /app/.venv/bin/activate
-elif [ -d "/databricks/python3" ]; then
-    echo "Found Databricks Python at /databricks/python3"
-    export PATH="/databricks/python3/bin:$PATH"
-fi
-
-# Also check for user-installed packages
-export PATH="$HOME/.local/bin:$PATH"
-export PYTHONPATH="/app:$PYTHONPATH"
-
-# Now try to start uvicorn
-echo "Looking for uvicorn..."
-which uvicorn || echo "uvicorn not in PATH"
-which python3 || echo "python3 not in PATH"
-
-# Start the server - by now uvicorn should be available
+# Try to start uvicorn (check as command first, then as module)
 if command -v uvicorn &> /dev/null; then
-    echo "✅ Starting with uvicorn command"
+    echo "Starting with: uvicorn app.main:app"
     exec uvicorn app.main:app --host 0.0.0.0 --port 8080 --log-level info
 else
-    echo "✅ Starting with python3 -m uvicorn"
+    echo "Starting with: python3 -m uvicorn app.main:app"
     exec python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8080 --log-level info
 fi
