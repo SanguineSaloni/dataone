@@ -1,1 +1,1 @@
-command: [".venv/bin/python", "start.py"]
+command: ["python3", "start_frontend.py"]
