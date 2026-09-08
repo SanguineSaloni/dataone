@@ -44,16 +44,36 @@ cd backend || { echo "❌ Backend directory not found"; exit 1; }
 echo "🚀 Starting FastAPI server..."
 echo ""
 
-# Try to find uvicorn - it might be in ~/.local/bin or virtualenv
-# Databricks installs packages but sometimes they're not in the module path
+# Databricks Apps installs packages in a virtualenv during build
+# We need to find and activate it, or add it to PATH
+# Common locations: /databricks/python3, /.venv, /app/.venv, or installed globally
+
+# Try to find the virtualenv
+if [ -d "/.venv" ]; then
+    echo "Found virtualenv at /.venv"
+    source /.venv/bin/activate
+elif [ -d "/app/.venv" ]; then
+    echo "Found virtualenv at /app/.venv"
+    source /app/.venv/bin/activate
+elif [ -d "/databricks/python3" ]; then
+    echo "Found Databricks Python at /databricks/python3"
+    export PATH="/databricks/python3/bin:$PATH"
+fi
+
+# Also check for user-installed packages
+export PATH="$HOME/.local/bin:$PATH"
+export PYTHONPATH="/app:$PYTHONPATH"
+
+# Now try to start uvicorn
+echo "Looking for uvicorn..."
+which uvicorn || echo "uvicorn not in PATH"
+which python3 || echo "python3 not in PATH"
+
+# Start the server - by now uvicorn should be available
 if command -v uvicorn &> /dev/null; then
-    echo "Found uvicorn command"
+    echo "✅ Starting with uvicorn command"
     exec uvicorn app.main:app --host 0.0.0.0 --port 8080 --log-level info
-elif python3 -c "import uvicorn" 2>/dev/null; then
-    echo "Found uvicorn module"
-    exec python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8080 --log-level info
 else
-    echo "⚠️  uvicorn not found, installing..."
-    pip3 install --user uvicorn[standard] fastapi
+    echo "✅ Starting with python3 -m uvicorn"
     exec python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8080 --log-level info
 fi
