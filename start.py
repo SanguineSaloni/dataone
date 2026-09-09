@@ -6,6 +6,21 @@ Sets environment variables and starts the FastAPI application.
 import os
 import sys
 
+# Get Databricks environment variables
+databricks_port = int(os.getenv("DATABRICKS_APP_PORT", "8080"))
+app_url = os.getenv("APP_URL")
+
+# For Databricks Apps, construct the backend URL properly
+if app_url:
+    backend_url = app_url
+    frontend_url = app_url
+    frontend_login_url = app_url + "/login"
+else:
+    # Fallback for local development
+    backend_url = f"http://localhost:{databricks_port}"
+    frontend_url = f"http://localhost:{databricks_port}"
+    frontend_login_url = f"http://localhost:{databricks_port}/login"
+
 # Set environment variables for Databricks deployment
 os.environ["DATABASE_URL"] = "sqlite:///./dataone.db"
 os.environ["CELERY_BROKER_URL"] = "memory://"
@@ -13,9 +28,9 @@ os.environ["CELERY_RESULT_BACKEND"] = "memory://"
 os.environ["LOG_LEVEL"] = "INFO"
 os.environ["SECRET_KEY"] = "databricks-dataone-secret-change-in-production"
 os.environ["ADMIN_DEFAULT_PASSWORD"] = "admin123"
-os.environ["BACKEND_URL"] = os.getenv("APP_URL", "http://localhost:8080")
-os.environ["FRONTEND_URL"] = os.getenv("APP_URL", "http://localhost:8080")
-os.environ["FRONTEND_LOGIN_URL"] = os.getenv("APP_URL", "http://localhost:8080") + "/login"
+os.environ["BACKEND_URL"] = backend_url
+os.environ["FRONTEND_URL"] = frontend_url
+os.environ["FRONTEND_LOGIN_URL"] = frontend_login_url
 os.environ["DATABRICKS_NATIVE_MODE"] = "true"
 os.environ["ENABLE_UNITY_CATALOG"] = "true"
 os.environ["ENABLE_EXTERNAL_CONNECTORS"] = "true"
@@ -27,7 +42,9 @@ print("Starting DataOne in Databricks Apps mode")
 print("=" * 60)
 print(f"✅ Environment configured")
 print(f"   Database: SQLite (file-based)")
-print(f"   Backend URL: {os.environ['BACKEND_URL']}")
+print(f"   Backend URL: {backend_url}")
+print(f"   Databricks Port: {databricks_port}")
+print(f"   APP_URL: {app_url}")
 print(f"   Databricks Native Mode: {os.environ['DATABRICKS_NATIVE_MODE']}")
 print()
 
@@ -38,7 +55,7 @@ sys.path.insert(0, backend_path)
 # Change to backend directory (for relative file paths like database)
 os.chdir("backend")
 
-print("🚀 Starting FastAPI server on port 8080...")
+print(f"🚀 Starting FastAPI server on port {databricks_port}...")
 print(f"   Python path: {backend_path}")
 print(f"   Working dir: {os.getcwd()}")
 print()
@@ -49,7 +66,7 @@ try:
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
-        port=8080,
+        port=databricks_port,
         log_level="info"
     )
 except ImportError as e:

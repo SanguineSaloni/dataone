@@ -277,16 +277,14 @@ app = FastAPI(
 )
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
+# Databricks Apps CORS configuration for cross-origin requests
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "*",  # Allow all origins (fallback)
-        "https://dataonefrontend-7474652115156015.aws.databricksapps.com",  # Your frontend
-        "http://localhost:3000", "http://localhost:3011",  # Local development
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=["*"],  # Allow all origins for Databricks Apps
+    allow_credentials=False,  # Don't use credentials to avoid preflight complexity
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # ── Request logging middleware ────────────────────────────────────────────────
@@ -295,15 +293,28 @@ async def log_requests(request: Request, call_next):
     request_id = str(uuid.uuid4())[:8]
     start = time.monotonic()
     
-    # Log CORS info for debugging
+    # Log all request details for debugging CORS
     origin = request.headers.get("origin")
-    if origin:
-        logger.info(f"Request from origin: {origin}")
+    logger.info(
+        f"[{request_id}] Incoming request: {request.method} {request.url.path}",
+        extra={
+            "request_id": request_id,
+            "method": request.method,
+            "path": request.url.path,
+            "origin": origin,
+            "headers": dict(request.headers),
+        }
+    )
+    
+    # Handle preflight OPTIONS requests explicitly
+    if request.method == "OPTIONS":
+        logger.info(f"[{request_id}] CORS preflight request from origin: {origin}")
     
     response = await call_next(request)
     duration_ms = round((time.monotonic() - start) * 1000)
+    
     logger.info(
-        "request completed",
+        f"[{request_id}] Response: {response.status_code} ({duration_ms}ms)",
         extra={
             "request_id": request_id,
             "method": request.method,
@@ -313,6 +324,7 @@ async def log_requests(request: Request, call_next):
             "origin": origin,
         },
     )
+    
     response.headers["X-Request-ID"] = request_id
     response.headers["X-Response-Time"] = f"{duration_ms}ms"
     return response
@@ -387,4 +399,30 @@ def health_check():
             "version": "1.0.0",
             "checks": checks,
         },
+    )
+
+
+@app.options("/api/v1/{path:path}")
+def options_api_wildcard(path: str):
+    """Handle OPTIONS requests for API paths to support CORS preflight."""
+    return JSONResponse(
+        content={}, 
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
+
+
+@app.options("/")
+def options_root():
+    """Handle OPTIONS requests for root path."""
+    return JSONResponse(
+        content={}, 
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD",
+            "Access-Control-Allow-Headers": "*",
+        }
     )
