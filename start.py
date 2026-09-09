@@ -7,7 +7,11 @@ import os
 import sys
 
 # Get Databricks environment variables
-databricks_port = int(os.getenv("DATABRICKS_APP_PORT", "8080"))
+# Try different possible port environment variable names
+databricks_port = int(os.getenv("DATABRICKS_APP_PORT") or 
+                     os.getenv("PORT") or 
+                     os.getenv("APP_PORT") or 
+                     "8080")
 app_url = os.getenv("APP_URL")
 
 # For Databricks Apps, construct the backend URL properly
@@ -45,6 +49,9 @@ print(f"   Database: SQLite (file-based)")
 print(f"   Backend URL: {backend_url}")
 print(f"   Databricks Port: {databricks_port}")
 print(f"   APP_URL: {app_url}")
+print(f"   PORT env: {os.getenv('PORT')}")
+print(f"   DATABRICKS_APP_PORT env: {os.getenv('DATABRICKS_APP_PORT')}")
+print(f"   APP_PORT env: {os.getenv('APP_PORT')}")
 print(f"   Databricks Native Mode: {os.environ['DATABRICKS_NATIVE_MODE']}")
 print()
 
