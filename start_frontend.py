@@ -7,7 +7,8 @@ import os
 import sys
 import subprocess
 
-# Get backend API URL from environment or use default
+# Get the dynamic port assigned by Databricks Apps
+databricks_port = os.getenv("DATABRICKS_APP_PORT", "8080")
 backend_url = os.getenv("BACKEND_API_URL", "http://localhost:8080")
 
 print("=" * 60)
@@ -15,12 +16,13 @@ print("Starting DataOne Frontend in Databricks Apps mode")
 print("=" * 60)
 print(f"✅ Environment configured")
 print(f"   Backend API URL: {backend_url}")
-print(f"   Frontend Port: 8080")
+print(f"   Databricks Port: {databricks_port}")
+print(f"   Port Source: {'DATABRICKS_APP_PORT' if os.getenv('DATABRICKS_APP_PORT') else 'fallback'}")
 print()
 
 # Set Next.js environment variables
 os.environ["NEXT_PUBLIC_API_URL"] = backend_url
-os.environ["PORT"] = "8080" 
+os.environ["PORT"] = str(databricks_port)
 os.environ["HOSTNAME"] = "0.0.0.0"
 
 # Change to frontend directory
@@ -69,10 +71,10 @@ print()
 # Navigate to the output directory and serve static files
 os.chdir("out")
 
-print("🚀 Starting Python HTTP server on port 8080...")
+print(f"🚀 Starting Python HTTP server on port {databricks_port}...")
 print("   Expected URLs:")
-print(f"   - Home: http://0.0.0.0:8080/")
-print(f"   - Login: http://0.0.0.0:8080/login/") 
+print(f"   - Home: http://0.0.0.0:{databricks_port}/")
+print(f"   - Login: http://0.0.0.0:{databricks_port}/login/") 
 print()
 
 # Start Python HTTP server to serve static files
@@ -91,9 +93,10 @@ try:
             self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
             super().end_headers()
     
-    with socketserver.TCPServer(("0.0.0.0", 8080), Handler) as httpd:
+    port = int(databricks_port)
+    with socketserver.TCPServer(("0.0.0.0", port), Handler) as httpd:
         print("✅ Server started successfully!")
-        print("📡 Serving static files on http://0.0.0.0:8080")
+        print(f"📡 Serving static files on http://0.0.0.0:{port}")
         httpd.serve_forever()
         
 except KeyboardInterrupt:
