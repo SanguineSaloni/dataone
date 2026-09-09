@@ -8,10 +8,6 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
-  // Ensure all pages are statically exported
-  experimental: {
-    missingSuspenseWithCSRBailout: false,
-  },
 };
 
 export default nextConfig;
