@@ -52,14 +52,22 @@ def get_current_user(
 
 @router.post("/login", response_model=LoginResponse)
 def login(req: LoginRequest, db: Session = Depends(get_db)):
+    logger.info(f"Login attempt for email: {req.email}")
     user = db.query(User).filter(User.email == req.email, User.is_active == True).first()
-    if user is None or not AuthService.verify_password(req.password, user.hashed_password):
+    if user is None:
+        logger.warning(f"Login failed: user not found for email {req.email}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password",
+        )
+    if not AuthService.verify_password(req.password, user.hashed_password):
+        logger.warning(f"Login failed: invalid password for email {req.email}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
         )
     token = AuthService.create_access_token({"sub": user.email, "role": user.role})
-    logger.info("User '%s' logged in", user.email)
+    logger.info("User '%s' logged in successfully", user.email)
     return LoginResponse(access_token=token, role=user.role, email=user.email)
 
 

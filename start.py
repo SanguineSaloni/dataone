@@ -12,15 +12,23 @@ databricks_port = int(os.getenv("DATABRICKS_APP_PORT") or
                      os.getenv("PORT") or 
                      os.getenv("APP_PORT") or 
                      "8080")
-app_url = os.getenv("APP_URL")
 
-# For Databricks Apps, construct the backend URL properly
-if app_url:
-    backend_url = app_url
-    frontend_url = app_url
-    frontend_login_url = app_url + "/login"
+# Try to get the app URL from multiple possible environment variables
+app_url = (os.getenv("APP_URL") or 
+          os.getenv("DATABRICKS_APP_URL") or 
+          os.getenv("APPLICATION_URL") or
+          os.getenv("PUBLIC_URL"))
+
+# For Databricks Apps, the backend should use the external URL
+# Since we're running the backend, we need to construct our own URL
+# Let's assume the pattern is similar to what we see in the logs
+if os.getenv("DATABRICKS_APP_PORT"):
+    # We're in Databricks Apps - use the known backend URL
+    backend_url = "https://dataonetest-7474652115156015.aws.databricksapps.com"
+    frontend_url = backend_url  # Same app serves both
+    frontend_login_url = backend_url + "/login"
 else:
-    # Fallback for local development
+    # Local development fallback
     backend_url = f"http://localhost:{databricks_port}"
     frontend_url = f"http://localhost:{databricks_port}"
     frontend_login_url = f"http://localhost:{databricks_port}/login"
