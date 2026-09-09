@@ -279,7 +279,11 @@ app = FastAPI(
 # ── CORS ──────────────────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "*",  # Allow all origins (fallback)
+        "https://dataonefrontend-7474652115156015.aws.databricksapps.com",  # Your frontend
+        "http://localhost:3000", "http://localhost:3011",  # Local development
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -290,6 +294,12 @@ app.add_middleware(
 async def log_requests(request: Request, call_next):
     request_id = str(uuid.uuid4())[:8]
     start = time.monotonic()
+    
+    # Log CORS info for debugging
+    origin = request.headers.get("origin")
+    if origin:
+        logger.info(f"Request from origin: {origin}")
+    
     response = await call_next(request)
     duration_ms = round((time.monotonic() - start) * 1000)
     logger.info(
@@ -300,6 +310,7 @@ async def log_requests(request: Request, call_next):
             "path": request.url.path,
             "status": response.status_code,
             "duration_ms": duration_ms,
+            "origin": origin,
         },
     )
     response.headers["X-Request-ID"] = request_id
