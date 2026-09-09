@@ -7,9 +7,11 @@ import os
 import sys
 import subprocess
 
-# Get the dynamic port assigned by Databricks Apps
+# Get backend API URL - hardcode for Databricks Apps since no env var option
+backend_url = os.getenv("BACKEND_API_URL", "https://dataonetest-7474652115156015.aws.databricksapps.com")
+
+# Get the dynamic port assigned by Databricks Apps  
 databricks_port = os.getenv("DATABRICKS_APP_PORT", "8080")
-backend_url = os.getenv("BACKEND_API_URL", "http://localhost:8080")
 
 print("=" * 60)
 print("Starting DataOne Frontend in Databricks Apps mode")
@@ -18,6 +20,7 @@ print(f"✅ Environment configured")
 print(f"   Backend API URL: {backend_url}")
 print(f"   Databricks Port: {databricks_port}")
 print(f"   Port Source: {'DATABRICKS_APP_PORT' if os.getenv('DATABRICKS_APP_PORT') else 'fallback'}")
+print(f"   ⚠️  Backend URL is hardcoded - update with actual URL")
 print()
 
 # Set Next.js environment variables
