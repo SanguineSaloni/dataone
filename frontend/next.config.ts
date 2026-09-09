@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Configure for server mode in Databricks Apps
+  // Use static export for Databricks Apps compatibility
+  output: 'export',
+  trailingSlash: true,
   images: {
     unoptimized: true,
   },

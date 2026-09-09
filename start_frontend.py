@@ -63,25 +63,44 @@ if build_result.returncode != 0:
 
 print()
 print("✅ Build completed successfully!")
-print()
-print("🚀 Starting Next.js production server on port 8080...")
-print("   Expected URLs:")
-print(f"   - Health: http://0.0.0.0:8080/api/health")
-print(f"   - Login: http://0.0.0.0:8080/login") 
-print(f"   - Home: http://0.0.0.0:8080/")
+print("📁 Serving static files from 'out' directory...")
 print()
 
-# Start the Next.js production server
+# Navigate to the output directory and serve static files
+os.chdir("out")
+
+print("🚀 Starting Python HTTP server on port 8080...")
+print("   Expected URLs:")
+print(f"   - Home: http://0.0.0.0:8080/")
+print(f"   - Login: http://0.0.0.0:8080/login/") 
+print()
+
+# Start Python HTTP server to serve static files
 try:
-    # Start with explicit host and port for Databricks Apps
-    subprocess.run([
-        "npm", "run", "start", "--", 
-        "--hostname", "0.0.0.0",
-        "--port", "8080"
-    ], check=True)
+    import http.server
+    import socketserver
+    
+    class Handler(http.server.SimpleHTTPRequestHandler):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, directory=".", **kwargs)
+        
+        def end_headers(self):
+            # Add CORS headers for API calls
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+            self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+            super().end_headers()
+    
+    with socketserver.TCPServer(("0.0.0.0", 8080), Handler) as httpd:
+        print("✅ Server started successfully!")
+        print("📡 Serving static files on http://0.0.0.0:8080")
+        httpd.serve_forever()
+        
 except KeyboardInterrupt:
     print("\n👋 Shutting down...")
     sys.exit(0)
 except Exception as e:
     print(f"❌ Failed to start server: {e}")
+    import traceback
+    traceback.print_exc()
     sys.exit(1)

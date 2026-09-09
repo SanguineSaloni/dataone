@@ -1,5 +1,1 @@
 command: ["python3", "start_frontend.py"]
-healthCheck:
-  path: /api/health
-  intervalSeconds: 30
-  timeoutSeconds: 5
