@@ -30,13 +30,21 @@ const ENTRA_ERROR_FALLBACK = "Unable to sign in with Microsoft. Please try again
 const DATABRICKS_ERROR_MESSAGES: Record<string, string> = {
   no_account: "No DataOne account exists for your Databricks user. Contact your administrator.",
   no_permissions: "You don't have the required Unity Catalog permissions.",
+  oauth_not_configured: "Databricks OAuth is not configured on this server. Please sign in with your email and password below.",
+  oauth_failed: "Databricks sign-in failed. Please try again or use your email and password below.",
 };
 const DATABRICKS_ERROR_FALLBACK = "Unable to sign in with Databricks. Please try again.";
 
 // Isolated so only this invisible leaf (not the whole statically-exported
 // form) depends on useSearchParams — keeping it out of the page body avoids
 // forcing the entire login page behind a client-only Suspense boundary.
-function EntraRedirectListener({ onError }: { onError: (message: string) => void }) {
+function EntraRedirectListener({
+  onError,
+  onShowEmailForm,
+}: {
+  onError: (message: string) => void;
+  onShowEmailForm: () => void;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -56,8 +64,11 @@ function EntraRedirectListener({ onError }: { onError: (message: string) => void
       onError(ENTRA_ERROR_MESSAGES[entraError] ?? ENTRA_ERROR_FALLBACK);
     } else if (databricksError) {
       onError(DATABRICKS_ERROR_MESSAGES[databricksError] ?? DATABRICKS_ERROR_FALLBACK);
+      // Auto-show the email form so the user can log in with password right away
+      onShowEmailForm();
     }
-  }, [searchParams, router, onError]);
+  }, [searchParams, router, onError, onShowEmailForm]);
+
 
   return null;
 }
@@ -111,7 +122,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen bg-background font-sans text-fg">
       <Suspense fallback={null}>
-        <EntraRedirectListener onError={setError} />
+        <EntraRedirectListener onError={setError} onShowEmailForm={() => setShowEmailForm(true)} />
       </Suspense>
 
       {/* ─────────────────────────── Left column (md+) ─────────────────────────── */}

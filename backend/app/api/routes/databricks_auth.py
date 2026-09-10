@@ -31,31 +31,40 @@ async def databricks_login(
 ):
     """
     Initiate Databricks OAuth2 authorization flow.
-    
-    This endpoint redirects the user to Databricks OAuth consent page.
-    After user grants permission, they will be redirected back to /callback.
+
+    If OAuth credentials are not configured (DATABRICKS_OAUTH_CLIENT_ID /
+    DATABRICKS_OAUTH_CLIENT_SECRET are unset), the user is redirected back to
+    the frontend login page with a friendly error instead of hitting a 500.
     """
+    # Guard: OAuth credentials not configured — redirect with friendly error
+    if databricks_auth_service.oauth_client is None:
+        logger.warning(
+            "Databricks OAuth login attempted but client is not configured. "
+            "Set DATABRICKS_OAUTH_CLIENT_ID and DATABRICKS_OAUTH_CLIENT_SECRET."
+        )
+        frontend_login = settings.FRONTEND_LOGIN_URL or f"{settings.FRONTEND_URL}/login"
+        return RedirectResponse(
+            url=f"{frontend_login}?error=oauth_not_configured",
+            status_code=302,
+        )
+
     try:
         # Generate CSRF token for state parameter
         state = secrets.token_urlsafe(32)
-        
-        # Store state and redirect_to in session (in production, use Redis)
-        # For now, we'll encode it in the state parameter
         state_data = f"{state}:{redirect_to}"
-        
-        # Get authorization URL
+
         auth_url = databricks_auth_service.get_authorization_url(state=state_data)
-        
         logger.info(f"Redirecting user to Databricks OAuth: {auth_url}")
-        
         return RedirectResponse(url=auth_url)
-        
+
     except Exception as e:
         logger.error(f"Failed to initiate OAuth flow: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to initiate Databricks authentication: {str(e)}"
+        frontend_login = settings.FRONTEND_LOGIN_URL or f"{settings.FRONTEND_URL}/login"
+        return RedirectResponse(
+            url=f"{frontend_login}?error=oauth_failed",
+            status_code=302,
         )
+
 
 
 @router.get("/callback")
