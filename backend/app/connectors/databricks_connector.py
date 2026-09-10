@@ -60,14 +60,21 @@ class DatabricksConnector(BaseConnector):
         """Establish connection to Databricks SQL Warehouse."""
         if not self.conn:
             try:
-                self.conn = sql.connect(
-                    server_hostname=self.config['server_hostname'],
-                    http_path=self.config['http_path'],
-                    access_token=self.config['access_token'],
-                    catalog=self.config['catalog'],
-                    schema=self.config['schema'],
-                    _socket_timeout=10  # Connection timeout
-                )
+                connect_kwargs = {
+                    "server_hostname": self.config['server_hostname'],
+                    "http_path": self.config['http_path'],
+                    "catalog": self.config['catalog'],
+                    "schema": self.config['schema'],
+                    "_socket_timeout": 10
+                }
+                
+                # Only pass access_token if it's explicitly provided. 
+                # If omitted, databricks-sql-connector automatically falls back to 
+                # SDK credentials (like DATABRICKS_CLIENT_ID and DATABRICKS_CLIENT_SECRET)
+                if self.config.get('access_token'):
+                    connect_kwargs["access_token"] = self.config['access_token']
+                    
+                self.conn = sql.connect(**connect_kwargs)
                 logger.info(
                     "Connected to Databricks SQL Warehouse: %s",
                     self.config['http_path']

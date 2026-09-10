@@ -33,29 +33,49 @@ class DatabricksAutoDiscoveryService:
         Extract Databricks connection details from environment.
         Returns None if not available or incomplete.
         """
-        # DEBUG: Log all env vars starting with DATABRICKS or DB to see what the platform injected
-        env_vars = {k: ("***" if "token" in k.lower() else v) for k, v in os.environ.items() if k.startswith("DATABRICKS") or k.startswith("DB")}
-        logger.warning(f"🔍 [get_workspace_connection_details] Available Databricks Env Vars: {env_vars}")
+        host = os.getenv("DATABRICKS_WORKSPACE_HOST") or os.getenv("DATABRICKS_SERVER_HOSTNAME") or os.getenv("DATABRICKS_HOST")
+        token = os.getenv("DATABRICKS_WORKSPACE_TOKEN") or os.getenv("DATABRICKS_TOKEN")
+        client_id = os.getenv("DATABRICKS_CLIENT_ID")
+        client_secret = os.getenv("DATABRICKS_CLIENT_SECRET")
+        http_path = os.getenv("DATABRICKS_WAREHOUSE_PATH") or os.getenv("DATABRICKS_HTTP_PATH")
         
-        host = os.getenv("DATABRICKS_WORKSPACE_HOST")
-        token = os.getenv("DATABRICKS_WORKSPACE_TOKEN") 
-        http_path = os.getenv("DATABRICKS_WAREHOUSE_PATH")
+        # We need either a token or OAuth credentials
+        has_auth = bool(token) or bool(client_id and client_secret)
         
-        # Try alternative environment variable names
-        if not host:
-            host = os.getenv("DATABRICKS_SERVER_HOSTNAME") or os.getenv("DATABRICKS_HOST")
-        if not token:
-            token = os.getenv("DATABRICKS_TOKEN")
-        if not http_path:
-            http_path = os.getenv("DATABRICKS_HTTP_PATH")
-            
-        if host and token:
+        if host and has_auth:
+            # If HTTP path is missing, try to auto-discover it using the SDK
+            if not http_path:
+                try:
+                    logger.info("No HTTP Path provided. Attempting to auto-discover a SQL Warehouse...")
+                    from databricks.sdk import WorkspaceClient
+                    w = WorkspaceClient()
+                    
+                    # Try to find a running warehouse first
+                    warehouses = w.warehouses.list()
+                    selected_wh = None
+                    for wh in warehouses:
+                        if wh.state and wh.state.value == "RUNNING":
+                            selected_wh = wh
+                            break
+                    
+                    # Fallback to any warehouse
+                    if not selected_wh:
+                        for wh in warehouses:
+                            selected_wh = wh
+                            break
+                            
+                    if selected_wh and selected_wh.odbc_params:
+                        http_path = selected_wh.odbc_params.path
+                        logger.info(f"Auto-discovered SQL Warehouse: {selected_wh.name} ({http_path})")
+                except Exception as e:
+                    logger.warning(f"Failed to auto-discover SQL Warehouse: {e}")
+
             return {
                 "server_hostname": host,
-                "access_token": token,
+                "access_token": token or "", # Send empty string if using OAuth
                 "http_path": http_path or "/sql/1.0/warehouses/default"
             }
-        
+            
         return None
     
     @staticmethod
