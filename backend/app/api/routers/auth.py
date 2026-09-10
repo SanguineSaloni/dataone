@@ -33,19 +33,27 @@ class LoginResponse(BaseModel):
 
 
 def get_current_user(
+    request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(bearer),
     db: Session = Depends(get_db),
 ) -> User:
+    logger.info(f"🔍 [get_current_user] incoming request headers: {dict(request.headers)}")
     if credentials is None:
+        logger.warning("❌ [get_current_user] No bearer credentials provided")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    payload = AuthService.decode_token(credentials.credentials)
+    try:
+        payload = AuthService.decode_token(credentials.credentials)
+    except Exception as e:
+        logger.warning(f"❌ [get_current_user] decode_token failed: {e}")
+        raise
     email: str = payload.get("sub", "")
     user = db.query(User).filter(User.email == email, User.is_active == True).first()
     if user is None:
+        logger.warning(f"❌ [get_current_user] User not found for email: {email}")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
     return user
 
