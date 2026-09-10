@@ -119,35 +119,6 @@ export default function LoginPage() {
     }
   };
 
-  /**
-   * Native Databricks Apps login.
-   * Calls /api/v1/auth/databricks/app-login which reads the
-   * X-Forwarded-Email / X-Forwarded-Access-Token headers that the
-   * Databricks Apps platform injects — no OAuth client credentials needed.
-   */
-  const handleDatabricksLogin = async () => {
-    setError("");
-    setLoading(true);
-    try {
-      const res = await fetch(`${api.base}/api/v1/auth/databricks/app-login`, {
-        method: "GET",
-        headers: { "Accept": "application/json" },
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body?.detail || "Databricks sign-in failed.");
-      }
-      const data = await res.json();
-      auth.setToken(data.access_token);
-      router.replace("/dashboard");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Databricks sign-in failed.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
   return (
     <div className="flex min-h-screen bg-background font-sans text-fg">
       <Suspense fallback={null}>
@@ -251,14 +222,24 @@ export default function LoginPage() {
             )}
 
             {DATABRICKS_MODE && (
-              <button
-                type="button"
-                onClick={handleDatabricksLogin}
-                disabled={loading}
-                className="w-full py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-orange-500 rounded-xl hover:opacity-90 transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-60"
+              /*
+               * IMPORTANT: This must be a full browser navigation (<a href>), NOT
+               * a fetch(). The Databricks Apps proxy injects X-Forwarded-Email only
+               * on direct browser navigations to the backend URL (session cookies are
+               * sent). A cross-origin fetch() is blocked by the proxy with 401.
+               *
+               * Flow:
+               *   browser → GET backend/api/v1/auth/databricks/login
+               *   Databricks proxy injects X-Forwarded-Email → backend reads it
+               *   backend issues JWT → 302 redirect to frontend/login?token=<jwt>
+               *   EntraRedirectListener reads ?token → stores it → /dashboard
+               */
+              <a
+                href={`${api.base}/api/v1/auth/databricks/login`}
+                className="w-full py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-orange-500 rounded-xl hover:opacity-90 transition-all shadow-md flex items-center justify-center gap-2"
               >
-                {loading ? "Signing in…" : "🧱 Sign in with Databricks"}
-              </button>
+                🧱 Sign in with Databricks
+              </a>
             )}
 
             {ENTRA_ENABLED && (
