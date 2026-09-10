@@ -30,7 +30,8 @@ class ConnectionResponse(ConnectionBase):
     is_deleted: bool = False
     created_by: Optional[str] = None
     owner_email: Optional[str] = None
-    created_at: datetime
+    created_at: Optional[datetime] = None
+    databricks_detected: bool = False  # True for auto-detected workspace connection
 
     class Config:
         from_attributes = True

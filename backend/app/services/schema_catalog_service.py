@@ -27,6 +27,78 @@ logger = logging.getLogger(__name__)
 class SchemaCatalogService:
 
     @staticmethod
+    def store_table_metadata(
+        db: Session, 
+        connection_id: int, 
+        table_name: str, 
+        columns: List[dict],
+        source_type: str = "auto_discovery"
+    ) -> bool:
+        """
+        Store table metadata from auto-discovery (e.g. Unity Catalog).
+        
+        Args:
+            db: Database session
+            connection_id: Connection ID
+            table_name: Full table name (e.g. catalog.schema.table)
+            columns: List of column metadata dicts
+            source_type: Source of the metadata (e.g. "unity_catalog")
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            from app.models.schema_catalog import CatalogTable, CatalogColumn
+            from datetime import datetime, timezone
+            
+            # Check if table already exists
+            existing_table = db.query(CatalogTable).filter(
+                CatalogTable.connection_id == connection_id,
+                CatalogTable.table_name == table_name
+            ).first()
+            
+            if existing_table:
+                logger.debug(f"Table {table_name} already exists in catalog")
+                return True
+                
+            # Create new table record
+            table = CatalogTable(
+                connection_id=connection_id,
+                table_name=table_name,
+                last_scanned_at=datetime.now(timezone.utc)
+            )
+            db.add(table)
+            db.flush()  # Get the table ID
+            
+            # Add columns
+            for col_info in columns:
+                column = CatalogColumn(
+                    table_id=table.id,
+                    column_name=col_info["name"],
+                    data_type=col_info["type"],
+                    is_nullable=col_info.get("nullable", True),
+                    ordinal_position=col_info.get("ordinal_position", 0),
+                    default_value=col_info.get("default"),
+                    comment=col_info.get("comment"),
+                    # Store additional metadata in extras
+                    extras={
+                        "source_type": source_type,
+                        "databricks": col_info.get("databricks", {}),
+                        "auto_discovered": True
+                    }
+                )
+                db.add(column)
+            
+            db.commit()
+            logger.info(f"Stored metadata for table {table_name} ({len(columns)} columns)")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to store metadata for table {table_name}: {e}")
+            db.rollback()
+            return False
+
+    @staticmethod
     def search_all(db: Session, q: str, *, page: int, page_size: int) -> dict:
         """Search active connections and their persisted catalog metadata.
 

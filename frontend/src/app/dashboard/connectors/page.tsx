@@ -9,6 +9,7 @@ import { EmptyState, ErrorState, LoadingState, WorkspaceHeader } from "../compon
 
 export default function ConnectorsPage() {
   const [connectors, setConnectors] = useState<Connector[]>([]);
+  const [workspaceConnector, setWorkspaceConnector] = useState<Connector | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,6 +32,15 @@ export default function ConnectorsPage() {
     try {
       const data = await api.get<Connector[]>("/api/v1/connectors/");
       setConnectors(data);
+      
+      // Auto-detect Databricks workspace connection
+      try {
+        const workspaceData = await api.get<Connector>("/api/v1/connectors/workspace");
+        setWorkspaceConnector(workspaceData);
+      } catch (err) {
+        // Workspace auto-detection failed - not a problem for non-Databricks deployments
+        console.log("No workspace auto-detection available");
+      }
     } catch (err) {
       setConnectors([]);
       setError(err instanceof ApiError ? err.message : "Failed to load connectors.");
@@ -114,35 +124,67 @@ export default function ConnectorsPage() {
       {error ? null : loading ? (
         <LoadingState label="Loading connectors" />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {connectors.map((c) => (
-            <ConnectorCard
-              key={c.id}
-              connector={c}
-              testResult={testResults[c.id]}
-              isTesting={testingId === c.id}
-              isScanning={scanningId === c.id}
-              onTest={handleTest}
-              onScan={handleScanSchema}
-              onRefresh={fetchConnectors}
-            />
-          ))}
-          {connectors.length === 0 ? (
+        <div className="flex flex-col gap-4">
+          {/* Auto-detected workspace connection */}
+          {workspaceConnector && (
+            <div>
+              <div className="mb-3 flex items-center gap-2">
+                <span className="text-sm font-semibold text-fg">🧱 Current Workspace</span>
+                <span className="text-xs px-2 py-1 bg-accent/10 text-accent rounded-full">Auto-detected</span>
+              </div>
+              <ConnectorCard
+                connector={workspaceConnector}
+                testResult={testResults[workspaceConnector.id]}
+                isTesting={testingId === workspaceConnector.id}
+                isScanning={scanningId === workspaceConnector.id}
+                onTest={handleTest}
+                onScan={handleScanSchema}
+                onRefresh={fetchConnectors}
+                isWorkspaceConnector={true}
+              />
+            </div>
+          )}
+
+          {/* External connections */}
+          {connectors.length > 0 && (
+            <div>
+              <div className="mb-3">
+                <span className="text-sm font-semibold text-fg">🔌 External Connections</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {connectors.map((c) => (
+                  <ConnectorCard
+                    key={c.id}
+                    connector={c}
+                    testResult={testResults[c.id]}
+                    isTesting={testingId === c.id}
+                    isScanning={scanningId === c.id}
+                    onTest={handleTest}
+                    onScan={handleScanSchema}
+                    onRefresh={fetchConnectors}
+                  />
+                ))}
+                <button
+                  type="button"
+                  onClick={() => { setIsModalOpen(true); setCreateError(null); }}
+                  className="flex min-h-[160px] flex-col items-center justify-center rounded-2xl border border-dashed border-border p-6 text-fg-subtle transition-all hover:border-accent/50 hover:bg-accent-soft hover:text-accent"
+                >
+                  <span className="mb-2 text-2xl" aria-hidden="true">＋</span>
+                  <span className="text-sm font-semibold">Link another database</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Empty state - only show if no workspace AND no external connections */}
+          {!workspaceConnector && connectors.length === 0 && (
             <EmptyState
               icon="🔌"
               title="No connectors yet"
               description="Add a database connection to begin schema discovery, mapping, and querying."
-              className="md:col-span-2 lg:col-span-3"
               action={<button type="button" onClick={() => setIsModalOpen(true)} className="workspace-primary-action">Add your first connector</button>}
             />
-          ) : <button
-            type="button"
-            onClick={() => { setIsModalOpen(true); setCreateError(null); }}
-            className="flex min-h-[160px] flex-col items-center justify-center rounded-2xl border border-dashed border-border p-6 text-fg-subtle transition-all hover:border-accent/50 hover:bg-accent-soft hover:text-accent"
-          >
-            <span className="mb-2 text-2xl" aria-hidden="true">＋</span>
-            <span className="text-sm font-semibold">Link another database</span>
-          </button>}
+          )}
         </div>
       )}
 
