@@ -19,14 +19,18 @@ app_url = (os.getenv("APP_URL") or
           os.getenv("APPLICATION_URL") or
           os.getenv("PUBLIC_URL"))
 
-# For Databricks Apps, the backend should use the external URL
-# Since we're running the backend, we need to construct our own URL
-# Let's assume the pattern is similar to what we see in the logs
-if os.getenv("DATABRICKS_APP_PORT"):
-    # We're in Databricks Apps - use the known backend URL
-    backend_url = "https://dataonetest-7474652115156015.aws.databricksapps.com"
-    frontend_url = backend_url  # Same app serves both
-    frontend_login_url = backend_url + "/login"
+is_databricks = bool(os.getenv("DATABRICKS_APP_PORT"))
+
+# Deployed Databricks App URLs — backend and frontend are separate apps
+BACKEND_APP_URL = "https://dataonetest-7474652115156015.aws.databricksapps.com"
+FRONTEND_APP_URL = "https://dataonefrontend-7474652115156015.aws.databricksapps.com"
+
+# For Databricks Apps, set the correct backend and frontend URLs
+if is_databricks:
+    backend_url = BACKEND_APP_URL
+    # Frontend is a SEPARATE Databricks App — OAuth redirects must land there
+    frontend_url = FRONTEND_APP_URL
+    frontend_login_url = FRONTEND_APP_URL + "/login"
 else:
     # Local development fallback
     backend_url = f"http://localhost:{databricks_port}"
@@ -49,11 +53,13 @@ else:
 
 os.environ["LOG_LEVEL"] = "INFO"
 os.environ["SECRET_KEY"] = "databricks-dataone-secret-change-in-production"
-os.environ["ADMIN_DEFAULT_PASSWORD"] = "admin123"
+os.environ["ADMIN_DEFAULT_PASSWORD"] = "veladmin123"
 os.environ["BACKEND_URL"] = backend_url
 os.environ["FRONTEND_URL"] = frontend_url
 os.environ["FRONTEND_LOGIN_URL"] = frontend_login_url
 os.environ["DATABRICKS_NATIVE_MODE"] = "true"
+# Allow both the frontend app and the backend app origins for CORS
+os.environ["CORS_ALLOWED_ORIGINS"] = f"{FRONTEND_APP_URL},{BACKEND_APP_URL}"
 os.environ["ENABLE_UNITY_CATALOG"] = "true"
 os.environ["ENABLE_EXTERNAL_CONNECTORS"] = "true"
 os.environ["DATABRICKS_USE_LLM"] = "false"

@@ -286,11 +286,20 @@ app = FastAPI(
 )
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
-# Databricks Apps CORS configuration for cross-origin requests
+# When running as Databricks Apps, CORS_ALLOWED_ORIGINS is set by start.py to
+# the explicit frontend + backend URLs so browsers accept cross-origin requests
+# from the frontend app. Falls back to wildcard for local/Docker deployments.
+_cors_origins_env = os.environ.get("CORS_ALLOWED_ORIGINS", "")
+if _cors_origins_env:
+    _allowed_origins: list[str] = [o.strip() for o in _cors_origins_env.split(",") if o.strip()]
+else:
+    _allowed_origins = ["*"]
+logger.info("[startup] CORS allowed origins: %s", _allowed_origins)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for Databricks Apps
-    allow_credentials=False,  # Don't use credentials to avoid preflight complexity
+    allow_origins=_allowed_origins,
+    allow_credentials=False,  # Bearer-token auth — no cookies, no credentials header needed
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
     allow_headers=["*"],
     expose_headers=["*"],
