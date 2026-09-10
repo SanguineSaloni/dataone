@@ -5,6 +5,7 @@ export interface Connector {
   config: Record<string, unknown>;
   health_status?: string;
   last_test_error?: string | null;
+  databricks_detected?: boolean;
 }
 
 export interface TestResponse {

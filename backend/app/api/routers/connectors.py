@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Dict, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -59,6 +60,52 @@ def _to_response(conn: DBConnection) -> ConnectionResponse:
 
 
 # ── Static routes (must precede /{id}) ─────────────────────────
+
+@router.get("/workspace", response_model=ConnectionResponse)
+def get_workspace_connection(db: Session = Depends(get_db),
+                           user: User = Depends(get_current_user)):
+    """Auto-detect Databricks workspace connection when running as Databricks App."""
+    
+    # Check if we're running in Databricks Apps environment
+    if not os.getenv("DATABRICKS_APP_PORT"):
+        raise HTTPException(status_code=404, detail="Not running in Databricks Apps environment")
+    
+    # Try to detect Databricks workspace details from environment
+    workspace_hostname = os.getenv("DATABRICKS_HOST") or os.getenv("DATABRICKS_SERVER_HOSTNAME")
+    if not workspace_hostname:
+        # Try to extract from APP_URL
+        app_url = os.getenv("APP_URL", "")
+        if "databricksapps.com" in app_url:
+            # Extract workspace ID from URL pattern
+            # https://dataonetest-7474652115156015.aws.databricksapps.com
+            # -> adb-7474652115156015.aws.databricks.net
+            import re
+            match = re.search(r'-(\d+)\.([^.]+)\.databricksapps\.com', app_url)
+            if match:
+                workspace_id, region = match.groups()
+                workspace_hostname = f"adb-{workspace_id}.{region}.databricks.net"
+    
+    if not workspace_hostname:
+        raise HTTPException(status_code=404, detail="Unable to auto-detect workspace details")
+    
+    # Create a virtual workspace connection response (not stored in DB)
+    return ConnectionResponse(
+        id=-1,  # Special ID for workspace connection
+        name="Current Workspace",
+        type="databricks",
+        environment="workspace",
+        config={
+            "server_hostname": workspace_hostname,
+            "http_path": "/sql/1.0/warehouses/auto",  # Will be detected at runtime
+            "catalog": "main",
+            "schema": "default"
+        },
+        created_by="system",
+        last_tested=None,
+        is_deleted=False,
+        databricks_detected=True
+    )
+
 
 @router.get("/types", response_model=Dict[str, ConnectorTypeMetadata])
 def list_connector_types(_user: User = Depends(get_current_user)):

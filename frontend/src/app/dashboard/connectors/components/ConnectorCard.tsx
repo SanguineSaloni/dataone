@@ -16,9 +16,10 @@ interface ConnectorCardProps {
   onTest: (id: number) => void;
   onScan: (id: number) => void;
   onRefresh: () => void;
+  isWorkspaceConnector?: boolean;
 }
 
-export default function ConnectorCard({ connector, testResult, isTesting, isScanning, onTest, onScan, onRefresh }: ConnectorCardProps) {
+export default function ConnectorCard({ connector, testResult, isTesting, isScanning, onTest, onScan, onRefresh, isWorkspaceConnector = false }: ConnectorCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
