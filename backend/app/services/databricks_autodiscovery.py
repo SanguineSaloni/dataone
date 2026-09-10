@@ -43,12 +43,27 @@ class DatabricksAutoDiscoveryService:
         has_auth = bool(token) or bool(client_id and client_secret)
         
         if host and has_auth:
+            # If we have OAuth but no token, fetch the M2M token explicitly
+            if not token and client_id and client_secret:
+                try:
+                    import requests
+                    logger.info("Fetching M2M OAuth token directly from Databricks...")
+                    token_url = f"https://{host}/oidc/v1/token"
+                    data = {"grant_type": "client_credentials", "scope": "all-apis"}
+                    auth = (client_id, client_secret)
+                    r = requests.post(token_url, data=data, auth=auth, timeout=10)
+                    r.raise_for_status()
+                    token = r.json().get("access_token")
+                    logger.info("Successfully fetched M2M token!")
+                except Exception as e:
+                    logger.error(f"Failed to fetch M2M OAuth token: {e}")
+
             # If HTTP path is missing, try to auto-discover it using the SDK
             if not http_path:
                 try:
                     logger.info("No HTTP Path provided. Attempting to auto-discover a SQL Warehouse...")
                     from databricks.sdk import WorkspaceClient
-                    w = WorkspaceClient()
+                    w = WorkspaceClient(host=f"https://{host}", token=token)
                     
                     # Try to find a running warehouse first
                     warehouses = w.warehouses.list()
@@ -72,7 +87,7 @@ class DatabricksAutoDiscoveryService:
 
             return {
                 "server_hostname": host,
-                "access_token": token or "", # Send empty string if using OAuth
+                "access_token": token or "", 
                 "http_path": http_path or "/sql/1.0/warehouses/default"
             }
             

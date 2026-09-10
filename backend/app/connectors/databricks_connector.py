@@ -71,12 +71,6 @@ class DatabricksConnector(BaseConnector):
                 # Only pass access_token if it's explicitly provided. 
                 if self.config.get('access_token'):
                     connect_kwargs["access_token"] = self.config['access_token']
-                else:
-                    # If no explicit token is provided, tell the SQL connector to use native Databricks OAuth.
-                    # It will automatically pick up DATABRICKS_CLIENT_ID and DATABRICKS_CLIENT_SECRET
-                    # from the environment for M2M authentication.
-                    # Without this, it defaults to U2M (browser-based) OAuth and hangs the container.
-                    connect_kwargs["auth_type"] = "databricks-oauth"
                     
                 self.conn = sql.connect(**connect_kwargs)
                 logger.info(
