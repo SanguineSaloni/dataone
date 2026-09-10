@@ -38,15 +38,26 @@ def get_current_user(
     db: Session = Depends(get_db),
 ) -> User:
     logger.info(f"🔍 [get_current_user] incoming request headers: {dict(request.headers)}")
-    if credentials is None:
+    
+    # Databricks proxy might strip the Authorization header. Check X-DataOne-Auth fallback.
+    token = None
+    if credentials:
+        token = credentials.credentials
+    else:
+        fallback = request.headers.get("X-DataOne-Auth")
+        if fallback and fallback.lower().startswith("bearer "):
+            token = fallback[7:]
+            
+    if not token:
         logger.warning("❌ [get_current_user] No bearer credentials provided")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
             headers={"WWW-Authenticate": "Bearer"},
         )
+        
     try:
-        payload = AuthService.decode_token(credentials.credentials)
+        payload = AuthService.decode_token(token)
     except Exception as e:
         logger.warning(f"❌ [get_current_user] decode_token failed: {e}")
         raise

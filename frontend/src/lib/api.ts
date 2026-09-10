@@ -9,7 +9,10 @@ function authHeaders(includeContentType = true): Record<string, string> {
   const token = getToken();
   const headers: Record<string, string> = {};
   if (includeContentType) headers["Content-Type"] = "application/json";
-  if (token) headers["Authorization"] = `Bearer ${token}`;
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+    headers["X-DataOne-Auth"] = `Bearer ${token}`;
+  }
   return headers;
 }
 
