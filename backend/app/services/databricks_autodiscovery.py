@@ -33,6 +33,10 @@ class DatabricksAutoDiscoveryService:
         Extract Databricks connection details from environment.
         Returns None if not available or incomplete.
         """
+        # DEBUG: Log all env vars starting with DATABRICKS or DB to see what the platform injected
+        env_vars = {k: ("***" if "token" in k.lower() else v) for k, v in os.environ.items() if k.startswith("DATABRICKS") or k.startswith("DB")}
+        logger.warning(f"🔍 [get_workspace_connection_details] Available Databricks Env Vars: {env_vars}")
+        
         host = os.getenv("DATABRICKS_WORKSPACE_HOST")
         token = os.getenv("DATABRICKS_WORKSPACE_TOKEN") 
         http_path = os.getenv("DATABRICKS_WAREHOUSE_PATH")
