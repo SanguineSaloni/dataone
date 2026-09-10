@@ -72,16 +72,11 @@ class DatabricksConnector(BaseConnector):
                 if self.config.get('access_token'):
                     connect_kwargs["access_token"] = self.config['access_token']
                 else:
-                    # Explicitly use databricks-sdk for authentication. 
-                    # If we don't, databricks-sql-connector defaults to U2M OAuth (browser popup)
-                    # which hangs the application in a Databricks App container.
-                    from databricks.sdk import WorkspaceClient
-                    try:
-                        w = WorkspaceClient(host=self.config['server_hostname'])
-                        # config.authenticate returns a credential provider function that databricks-sql-connector can use
-                        connect_kwargs["credentials_provider"] = w.config.authenticate
-                    except Exception as e:
-                        logger.error(f"Failed to initialize Databricks SDK WorkspaceClient for auth: {e}")
+                    # If no explicit token is provided, tell the SQL connector to use native Databricks OAuth.
+                    # It will automatically pick up DATABRICKS_CLIENT_ID and DATABRICKS_CLIENT_SECRET
+                    # from the environment for M2M authentication.
+                    # Without this, it defaults to U2M (browser-based) OAuth and hangs the container.
+                    connect_kwargs["auth_type"] = "databricks-oauth"
                     
                 self.conn = sql.connect(**connect_kwargs)
                 logger.info(
