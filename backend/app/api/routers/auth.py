@@ -52,22 +52,42 @@ def get_current_user(
 
 @router.post("/login", response_model=LoginResponse)
 def login(req: LoginRequest, db: Session = Depends(get_db)):
-    logger.info(f"Login attempt for email: {req.email}")
-    user = db.query(User).filter(User.email == req.email, User.is_active == True).first()
+    logger.info(f"🔍 Login attempt - Email: {req.email}, Password length: {len(req.password)}")
+    
+    # Check if any users exist at all
+    user_count = db.query(User).count()
+    logger.info(f"🔍 Total users in database: {user_count}")
+    
+    # Check if this specific user exists
+    user = db.query(User).filter(User.email == req.email).first()
     if user is None:
-        logger.warning(f"Login failed: user not found for email {req.email}")
+        logger.warning(f"❌ Login failed: No user found with email {req.email}")
+        # List all users for debugging
+        all_users = db.query(User.email, User.is_active).all()
+        logger.info(f"🔍 All users in database: {[(email, active) for email, active in all_users]}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
         )
+    
+    logger.info(f"🔍 User found: {user.email}, Active: {user.is_active}, Has password: {user.hashed_password is not None}")
+    
+    if not user.is_active:
+        logger.warning(f"❌ Login failed: User {req.email} is not active")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password",
+        )
+    
     if not AuthService.verify_password(req.password, user.hashed_password):
-        logger.warning(f"Login failed: invalid password for email {req.email}")
+        logger.warning(f"❌ Login failed: Invalid password for email {req.email}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
         )
+    
     token = AuthService.create_access_token({"sub": user.email, "role": user.role})
-    logger.info("User '%s' logged in successfully", user.email)
+    logger.info("✅ User '%s' logged in successfully", user.email)
     return LoginResponse(access_token=token, role=user.role, email=user.email)
 
 
