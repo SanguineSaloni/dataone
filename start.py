@@ -86,6 +86,21 @@ print(f"   APP_URL: {app_url}")
 print(f"   PORT env: {os.getenv('PORT')}")
 print(f"   DATABRICKS_APP_PORT env: {os.getenv('DATABRICKS_APP_PORT')}")
 print(f"   APP_PORT env: {os.getenv('APP_PORT')}")
+
+# Debug: Check for Databricks workspace environment variables
+print("🔍 Databricks Environment Discovery:")
+databricks_env_vars = [
+    'DATABRICKS_HOST', 'DATABRICKS_TOKEN', 'DATABRICKS_WAREHOUSE_ID',
+    'DATABRICKS_SERVER_HOSTNAME', 'DATABRICKS_HTTP_PATH',
+    'WORKSPACE_URL', 'WORKSPACE_ID', 'CLUSTER_ID', 'DATABRICKS_RUNTIME_VERSION'
+]
+for var in databricks_env_vars:
+    value = os.getenv(var)
+    if value:
+        print(f"   {var}: {value}")
+    else:
+        print(f"   {var}: (not set)")
+
 print(f"   Databricks Native Mode: {os.environ['DATABRICKS_NATIVE_MODE']}")
 print()
 
