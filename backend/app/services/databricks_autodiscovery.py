@@ -63,7 +63,10 @@ class DatabricksAutoDiscoveryService:
                 try:
                     logger.info("No HTTP Path provided. Attempting to auto-discover a SQL Warehouse...")
                     from databricks.sdk import WorkspaceClient
-                    w = WorkspaceClient(host=f"https://{host}", token=token)
+                    
+                    # Do NOT pass token=token here, because DATABRICKS_CLIENT_ID is in the environment
+                    # and the SDK will crash complaining about multiple auth methods if we pass a token too.
+                    w = WorkspaceClient(host=f"https://{host}")
                     
                     # Try to find a running warehouse first
                     warehouses = w.warehouses.list()
