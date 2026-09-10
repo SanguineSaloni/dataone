@@ -117,38 +117,83 @@ async def databricks_app_login(request: Request, db: Session = Depends(get_db)):
 async def databricks_login(
     request: Request,
     redirect_to: str = Query(default="/dashboard", description="URL to redirect after successful login"),
+    db: Session = Depends(get_db),
 ):
     """
-    Initiate Databricks OAuth2 authorization flow (requires DATABRICKS_OAUTH_CLIENT_ID/SECRET).
+    Initiate Databricks authentication.
 
-    For Databricks Apps deployments, prefer /app-login instead — it uses the
-    platform's native identity headers and needs no client credentials.
+    Priority order:
+    1. Native Databricks Apps mode: reads X-Forwarded-Email / X-Forwarded-Access-Token
+       injected by the Databricks Apps reverse-proxy. Works with zero credentials.
+    2. OAuth2 flow: used only when DATABRICKS_OAUTH_CLIENT_ID/SECRET are configured.
+    3. Error redirect if neither is available.
     """
-    if databricks_auth_service.oauth_client is None:
-        logger.warning(
-            "[databricks-login] OAuth client not configured — "
-            "DATABRICKS_OAUTH_CLIENT_ID or DATABRICKS_OAUTH_CLIENT_SECRET is unset. "
-            "Use /api/v1/auth/databricks/app-login for native Databricks Apps auth."
-        )
-        frontend_login = settings.FRONTEND_LOGIN_URL or f"{settings.FRONTEND_URL}/login"
-        return RedirectResponse(
-            url=f"{frontend_login}?error=oauth_not_configured",
-            status_code=302,
-        )
+    # ── Priority 1: Native Databricks Apps headers ────────────────────────────
+    email = request.headers.get("X-Forwarded-Email")
+    username = (
+        request.headers.get("X-Forwarded-Preferred-Username")
+        or request.headers.get("X-Forwarded-User")
+    )
+    access_token = request.headers.get("X-Forwarded-Access-Token")
 
-    try:
-        state = secrets.token_urlsafe(32)
-        state_data = f"{state}:{redirect_to}"
-        auth_url = databricks_auth_service.get_authorization_url(state=state_data)
-        logger.info(f"[databricks-login] Redirecting to OAuth consent: {auth_url}")
-        return RedirectResponse(url=auth_url)
-    except Exception as e:
-        logger.error(f"[databricks-login] Failed to initiate OAuth flow: {e}")
-        frontend_login = settings.FRONTEND_LOGIN_URL or f"{settings.FRONTEND_URL}/login"
-        return RedirectResponse(
-            url=f"{frontend_login}?error=oauth_failed",
-            status_code=302,
-        )
+    if email:
+        logger.info(f"[databricks-login] Native Databricks Apps auth for {email!r}")
+        try:
+            # Provision or update user
+            user = db.query(User).filter(User.email == email).first()
+            if user:
+                if access_token:
+                    user.databricks_access_token = access_token
+                user.is_active = True
+                db.commit()
+            else:
+                user = User(
+                    email=email,
+                    full_name=username or email,
+                    role="viewer",
+                    is_active=True,
+                    hashed_password=None,
+                    databricks_access_token=access_token,
+                )
+                db.add(user)
+                db.commit()
+                db.refresh(user)
+                logger.info(f"[databricks-login] Auto-provisioned new user: {email}")
+
+            dataone_token = AuthService.create_access_token(
+                data={"sub": user.email, "user_id": user.id, "role": user.role}
+            )
+            # Redirect to frontend login page with token — same pattern as Entra SSO
+            frontend_login = settings.FRONTEND_LOGIN_URL or f"{settings.FRONTEND_URL}/login"
+            return RedirectResponse(
+                url=f"{frontend_login}?token={dataone_token}",
+                status_code=302,
+            )
+        except Exception as e:
+            logger.error(f"[databricks-login] Native auth failed: {e}", exc_info=True)
+            # Fall through to OAuth or error
+
+    # ── Priority 2: OAuth2 flow (requires client credentials) ────────────────
+    if databricks_auth_service.oauth_client is not None:
+        try:
+            state = secrets.token_urlsafe(32)
+            state_data = f"{state}:{redirect_to}"
+            auth_url = databricks_auth_service.get_authorization_url(state=state_data)
+            logger.info(f"[databricks-login] Redirecting to OAuth consent: {auth_url}")
+            return RedirectResponse(url=auth_url)
+        except Exception as e:
+            logger.error(f"[databricks-login] OAuth initiation failed: {e}")
+
+    # ── Priority 3: Nothing worked — redirect with friendly error ─────────────
+    logger.warning(
+        "[databricks-login] No auth method available. "
+        "X-Forwarded-Email header not present and OAuth client not configured."
+    )
+    frontend_login = settings.FRONTEND_LOGIN_URL or f"{settings.FRONTEND_URL}/login"
+    return RedirectResponse(
+        url=f"{frontend_login}?error=oauth_not_configured",
+        status_code=302,
+    )
 
 
 @router.get("/callback")
