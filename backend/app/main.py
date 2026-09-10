@@ -475,10 +475,17 @@ if _frontend_out and os.path.isdir(_frontend_out):
         fp = os.path.join(_frontend_out, full_path)
         if os.path.isfile(fp):
             return FileResponse(fp)
-        # Next.js static export uses trailing-slash directories with index.html
+            
+        # Next.js App Router static export produces .html files for routes
+        html_path = os.path.join(_frontend_out, f"{full_path.rstrip('/')}.html")
+        if os.path.isfile(html_path):
+            return FileResponse(html_path)
+            
+        # Next.js static export fallback (if trailingSlash: true was used)
         ip = os.path.join(_frontend_out, full_path.rstrip("/"), "index.html")
         if os.path.isfile(ip):
             return FileResponse(ip)
+            
         # SPA fallback: return root index.html for client-side routing
         root_index = os.path.join(_frontend_out, "index.html")
         if os.path.isfile(root_index):
