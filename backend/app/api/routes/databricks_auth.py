@@ -1,46 +1,134 @@
 """
-Databricks OAuth2 Authentication Endpoints
+Databricks Apps Native Authentication + OAuth2 Endpoints
 
-Provides OAuth2 flow endpoints for Databricks Lakehouse App authentication:
-- /auth/databricks/login - Initiate OAuth flow
-- /auth/databricks/callback - Handle OAuth callback
-- /auth/databricks/refresh - Refresh access token
+Two authentication modes:
+1. NATIVE (preferred for Databricks Apps): The Databricks platform reverse-proxy
+   injects X-Forwarded-Email and X-Forwarded-Access-Token headers into every
+   request. No OAuth client credentials are needed — the platform handles SSO.
+   Endpoint: GET /auth/databricks/app-login
+
+2. OAUTH2 (optional, requires DATABRICKS_OAUTH_CLIENT_ID/SECRET env vars):
+   Full OAuth2 authorization-code flow for external/self-hosted deployments.
+   Endpoints: GET /auth/databricks/login  →  GET /auth/databricks/callback
 """
 
 import logging
 import secrets
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.services.databricks_auth_service import databricks_auth_service
 from app.core.database import get_db
 from app.services.auth_service import AuthService
 from app.core.config import settings
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth/databricks", tags=["databricks-auth"])
 
 
+# ── Mode 1: Native Databricks Apps authentication ─────────────────────────────
+# Databricks Apps reverse-proxy injects X-Forwarded-Email and
+# X-Forwarded-Access-Token into every request.  No client credentials needed.
+
+@router.get("/app-login")
+async def databricks_app_login(request: Request, db: Session = Depends(get_db)):
+    """
+    Authenticate using the identity injected by the Databricks Apps platform.
+
+    Databricks Apps automatically inject:
+      X-Forwarded-Email              — user's email from the IdP
+      X-Forwarded-Preferred-Username — username
+      X-Forwarded-Access-Token       — user's OAuth access token (if OBO enabled)
+      X-Forwarded-User               — unique user identifier
+
+    This endpoint reads those headers, provisions or updates the DataOne user,
+    issues a DataOne JWT, and returns it as JSON so the frontend can store it.
+    No OAuth client credentials (DATABRICKS_OAUTH_CLIENT_ID/SECRET) are needed.
+    """
+    email = request.headers.get("X-Forwarded-Email")
+    username = request.headers.get("X-Forwarded-Preferred-Username") or request.headers.get("X-Forwarded-User")
+    access_token = request.headers.get("X-Forwarded-Access-Token")
+
+    logger.info(
+        f"[databricks-app-login] email={email!r} username={username!r} "
+        f"has_token={bool(access_token)}"
+    )
+
+    if not email:
+        logger.warning(
+            "[databricks-app-login] X-Forwarded-Email header missing. "
+            "Is this running inside a Databricks App?"
+        )
+        raise HTTPException(
+            status_code=401,
+            detail=(
+                "Databricks user identity not found. "
+                "This endpoint is only available when running inside Databricks Apps."
+            ),
+        )
+
+    # Provision or update the user in DataOne DB
+    user = db.query(User).filter(User.email == email).first()
+    if user:
+        # Refresh the stored access token if a new one was injected
+        if access_token:
+            user.databricks_access_token = access_token
+        user.is_active = True
+        db.commit()
+        logger.info(f"[databricks-app-login] Updated existing user: {email}")
+    else:
+        # Auto-provision: new Databricks users get 'viewer' role by default.
+        # An admin can promote them later via the Users admin panel.
+        user = User(
+            email=email,
+            full_name=username or email,
+            role="viewer",
+            is_active=True,
+            hashed_password=None,  # OAuth user — no password
+            databricks_access_token=access_token,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        logger.info(f"[databricks-app-login] Provisioned new user: {email} role=viewer")
+
+    # Issue a DataOne JWT
+    dataone_token = AuthService.create_access_token(
+        data={"sub": user.email, "user_id": user.id, "role": user.role}
+    )
+
+    return JSONResponse(
+        content={
+            "access_token": dataone_token,
+            "token_type": "bearer",
+            "email": user.email,
+            "role": user.role,
+        }
+    )
+
+
+# ── Mode 2: Full OAuth2 flow (requires client credentials) ────────────────────
+
 @router.get("/login")
 async def databricks_login(
     request: Request,
-    redirect_to: str = Query(default="/dashboard", description="URL to redirect after successful login")
+    redirect_to: str = Query(default="/dashboard", description="URL to redirect after successful login"),
 ):
     """
-    Initiate Databricks OAuth2 authorization flow.
+    Initiate Databricks OAuth2 authorization flow (requires DATABRICKS_OAUTH_CLIENT_ID/SECRET).
 
-    If OAuth credentials are not configured (DATABRICKS_OAUTH_CLIENT_ID /
-    DATABRICKS_OAUTH_CLIENT_SECRET are unset), the user is redirected back to
-    the frontend login page with a friendly error instead of hitting a 500.
+    For Databricks Apps deployments, prefer /app-login instead — it uses the
+    platform's native identity headers and needs no client credentials.
     """
-    # Guard: OAuth credentials not configured — redirect with friendly error
     if databricks_auth_service.oauth_client is None:
         logger.warning(
-            "Databricks OAuth login attempted but client is not configured. "
-            "Set DATABRICKS_OAUTH_CLIENT_ID and DATABRICKS_OAUTH_CLIENT_SECRET."
+            "[databricks-login] OAuth client not configured — "
+            "DATABRICKS_OAUTH_CLIENT_ID or DATABRICKS_OAUTH_CLIENT_SECRET is unset. "
+            "Use /api/v1/auth/databricks/app-login for native Databricks Apps auth."
         )
         frontend_login = settings.FRONTEND_LOGIN_URL or f"{settings.FRONTEND_URL}/login"
         return RedirectResponse(
@@ -49,16 +137,13 @@ async def databricks_login(
         )
 
     try:
-        # Generate CSRF token for state parameter
         state = secrets.token_urlsafe(32)
         state_data = f"{state}:{redirect_to}"
-
         auth_url = databricks_auth_service.get_authorization_url(state=state_data)
-        logger.info(f"Redirecting user to Databricks OAuth: {auth_url}")
+        logger.info(f"[databricks-login] Redirecting to OAuth consent: {auth_url}")
         return RedirectResponse(url=auth_url)
-
     except Exception as e:
-        logger.error(f"Failed to initiate OAuth flow: {e}")
+        logger.error(f"[databricks-login] Failed to initiate OAuth flow: {e}")
         frontend_login = settings.FRONTEND_LOGIN_URL or f"{settings.FRONTEND_URL}/login"
         return RedirectResponse(
             url=f"{frontend_login}?error=oauth_failed",
@@ -66,128 +151,63 @@ async def databricks_login(
         )
 
 
-
 @router.get("/callback")
 async def databricks_callback(
     code: str = Query(..., description="Authorization code from Databricks"),
-    state: str = Query(None, description="State parameter for CSRF protection"),
-    error: str = Query(None, description="Error from OAuth provider"),
-    error_description: str = Query(None, description="Error description"),
-    db: Session = Depends(get_db)
+    state: Optional[str] = Query(None, description="State parameter for CSRF protection"),
+    error: Optional[str] = Query(None, description="Error from OAuth provider"),
+    error_description: Optional[str] = Query(None, description="Error description"),
+    db: Session = Depends(get_db),
 ):
-    """
-    Handle OAuth2 callback from Databricks.
-    
-    This endpoint:
-    1. Exchanges authorization code for access token
-    2. Fetches user information from Databricks
-    3. Creates or updates user in DataOne
-    4. Returns DataOne JWT token
-    """
-    # Check for OAuth errors
+    """Handle OAuth2 callback from Databricks (Mode 2 only)."""
     if error:
-        logger.error(f"OAuth error: {error} - {error_description}")
+        logger.error(f"[databricks-callback] OAuth error: {error} — {error_description}")
         raise HTTPException(
             status_code=400,
-            detail=f"OAuth authorization failed: {error_description or error}"
+            detail=f"OAuth authorization failed: {error_description or error}",
         )
-    
+
     try:
-        # Parse state to get redirect URL
         redirect_to = "/dashboard"
         if state and ":" in state:
             _, redirect_to = state.split(":", 1)
-        
-        # Exchange authorization code for tokens
-        logger.info("Exchanging authorization code for tokens...")
+
         token_data = await databricks_auth_service.exchange_code_for_token(code)
-        
-        # Fetch user information
-        logger.info("Fetching user information from Databricks...")
         user_info = databricks_auth_service.get_user_info(token_data["access_token"])
-        
-        # Provision or update user
-        logger.info(f"Provisioning user: {user_info['email']}")
+
+        logger.info(f"[databricks-callback] Provisioning user: {user_info['email']}")
         user = await databricks_auth_service.provision_or_update_user(
             db=db,
             user_info=user_info,
             access_token=token_data["access_token"],
             refresh_token=token_data["refresh_token"],
-            expires_in=token_data["expires_in"]
+            expires_in=token_data["expires_in"],
         )
-        
-        # Create DataOne JWT token
-        access_token = AuthService.create_access_token(
-            data={
-                "sub": user.email,
-                "user_id": user.id,
-                "role": user.role
-            }
+
+        dataone_token = AuthService.create_access_token(
+            data={"sub": user.email, "user_id": user.id, "role": user.role}
         )
-        
-        # In production, this would redirect to frontend with token in secure cookie
-        # For now, return JSON with token and redirect URL
-        frontend_url = f"{settings.FRONTEND_URL}{redirect_to}?token={access_token}"
-        
-        logger.info(f"Successfully authenticated user {user.email}, redirecting to {redirect_to}")
-        
+
+        frontend_url = f"{settings.FRONTEND_URL}{redirect_to}?token={dataone_token}"
+        logger.info(f"[databricks-callback] Auth success for {user.email}, redirecting")
         return RedirectResponse(url=frontend_url)
-        
-    except Exception as e:
-        logger.error(f"OAuth callback failed: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to complete authentication: {str(e)}"
-        )
 
-
-@router.post("/refresh")
-async def refresh_databricks_token(
-    user_id: int,
-    db: Session = Depends(get_db)
-) -> Dict[str, Any]:
-    """
-    Refresh Databricks access token for a user.
-    
-    This endpoint is typically called internally when a token is about to expire.
-    """
-    try:
-        from app.models.user import User
-        
-        # Get user
-        user = db.query(User).filter(User.id == user_id).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        
-        # Ensure token is valid (will refresh if needed)
-        access_token = await databricks_auth_service.ensure_token_valid(user, db)
-        
-        return {
-            "status": "success",
-            "message": "Token refreshed successfully",
-            "expires_at": user.databricks_token_expires_at.isoformat() if user.databricks_token_expires_at else None
-        }
-        
     except Exception as e:
-        logger.error(f"Failed to refresh token: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to refresh token: {str(e)}"
-        )
+        logger.error(f"[databricks-callback] OAuth callback failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to complete authentication: {str(e)}")
 
 
 @router.get("/status")
-async def databricks_auth_status():
-    """
-    Check if Databricks OAuth is configured and available.
-    """
-    is_configured = (
-        databricks_auth_service.oauth_client is not None and
-        databricks_auth_service.client_id is not None
+async def databricks_auth_status(request: Request):
+    """Check which Databricks auth modes are available."""
+    oauth_configured = (
+        databricks_auth_service.oauth_client is not None
+        and databricks_auth_service.client_id is not None
     )
-    
+    native_available = bool(request.headers.get("X-Forwarded-Email"))
+
     return {
-        "enabled": is_configured,
-        "workspace_url": databricks_auth_service.workspace_url if is_configured else None,
-        "scopes": databricks_auth_service.scopes if is_configured else []
+        "native_app_login": native_available,
+        "oauth_configured": oauth_configured,
+        "workspace_url": databricks_auth_service.workspace_url if oauth_configured else None,
     }

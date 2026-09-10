@@ -119,6 +119,35 @@ export default function LoginPage() {
     }
   };
 
+  /**
+   * Native Databricks Apps login.
+   * Calls /api/v1/auth/databricks/app-login which reads the
+   * X-Forwarded-Email / X-Forwarded-Access-Token headers that the
+   * Databricks Apps platform injects — no OAuth client credentials needed.
+   */
+  const handleDatabricksLogin = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      const res = await fetch(`${api.base}/api/v1/auth/databricks/app-login`, {
+        method: "GET",
+        headers: { "Accept": "application/json" },
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.detail || "Databricks sign-in failed.");
+      }
+      const data = await res.json();
+      auth.setToken(data.access_token);
+      router.replace("/dashboard");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Databricks sign-in failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
   return (
     <div className="flex min-h-screen bg-background font-sans text-fg">
       <Suspense fallback={null}>
@@ -222,12 +251,14 @@ export default function LoginPage() {
             )}
 
             {DATABRICKS_MODE && (
-              <a
-                href={`${api.base}/api/v1/auth/databricks/login`}
-                className="w-full py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-orange-500 rounded-xl hover:opacity-90 transition-all shadow-md flex items-center justify-center gap-2"
+              <button
+                type="button"
+                onClick={handleDatabricksLogin}
+                disabled={loading}
+                className="w-full py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-orange-500 rounded-xl hover:opacity-90 transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-60"
               >
-                🧱 Sign in with Databricks
-              </a>
+                {loading ? "Signing in…" : "🧱 Sign in with Databricks"}
+              </button>
             )}
 
             {ENTRA_ENABLED && (
