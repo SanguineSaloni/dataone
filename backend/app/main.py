@@ -464,7 +464,7 @@ _frontend_out = os.environ.get("FRONTEND_OUT_DIR", "")
 if _frontend_out and os.path.isdir(_frontend_out):
     logger.info("[startup] Unified mode: serving frontend from %s", _frontend_out)
 
-    @app.get("/{full_path:path}")
+    @app.api_route("/{full_path:path}", methods=["GET", "HEAD"])
     async def _serve_frontend(full_path: str):
         """
         Catch-all: serve Next.js static export for any path that is not an
