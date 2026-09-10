@@ -35,8 +35,18 @@ else:
 
 # Set environment variables for Databricks deployment
 os.environ["DATABASE_URL"] = "sqlite:///./dataone.db"
-os.environ["CELERY_BROKER_URL"] = "memory://"
-os.environ["CELERY_RESULT_BACKEND"] = "memory://"
+
+# For Databricks Apps, disable Redis/Celery-dependent features
+if os.getenv("DATABRICKS_APP_PORT"):
+    # Running in Databricks Apps - no Redis available
+    os.environ["CELERY_BROKER_URL"] = "redis://disabled"  # Placeholder to avoid Redis health check
+    os.environ["CELERY_RESULT_BACKEND"] = "disabled"
+    os.environ["DISABLE_CELERY"] = "true"  # Flag to disable Celery features
+else:
+    # Local development
+    os.environ["CELERY_BROKER_URL"] = "memory://"
+    os.environ["CELERY_RESULT_BACKEND"] = "memory://"
+
 os.environ["LOG_LEVEL"] = "INFO"
 os.environ["SECRET_KEY"] = "databricks-dataone-secret-change-in-production"
 os.environ["ADMIN_DEFAULT_PASSWORD"] = "admin123"

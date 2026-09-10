@@ -389,15 +389,24 @@ def health_check():
         checks["database"] = f"error: {exc}"
         overall = "degraded"
 
-    try:
-        import redis as _redis
-        broker_url = settings.CELERY_BROKER_URL
-        r = _redis.from_url(broker_url, socket_connect_timeout=2)
-        r.ping()
-        checks["redis"] = "ok"
-    except Exception as exc:
-        checks["redis"] = f"error: {exc}"
-        overall = "degraded"
+    # Check Redis/Celery only if not disabled for Databricks Apps
+    if os.getenv("DISABLE_CELERY") == "true":
+        checks["redis"] = "disabled (Databricks Apps mode)"
+        checks["celery"] = "disabled (Databricks Apps mode)"
+    else:
+        try:
+            import redis as _redis
+            broker_url = settings.CELERY_BROKER_URL
+            if broker_url and broker_url != "redis://disabled":
+                r = _redis.from_url(broker_url, socket_connect_timeout=2)
+                r.ping()
+                checks["redis"] = "ok"
+            else:
+                checks["redis"] = "disabled"
+        except Exception as exc:
+            checks["redis"] = f"error: {exc}"
+            if overall == "healthy":
+                overall = "degraded"
 
     status_code = 200 if overall == "healthy" else 503
     return JSONResponse(
@@ -407,6 +416,7 @@ def health_check():
             "service": "DataOne API",
             "version": "1.0.0",
             "checks": checks,
+            "mode": "databricks_app" if os.getenv("DATABRICKS_APP_PORT") else "standalone"
         },
     )
 
