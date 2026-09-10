@@ -69,10 +69,19 @@ class DatabricksConnector(BaseConnector):
                 }
                 
                 # Only pass access_token if it's explicitly provided. 
-                # If omitted, databricks-sql-connector automatically falls back to 
-                # SDK credentials (like DATABRICKS_CLIENT_ID and DATABRICKS_CLIENT_SECRET)
                 if self.config.get('access_token'):
                     connect_kwargs["access_token"] = self.config['access_token']
+                else:
+                    # Explicitly use databricks-sdk for authentication. 
+                    # If we don't, databricks-sql-connector defaults to U2M OAuth (browser popup)
+                    # which hangs the application in a Databricks App container.
+                    from databricks.sdk import WorkspaceClient
+                    try:
+                        w = WorkspaceClient(host=self.config['server_hostname'])
+                        # config.authenticate returns a credential provider function that databricks-sql-connector can use
+                        connect_kwargs["credentials_provider"] = w.config.authenticate
+                    except Exception as e:
+                        logger.error(f"Failed to initialize Databricks SDK WorkspaceClient for auth: {e}")
                     
                 self.conn = sql.connect(**connect_kwargs)
                 logger.info(
