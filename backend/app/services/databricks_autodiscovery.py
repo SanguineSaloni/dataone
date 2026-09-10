@@ -39,7 +39,7 @@ class DatabricksAutoDiscoveryService:
         
         # Try alternative environment variable names
         if not host:
-            host = os.getenv("DATABRICKS_SERVER_HOSTNAME")
+            host = os.getenv("DATABRICKS_SERVER_HOSTNAME") or os.getenv("DATABRICKS_HOST")
         if not token:
             token = os.getenv("DATABRICKS_TOKEN")
         if not http_path:

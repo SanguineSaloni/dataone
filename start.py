@@ -60,7 +60,7 @@ else:
 # Auto-configure Databricks workspace connection from injected env vars
 if is_databricks:
     os.environ["DATABRICKS_AUTO_DISCOVER"] = "true"
-    workspace_host  = os.getenv("DATABRICKS_SERVER_HOSTNAME")
+    workspace_host  = os.getenv("DATABRICKS_SERVER_HOSTNAME") or os.getenv("DATABRICKS_HOST")
     workspace_token = os.getenv("DATABRICKS_TOKEN")
     warehouse_path  = os.getenv("DATABRICKS_HTTP_PATH")
     if workspace_host and workspace_token:
