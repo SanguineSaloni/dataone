@@ -20,7 +20,7 @@ import uuid
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from app.api.routers import connectors, schema, agent, query, askdata, mapper, pipelines
 from app.api.routers import tasks as tasks_router
 from app.api.routers import audit as audit_router
@@ -454,3 +454,35 @@ def options_root():
             "Access-Control-Allow-Headers": "*",
         }
     )
+
+
+# ── Serve Next.js static frontend (unified deployment) ────────────────────────
+# When FRONTEND_OUT_DIR is set (by start.py), FastAPI serves the pre-built
+# Next.js export at every non-API path. This makes frontend + backend run as
+# a single Databricks App at the same origin, eliminating cross-origin issues.
+_frontend_out = os.environ.get("FRONTEND_OUT_DIR", "")
+if _frontend_out and os.path.isdir(_frontend_out):
+    logger.info("[startup] Unified mode: serving frontend from %s", _frontend_out)
+
+    @app.get("/{full_path:path}")
+    async def _serve_frontend(full_path: str):
+        """
+        Catch-all: serve Next.js static export for any path that is not an
+        API route. Routes are matched in registration order in FastAPI, so all
+        /api/v1/* routes registered above take priority over this catch-all.
+        """
+        # Exact file (JS, CSS, images, etc.)
+        fp = os.path.join(_frontend_out, full_path)
+        if os.path.isfile(fp):
+            return FileResponse(fp)
+        # Next.js static export uses trailing-slash directories with index.html
+        ip = os.path.join(_frontend_out, full_path.rstrip("/"), "index.html")
+        if os.path.isfile(ip):
+            return FileResponse(ip)
+        # SPA fallback: return root index.html for client-side routing
+        root_index = os.path.join(_frontend_out, "index.html")
+        if os.path.isfile(root_index):
+            return FileResponse(root_index)
+        raise HTTPException(status_code=404, detail="Not found")
+else:
+    logger.info("[startup] API-only mode (FRONTEND_OUT_DIR not set or missing)")
