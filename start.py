@@ -49,6 +49,22 @@ os.environ["ENABLE_EXTERNAL_CONNECTORS"] = "true"
 os.environ["DATABRICKS_USE_LLM"] = "false"
 os.environ["OLLAMA_HOST"] = "http://localhost:11434"
 
+# Auto-configure Databricks connection when running as Databricks App
+if os.getenv("DATABRICKS_APP_PORT"):
+    # Running in Databricks Apps - set up auto-discovery
+    os.environ["DATABRICKS_AUTO_DISCOVER"] = "true"
+    
+    # Try to detect workspace connection details from environment
+    workspace_host = os.getenv("DATABRICKS_SERVER_HOSTNAME")
+    workspace_token = os.getenv("DATABRICKS_TOKEN") 
+    warehouse_path = os.getenv("DATABRICKS_HTTP_PATH")
+    
+    if workspace_host and workspace_token:
+        os.environ["DATABRICKS_WORKSPACE_HOST"] = workspace_host
+        os.environ["DATABRICKS_WORKSPACE_TOKEN"] = workspace_token
+        if warehouse_path:
+            os.environ["DATABRICKS_WAREHOUSE_PATH"] = warehouse_path
+
 print("=" * 60)
 print("Starting DataOne in Databricks Apps mode")
 print("=" * 60)

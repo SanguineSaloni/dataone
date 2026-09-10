@@ -259,6 +259,14 @@ async def lifespan(app: FastAPI):
     finally:
         db.close()
 
+    # 5. Auto-discover Databricks workspace (if running as Databricks App)
+    from app.services.databricks_autodiscovery import DatabricksAutoDiscoveryService
+    db = SessionLocal()
+    try:
+        DatabricksAutoDiscoveryService.setup_auto_discovery(db)
+    finally:
+        db.close()
+
     if engine.dialect.name == "postgresql":
         startup_lock_connection.execute(
             text("SELECT pg_advisory_unlock(:key)"), {"key": startup_lock_key},
