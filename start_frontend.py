@@ -8,7 +8,8 @@ import sys
 import subprocess
 
 # Get backend API URL - hardcode for Databricks Apps since no env var option
-backend_url = os.getenv("BACKEND_API_URL", "https://dataonetest-7474652115156015.aws.databricksapps.com")
+# Note: Backend uses .aws.databricks.com (not .aws.databricksapps.com)
+backend_url = os.getenv("BACKEND_API_URL", "https://dataonetest-7474652115156015.aws.databricks.com")
 
 # Get the dynamic port assigned by Databricks Apps  
 databricks_port = os.getenv("DATABRICKS_APP_PORT", "8080")
