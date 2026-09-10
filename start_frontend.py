@@ -7,9 +7,8 @@ import os
 import sys
 import subprocess
 
-# Get backend API URL - hardcode for Databricks Apps since no env var option
-# Note: Backend uses .aws.databricks.com (not .aws.databricksapps.com)
-backend_url = os.getenv("BACKEND_API_URL", "https://dataonetest-7474652115156015.aws.databricks.com")
+# Correct backend URL uses .aws.databricksapps.com (NOT .aws.databricks.com)
+backend_url = os.getenv("BACKEND_API_URL", "https://dataonetest-7474652115156015.aws.databricksapps.com")
 
 # Get the dynamic port assigned by Databricks Apps  
 databricks_port = os.getenv("DATABRICKS_APP_PORT", "8080")
@@ -24,8 +23,9 @@ print(f"   Port Source: {'DATABRICKS_APP_PORT' if os.getenv('DATABRICKS_APP_PORT
 print(f"   ⚠️  Backend URL is hardcoded - update with actual URL")
 print()
 
-# Set Next.js environment variables
+# Set Next.js environment variables BEFORE the build — baked into the static bundle
 os.environ["NEXT_PUBLIC_API_URL"] = backend_url
+os.environ["NEXT_PUBLIC_DATABRICKS_MODE"] = os.getenv("NEXT_PUBLIC_DATABRICKS_MODE", "true")
 os.environ["PORT"] = str(databricks_port)
 os.environ["HOSTNAME"] = "0.0.0.0"
 
