@@ -146,24 +146,21 @@ class DatabricksConnector(BaseConnector):
     def get_tables(self) -> List[str]:
         """
         Fetch list of all table names in the current catalog/schema.
-        Uses Unity Catalog information_schema (which lives in system catalog).
+        Uses SHOW TABLES which works for both Unity Catalog and legacy hive_metastore.
         """
         conn = self.connect()
         cursor = conn.cursor()
         
         try:
-            # In Unity Catalog, information_schema is in the system catalog
             catalog = self.config['catalog']
             schema = self.config['schema']
             
-            query = """
-                SELECT table_name 
-                FROM system.information_schema.tables 
-                WHERE table_catalog = ? AND table_schema = ?
-                ORDER BY table_name
-            """
-            cursor.execute(query, (catalog, schema))
-            tables = [row[0] for row in cursor.fetchall()]
+            # Use standard Databricks SQL that works across all catalog types
+            query = f"SHOW TABLES IN `{catalog}`.`{schema}`"
+            cursor.execute(query)
+            
+            # SHOW TABLES returns: database, tableName, isTemporary
+            tables = [row.tableName for row in cursor.fetchall() if not row.isTemporary]
             
             logger.info(
                 "Found %d tables in %s.%s",
@@ -221,17 +218,46 @@ class DatabricksConnector(BaseConnector):
                     "name": col_name,
                     "type": data_type,
                     "nullable": is_nullable == "YES",
-                    "primary_key": False,  # UC doesn't expose PK in information_schema
-                    "foreign_keys": [],    # UC doesn't expose FK in information_schema
+                    "primary_key": False,
+                    "foreign_keys": [],
                     "ordinal_position": pos,
                     "default": default,
                     "comment": comment,
-                    # Additional UC-specific fields
                     "databricks": {
-                        "catalog": self.config['catalog'],
-                        "schema": self.config['schema']
+                        "catalog": catalog,
+                        "schema": schema
                     }
                 })
+                
+            # Fallback for non-Unity Catalog catalogs (e.g. legacy hive_metastore / workspace)
+            # system.information_schema ONLY contains Unity Catalog tables.
+            if not columns:
+                try:
+                    cursor.execute(f"DESCRIBE TABLE `{catalog}`.`{schema}`.`{table_name}`")
+                    pos = 1
+                    for row in cursor.fetchall():
+                        col_name = row.col_name
+                        # Stop parsing when we hit metadata/partition boundaries
+                        if not col_name or col_name.startswith("#") or col_name == "":
+                            break
+                        
+                        columns.append({
+                            "name": col_name,
+                            "type": row.data_type,
+                            "nullable": True,  # DESCRIBE doesn't provide this, default to True
+                            "primary_key": False,
+                            "foreign_keys": [],
+                            "ordinal_position": pos,
+                            "default": None,
+                            "comment": row.comment,
+                            "databricks": {
+                                "catalog": catalog,
+                                "schema": schema
+                            }
+                        })
+                        pos += 1
+                except Exception as e:
+                    logger.debug(f"DESCRIBE TABLE fallback failed for {catalog}.{schema}.{table_name}: {e}")
             
             # Try to get primary key info from DESCRIBE DETAIL
             try:
