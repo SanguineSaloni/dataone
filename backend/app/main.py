@@ -432,31 +432,6 @@ def health_check():
     )
 
 
-@app.options("/api/v1/{path:path}")
-def options_api_wildcard(path: str):
-    """Handle OPTIONS requests for API paths to support CORS preflight."""
-    return JSONResponse(
-        content={}, 
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD",
-            "Access-Control-Allow-Headers": "*",
-        }
-    )
-
-
-@app.options("/")
-def options_root():
-    """Handle OPTIONS requests for root path."""
-    return JSONResponse(
-        content={}, 
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD",
-            "Access-Control-Allow-Headers": "*",
-        }
-    )
-
 
 # ── Serve Next.js static frontend (unified deployment) ────────────────────────
 # When FRONTEND_OUT_DIR is set (by start.py), FastAPI serves the pre-built
