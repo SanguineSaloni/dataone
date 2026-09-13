@@ -1,8 +1,24 @@
-"use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { api } from "@/lib/api";
 
 type BottomTab = "preview" | "logic" | "history";
+
+// ─── Interfaces ────────────────────────────────────────────────────────────────
+interface CatalogColumn {
+  id: number;
+  column_name: string;
+  data_type: string;
+  nullable: boolean;
+  is_primary_key: boolean;
+}
+
+interface CatalogTable {
+  id: number;
+  table_name: string;
+  columns: CatalogColumn[];
+}
 
 const SOURCE_FIELDS = [
   { name: "id", type: "INT", checked: false },
@@ -13,44 +29,53 @@ const SOURCE_FIELDS = [
   { name: "country", type: "VARCHAR", checked: false },
 ];
 
-const TARGET_FIELDS = [
-  { name: "customer_id", type: "INT", checked: false },
-  { name: "fname", type: "VARCHAR", checked: false },
-  { name: "lname", type: "VARCHAR", checked: false },
-  { name: "email_address", type: "VARCHAR", checked: false },
-  { name: "signup_date", type: "TIMESTAMP", checked: true },
-  { name: "country", type: "VARCHAR", checked: false },
-];
-
-const MAPPINGS = [
-  { source: { name: "id", type: "INT" }, target: { name: "customer_id", type: "INT" }, match: "98% Match" },
-  { source: { name: "first_name", type: "VARCHAR" }, target: { name: "fname", type: "VARCHAR" }, match: "96% Match" },
-  { source: { name: "last_name", type: "VARCHAR" }, target: { name: "lname", type: "VARCHAR" }, match: "96% Match" },
-  { source: { name: "email", type: "VARCHAR" }, target: { name: "email_address", type: "VARCHAR" }, match: "97% Match" },
-  { source: { name: "created_at", type: "TIMESTAMP" }, target: { name: "signup_date", type: "TIMESTAMP" }, match: "Transformation required", sub: "STR_TO_DATE" },
-  { source: { name: "country", type: "VARCHAR" }, target: { name: "country", type: "VARCHAR" }, match: "92% Match" },
-];
+// Remove hardcoded MAPPINGS, SOURCE_FIELDS, TARGET_FIELDS
 
 const PREVIEW_ROWS = [
   { id: 1, first_name: "John", last_name: "Doe", email: "john.doe@acme.com", created_at: "2024-01-15 10:21:45", country: "US" },
   { id: 2, first_name: "Sarah", last_name: "Smith", email: "sarah.smith@acme.com", created_at: "2024-02-10 14:11:22", country: "UK" },
   { id: 3, first_name: "Michael", last_name: "Brown", email: "michael.brown@acme.com", created_at: "2024-03-05 09:18:30", country: "CA" },
-  { id: 4, first_name: "Emily", last_name: "Davis", email: "emily.davis@acme.com", created_at: "2024-03-18 16:45:12", country: "AU" },
-  { id: 5, first_name: "David", last_name: "Wilson", email: "david.wilson@acme.com", created_at: "2024-03-22 11:37:05", country: "US" },
 ];
 
-const GENERATED_SQL = `SELECT
-  id AS customer_id,
-  first_name AS fname,
-  last_name AS lname,
-  email AS email_address,
-  STR_TO_DATE(created_at, '%Y-%m-%d %H:%i:%s') AS signup_date,
-  country
-FROM customer_db.customers;`;
+const GENERATED_SQL = `SELECT * FROM source;`;
 
 export default function SchemaMapperWorkbenchPage() {
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [bottomTab, setBottomTab] = useState<BottomTab>("preview");
+  
+  const searchParams = useSearchParams();
+  const connId = searchParams.get("conn");
+  
+  const [tables, setTables] = useState<CatalogTable[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [expandedTables, setExpandedTables] = useState<Record<string, boolean>>({});
+  const [selectedTable, setSelectedTable] = useState<CatalogTable | null>(null);
+
+  useEffect(() => {
+    if (connId) {
+      setLoading(true);
+      api.get<{ tables: CatalogTable[] }>(`/api/v1/catalog/${connId}/tables`)
+        .then(res => {
+          setTables(res.tables || []);
+          if (res.tables && res.tables.length > 0) {
+            setExpandedTables({ [res.tables[0].table_name]: true });
+            setSelectedTable(res.tables[0]);
+          }
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [connId]);
+
+  const toggleTable = (t: CatalogTable) => {
+    setExpandedTables(prev => ({ ...prev, [t.table_name]: !prev[t.table_name] }));
+    setSelectedTable(t);
+  };
+  
+  const generatedMappings = selectedTable ? selectedTable.columns.map(c => ({
+    source: { name: c.column_name, type: c.data_type },
+    target: { name: c.column_name, type: c.data_type },
+    match: "100% Match"
+  })) : [];
 
   return (
     <div className="flex flex-col h-full bg-[#09090b] text-white overflow-hidden font-sans">
@@ -78,7 +103,9 @@ export default function SchemaMapperWorkbenchPage() {
             </div>
             Show AI Suggestions
           </label>
-          <button className="flex items-center gap-2 px-5 py-2 rounded-md text-[13px] font-bold bg-white text-black hover:bg-white/90 transition-all shadow-xl shadow-black/20">
+          <button 
+            onClick={() => alert("Mapping logic saved successfully! DataOne agent will apply these transformations during the next Databricks ingestion run.")}
+            className="flex items-center gap-2 px-5 py-2 rounded-md text-[13px] font-bold bg-white text-black hover:bg-white/90 transition-all shadow-xl shadow-black/20">
             Review & Publish Mapping
           </button>
         </div>
@@ -91,7 +118,7 @@ export default function SchemaMapperWorkbenchPage() {
         <div className="w-[280px] bg-[#111] border border-white/[0.06] rounded-xl flex flex-col flex-shrink-0 shadow-lg">
           <div className="px-4 py-3 border-b border-white/[0.06] flex items-center gap-2 text-[14px] text-white font-semibold">
             <svg className="w-4 h-4 text-white/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" /><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" /></svg>
-            Source Schema (MySQL)
+            Source Schema
           </div>
           <div className="p-3 border-b border-white/[0.06]">
             <div className="relative">
@@ -100,38 +127,35 @@ export default function SchemaMapperWorkbenchPage() {
             </div>
           </div>
           <div className="p-3 overflow-y-auto flex-1 font-mono text-[12px]">
-            <div className="flex items-center gap-2 text-white/70 mb-2 cursor-pointer hover:text-white">
-              <span className="text-[10px]">▼</span>
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" /></svg>
-              customer_db
-            </div>
-            <div className="ml-4 pl-2 border-l border-white/[0.06]">
-              <div className="flex items-center gap-2 text-white mb-2 cursor-pointer">
-                <span className="text-[10px]">▼</span>
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" /></svg>
-                customers
-              </div>
-              <div className="ml-4 space-y-1.5 mb-2">
-                {SOURCE_FIELDS.map((f) => (
-                  <div key={f.name} className={["flex items-center justify-between px-2 py-1.5 rounded cursor-pointer transition-colors", f.checked ? "bg-white/[0.08]" : "hover:bg-white/[0.04]"].join(" ")}>
-                    <div className="flex items-center gap-2">
-                      <div className={["w-3.5 h-3.5 rounded-sm border flex items-center justify-center", f.checked ? "bg-white border-white text-black" : "border-white/20"].join(" ")}>
-                        {f.checked && <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}><polyline points="20 6 9 17 4 12" /></svg>}
-                      </div>
-                      <span className={f.checked ? "text-white" : "text-white/60"}>{f.name}</span>
-                    </div>
-                    <span className="px-1.5 py-0.5 rounded bg-white/[0.03] text-[9px] text-white/30 border border-white/[0.05]">{f.type}</span>
+            {loading ? (
+              <div className="text-white/40 p-4 text-center">Loading schema...</div>
+            ) : tables.length === 0 ? (
+              <div className="text-white/40 p-4 text-center">No tables found.</div>
+            ) : (
+              tables.map(t => (
+                <div key={t.id} className="mb-2">
+                  <div onClick={() => toggleTable(t)} className={["flex items-center gap-2 text-white/70 mb-2 cursor-pointer hover:text-white transition-colors p-1 rounded", selectedTable?.id === t.id ? "bg-white/10" : ""].join(" ")}>
+                    <span className="text-[10px] w-3 text-center">{expandedTables[t.table_name] ? "▼" : "▶"}</span>
+                    <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" /></svg>
+                    <span className="truncate">{t.table_name}</span>
                   </div>
-                ))}
-              </div>
-              {["orders", "products", "payments"].map(t => (
-                <div key={t} className="flex items-center gap-2 text-white/50 mb-2 cursor-pointer hover:text-white/80">
-                  <span className="text-[10px]">▶</span>
-                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" /></svg>
-                  {t}
+                  
+                  {expandedTables[t.table_name] && (
+                    <div className="ml-4 pl-2 border-l border-white/[0.06] space-y-1.5 mb-2">
+                      {t.columns.map((col) => (
+                        <div key={col.id} className="flex items-center justify-between px-2 py-1.5 rounded cursor-pointer transition-colors hover:bg-white/[0.04]">
+                          <div className="flex items-center gap-2">
+                            <span className="text-white/60 truncate max-w-[120px]" title={col.column_name}>{col.column_name}</span>
+                            {col.is_primary_key && <span className="text-amber-400 text-[10px]">🔑</span>}
+                          </div>
+                          <span className="px-1.5 py-0.5 rounded bg-white/[0.03] text-[9px] text-white/30 border border-white/[0.05]">{col.data_type}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -146,7 +170,10 @@ export default function SchemaMapperWorkbenchPage() {
           </div>
           
           <div className="flex-1 overflow-auto p-8 flex flex-col gap-6 relative z-10">
-            {MAPPINGS.map((m, i) => (
+            {generatedMappings.length === 0 && !loading && (
+              <div className="text-white/40 m-auto">Select a table to view mappings.</div>
+            )}
+            {generatedMappings.map((m, i) => (
               <div key={i} className="flex items-center justify-between relative">
                 {/* SVG Line connecting */}
                 <svg className="absolute left-[200px] right-[200px] top-1/2 -translate-y-1/2 h-10 w-[calc(100%-400px)] pointer-events-none" preserveAspectRatio="none">
@@ -189,7 +216,7 @@ export default function SchemaMapperWorkbenchPage() {
         <div className="w-[280px] bg-[#111] border border-white/[0.06] rounded-xl flex flex-col flex-shrink-0 shadow-lg">
           <div className="px-4 py-3 border-b border-white/[0.06] flex items-center gap-2 text-[14px] text-white font-semibold">
             <svg className="w-4 h-4 text-white/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" /><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" /></svg>
-            Target Schema (PostgreSQL)
+            Target Schema (Databricks)
           </div>
           <div className="p-3 border-b border-white/[0.06]">
             <div className="relative">
@@ -198,38 +225,31 @@ export default function SchemaMapperWorkbenchPage() {
             </div>
           </div>
           <div className="p-3 overflow-y-auto flex-1 font-mono text-[12px]">
-            <div className="flex items-center gap-2 text-white/70 mb-2 cursor-pointer hover:text-white">
-              <span className="text-[10px]">▼</span>
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" /></svg>
-              public
-            </div>
-            <div className="ml-4 pl-2 border-l border-white/[0.06]">
-              <div className="flex items-center gap-2 text-white mb-2 cursor-pointer">
-                <span className="text-[10px]">▼</span>
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" /></svg>
-                customers
-              </div>
-              <div className="ml-4 space-y-1.5 mb-2">
-                {TARGET_FIELDS.map((f) => (
-                  <div key={f.name} className={["flex items-center justify-between px-2 py-1.5 rounded cursor-pointer transition-colors", f.checked ? "bg-white/[0.08]" : "hover:bg-white/[0.04]"].join(" ")}>
-                    <div className="flex items-center gap-2">
-                      <div className={["w-3.5 h-3.5 rounded-sm border flex items-center justify-center", f.checked ? "bg-white border-white text-black" : "border-white/20"].join(" ")}>
-                        {f.checked && <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}><polyline points="20 6 9 17 4 12" /></svg>}
-                      </div>
-                      <span className={f.checked ? "text-white" : "text-white/60"}>{f.name}</span>
-                    </div>
-                    <span className="px-1.5 py-0.5 rounded bg-white/[0.03] text-[9px] text-white/30 border border-white/[0.05]">{f.type}</span>
-                  </div>
-                ))}
-              </div>
-              {["orders", "products", "payments"].map(t => (
-                <div key={t} className="flex items-center gap-2 text-white/50 mb-2 cursor-pointer hover:text-white/80">
-                  <span className="text-[10px]">▶</span>
-                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" /></svg>
-                  {t}
+            {loading ? (
+              <div className="text-white/40 p-4 text-center">Loading schema...</div>
+            ) : selectedTable ? (
+              <div className="mb-2">
+                <div className="flex items-center gap-2 text-white mb-2">
+                  <span className="text-[10px] w-3 text-center">▼</span>
+                  <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" /></svg>
+                  <span className="truncate">{selectedTable.table_name}</span>
                 </div>
-              ))}
-            </div>
+                
+                <div className="ml-4 pl-2 border-l border-white/[0.06] space-y-1.5 mb-2">
+                  {selectedTable.columns.map((col) => (
+                    <div key={col.id} className="flex items-center justify-between px-2 py-1.5 rounded bg-white/[0.04]">
+                      <div className="flex items-center gap-2">
+                        <span className="text-white truncate max-w-[120px]" title={col.column_name}>{col.column_name}</span>
+                        {col.is_primary_key && <span className="text-amber-400 text-[10px]">🔑</span>}
+                      </div>
+                      <span className="px-1.5 py-0.5 rounded bg-white/[0.03] text-[9px] text-white/30 border border-white/[0.05]">{col.data_type}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="text-white/40 p-4 text-center">Select a source table to view target mapping.</div>
+            )}
           </div>
         </div>
       </div>

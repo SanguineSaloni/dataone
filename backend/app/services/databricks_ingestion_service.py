@@ -227,15 +227,15 @@ def _get_workspace_client(token: Optional[str] = None):
     """Return a Databricks WorkspaceClient using provided token or env config."""
     try:
         from databricks.sdk import WorkspaceClient
+        
+        # Native Databricks Apps mode uses DATABRICKS_HOST
+        host = settings.DATABRICKS_WORKSPACE_URL
+        if not host and settings.DATABRICKS_HOST:
+            host = f"https://{settings.DATABRICKS_HOST}"
+
         if token:
-            return WorkspaceClient(
-                host=settings.DATABRICKS_WORKSPACE_URL,
-                token=token,
-            )
-        return WorkspaceClient(
-            host=settings.DATABRICKS_WORKSPACE_URL,
-            token=settings.DATABRICKS_ACCESS_TOKEN,
-        )
+            return WorkspaceClient(host=host, token=token)
+        return WorkspaceClient(host=host, token=settings.DATABRICKS_ACCESS_TOKEN)
     except Exception as e:
         logger.error("[databricks_ingestion] stage=get_client failed: %s", e)
         raise
@@ -317,7 +317,11 @@ class DatabricksIngestionService:
         script = INGESTION_SCRIPTS.get(source_type, INGESTION_SCRIPTS.get("mysql", ""))
         job_name = f"DataOne_{SOURCE_TYPE_DISPLAY.get(source_type, source_type.title())}_Ingestion"
 
-        if not settings.DATABRICKS_WORKSPACE_URL or not settings.DATABRICKS_ACCESS_TOKEN:
+        # Check for either the explicit URL/PAT or Native App Host/user token
+        has_explicit_creds = bool(settings.DATABRICKS_WORKSPACE_URL and settings.DATABRICKS_ACCESS_TOKEN)
+        has_native_creds = bool(settings.DATABRICKS_HOST and user_token)
+        
+        if not has_explicit_creds and not has_native_creds:
             logger.warning(
                 "[databricks_ingestion] stage=no_credentials — Databricks not configured, returning mock job_id"
             )

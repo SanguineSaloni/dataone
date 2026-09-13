@@ -400,7 +400,7 @@ function CatalogBrowser() {
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
-type Tab = "new" | "pipelines" | "catalog";
+type Tab = "new" | "pipelines" | "catalog" | "connections";
 
 export default function ConnectorsPage() {
   const router = useRouter();
@@ -529,6 +529,7 @@ export default function ConnectorsPage() {
 
   const tabs: { id: Tab; label: string; icon: string }[] = [
     { id: "new",       label: "New Connection",    icon: "➕" },
+    { id: "connections", label: "Saved Connections", icon: "🔗" },
     { id: "pipelines", label: "Active Pipelines",  icon: "⚡" },
     { id: "catalog",   label: "Unity Catalog",     icon: "🏔" },
   ];
@@ -679,7 +680,53 @@ export default function ConnectorsPage() {
           </div>
         )}
 
-        {/* ── PIPELINES TAB ── */}
+        {/* ── SAVED CONNECTIONS TAB ── */}
+        {activeTab === "connections" && (
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-white">Your Connections</h2>
+              <button onClick={() => setActiveTab("new")} className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 rounded-lg text-[13px] font-semibold text-white transition-colors">
+                + New Connection
+              </button>
+            </div>
+            
+            {connections.length === 0 ? (
+              <div className="text-center py-20 border border-white/5 rounded-2xl bg-[#111]">
+                <p className="text-white/40 text-[14px]">No connections saved yet.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {connections.map(conn => (
+                  <div key={conn.id} className="p-5 rounded-2xl bg-[#111] border border-white/10 hover:border-white/20 transition-colors flex flex-col gap-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10">
+                          {conn.type === "databricks" ? "🏔" : conn.type === "mysql" ? "🐘" : "🗄"}
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-white/90 text-[14px] truncate max-w-[150px]" title={conn.name}>{conn.name}</h3>
+                          <p className="text-xs text-white/40 uppercase">{conn.type}</p>
+                        </div>
+                      </div>
+                      <StatusBadge status={conn.health_status} />
+                    </div>
+                    
+                    <div className="mt-2 text-[12px] text-white/60 bg-[#161618] p-3 rounded-lg font-mono">
+                      {Object.entries(conn.config || {}).filter(([k]) => k !== "password" && k !== "access_token" && k !== "url").map(([k, v]) => (
+                        <div key={k} className="flex gap-2">
+                          <span className="text-white/30 min-w-[60px]">{k}:</span>
+                          <span className="truncate">{String(v)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── ACTIVE PIPELINES TAB ── */}
         {activeTab === "pipelines" && (
           <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between mb-2">
@@ -728,7 +775,7 @@ export default function ConnectorsPage() {
                         </td>
                         <td className="px-5 py-3">
                           <button
-                            onClick={() => router.push("/dashboard/schema-mapper")}
+                            onClick={() => router.push(`/dashboard/schema-mapper?conn=${run.source_connection_id}`)}
                             className="px-3 py-1 bg-white/5 hover:bg-white/10 text-white text-[11px] font-semibold rounded-lg transition-colors border border-white/10">
                             View Schema Mapping
                           </button>
