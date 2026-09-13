@@ -54,6 +54,53 @@ def _table_response(table: CatalogTable) -> CatalogTableResponse:
     )
 
 
+@router.get("/all-tables")
+def list_all_catalog_tables(
+    q: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
+    """Return all catalog tables across every connection (no owner filter).
+    Used by the Unity Catalog browser tab which shows workspace-wide tables."""
+    from sqlalchemy.orm import joinedload as jl
+    from app.models.connection import DBConnection
+
+    query = (
+        db.query(CatalogTable)
+        .options(jl(CatalogTable.columns))
+        .join(DBConnection, CatalogTable.connection_id == DBConnection.id)
+        .filter(DBConnection.is_deleted == False)  # noqa: E712
+    )
+    if q:
+        needle = f"%{q.lower()}%"
+        query = query.filter(CatalogTable.table_name.ilike(needle))
+
+    tables = query.order_by(CatalogTable.table_name).all()
+
+    # Group by connection
+    from collections import defaultdict
+    by_conn: dict = defaultdict(list)
+    for t in tables:
+        by_conn[t.connection_id].append(_table_response(t))
+
+    # Fetch connection names
+    conn_ids = list(by_conn.keys())
+    conns = db.query(DBConnection).filter(DBConnection.id.in_(conn_ids)).all()
+    conn_map = {c.id: c for c in conns}
+
+    return {
+        "total": len(tables),
+        "connections": [
+            {
+                "connection_id": cid,
+                "connection_name": conn_map[cid].name if cid in conn_map else f"Connection {cid}",
+                "connection_type": conn_map[cid].type if cid in conn_map else "unknown",
+                "tables": by_conn[cid],
+            }
+            for cid in by_conn
+        ],
+    }
+
+
 @router.post("/scan/{connection_id}", response_model=ScanResult, status_code=201)
 def scan_connection(
     connection_id: int, db: Session = Depends(get_db),

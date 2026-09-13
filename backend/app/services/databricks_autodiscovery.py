@@ -151,7 +151,7 @@ class DatabricksAutoDiscoveryService:
                     "catalog": "main",
                     "schema": "default"
                 },
-                owner_email="admin@dataplane.ai"  # Default admin
+                owner_email=None  # Shared workspace connection — visible to all users
             )
             
             db.add(connection)

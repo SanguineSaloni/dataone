@@ -174,181 +174,200 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-// Unity Catalog tree component
-function CatalogBrowser({ connections }: { connections: Connection[] }) {
-  const [selectedConn, setSelectedConn] = useState<number | null>(null);
-  const [tables, setTables] = useState<CatalogTable[]>([]);
+// Unity Catalog browser — uses /all-tables (no owner filter, workspace-wide)
+interface CatalogGroup {
+  connection_id: number;
+  connection_name: string;
+  connection_type: string;
+  tables: CatalogTable[];
+}
+
+function CatalogBrowser() {
+  const [groups, setGroups] = useState<CatalogGroup[]>([]);
+  const [total, setTotal] = useState(0);
   const [expandedTable, setExpandedTable] = useState<number | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [scanning, setScanning] = useState(false);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
 
-  const databricksConns = connections.filter(c => c.type === "databricks");
-
-  const loadCatalog = async (connId: number) => {
-    setSelectedConn(connId);
+  const load = async (q?: string) => {
     setLoading(true);
     setError("");
     try {
-      const result = await api.get<{ tables: CatalogTable[]; total: number }>(`/api/v1/catalog/${connId}/tables`);
-      setTables(result.tables || []);
-    } catch {
-      setError("No catalog data yet. Try triggering a scan below.");
-      setTables([]);
+      const url = q ? `/api/v1/catalog/all-tables?q=${encodeURIComponent(q)}` : "/api/v1/catalog/all-tables";
+      const result = await api.get<{ total: number; connections: CatalogGroup[] }>(url);
+      setTotal(result.total || 0);
+      setGroups(result.connections || []);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Failed to load catalog.");
+      setGroups([]);
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => { load(); }, []);
+
   const triggerScan = async (connId: number) => {
-    setLoading(true);
+    setScanning(true);
     try {
       await api.post(`/api/v1/catalog/scan/${connId}`, {});
-      await loadCatalog(connId);
+      await load(search || undefined);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Scan failed");
-      setLoading(false);
+      setError(e instanceof ApiError ? e.message : "Scan failed.");
+    } finally {
+      setScanning(false);
     }
   };
 
-  const filtered = tables.filter(t =>
-    !search || t.table_name.toLowerCase().includes(search.toLowerCase()) ||
-    t.columns.some(c => c.column_name.toLowerCase().includes(search.toLowerCase()))
-  );
+  // Client-side filter
+  const filteredGroups = groups.map(g => ({
+    ...g,
+    tables: search
+      ? g.tables.filter(t =>
+          t.table_name.toLowerCase().includes(search.toLowerCase()) ||
+          t.columns.some(c => c.column_name.toLowerCase().includes(search.toLowerCase()))
+        )
+      : g.tables,
+  })).filter(g => g.tables.length > 0);
 
-  // Group by catalog.schema
-  const grouped: Record<string, CatalogTable[]> = {};
-  for (const t of filtered) {
-    const parts = t.table_name.split(".");
-    const group = parts.length >= 3 ? `${parts[0]}.${parts[1]}` : parts[0] || "default";
-    (grouped[group] = grouped[group] || []).push(t);
-  }
+  // Group tables by catalog.schema within each connection
+  const groupBySchema = (tables: CatalogTable[]) => {
+    const map: Record<string, CatalogTable[]> = {};
+    for (const t of tables) {
+      const parts = t.table_name.split(".");
+      const key = parts.length >= 3 ? `${parts[0]}.${parts[1]}` : (parts[0] || "default");
+      (map[key] = map[key] || []).push(t);
+    }
+    return map;
+  };
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Connection picker */}
-      <div className="flex flex-wrap gap-2">
-        {databricksConns.length === 0 ? (
-          <p className="text-white/40 text-sm">No Databricks connections found. The auto-discovered workspace connection will appear here once the app fully loads.</p>
-        ) : (
-          databricksConns.map(c => (
-            <button key={c.id}
-              onClick={() => loadCatalog(c.id)}
-              className={["px-3 py-1.5 rounded-lg text-[13px] font-medium border transition-all", 
-                selectedConn === c.id 
-                  ? "bg-indigo-500/20 border-indigo-500/40 text-indigo-300" 
-                  : "bg-white/5 border-white/10 text-white/60 hover:text-white/90 hover:border-white/20"].join(" ")}>
-              🏔 {c.name}
-            </button>
-          ))
-        )}
+      {/* Search + refresh */}
+      <div className="flex gap-3">
+        <div className="relative flex-1">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search tables or columns…"
+            className="w-full pl-9 pr-3 py-2 rounded-lg bg-[#1a1a1a] border border-white/10 text-white text-[13px] placeholder:text-white/30 focus:outline-none focus:border-white/30"
+          />
+        </div>
+        <button
+          onClick={() => load(search || undefined)}
+          disabled={loading}
+          className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 text-[13px] font-semibold border border-white/10 transition-colors disabled:opacity-50">
+          {loading ? "Loading…" : "↻ Refresh"}
+        </button>
       </div>
 
-      {selectedConn && (
-        <>
-          {/* Search + scan */}
-          <div className="flex gap-3">
-            <div className="relative flex-1">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-              <input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Search tables or columns…"
-                className="w-full pl-9 pr-3 py-2 rounded-lg bg-[#1a1a1a] border border-white/10 text-white text-[13px] placeholder:text-white/30 focus:outline-none focus:border-white/30"
-              />
-            </div>
-            <button
-              onClick={() => triggerScan(selectedConn)}
-              disabled={loading}
-              className="px-4 py-2 rounded-lg bg-indigo-600/80 hover:bg-indigo-600 text-white text-[13px] font-semibold border border-indigo-500/40 transition-colors disabled:opacity-50">
-              {loading ? "Scanning…" : "Refresh Scan"}
-            </button>
-          </div>
+      {error && <p className="text-amber-400 text-sm bg-amber-500/10 rounded-lg p-3 border border-amber-500/20">⚠ {error}</p>}
 
-          {error && <p className="text-amber-400 text-sm bg-amber-500/10 rounded-lg p-3 border border-amber-500/20">⚠ {error}</p>}
-
-          {loading && !error && (
-            <div className="flex items-center justify-center py-12 gap-3">
-              <div className="w-5 h-5 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
-              <span className="text-white/40 text-sm">Loading Unity Catalog…</span>
-            </div>
-          )}
-
-          {!loading && tables.length > 0 && (
-            <div className="rounded-xl border border-white/[0.06] overflow-hidden">
-              <div className="bg-[#111] px-4 py-2.5 border-b border-white/[0.06] flex items-center justify-between">
-                <span className="text-[12px] text-white/50 font-medium uppercase tracking-wider">Unity Catalog Explorer</span>
-                <span className="text-[12px] text-white/30">{tables.length} tables discovered</span>
-              </div>
-              <div className="divide-y divide-white/[0.04] max-h-[500px] overflow-y-auto">
-                {Object.entries(grouped).map(([group, groupTables]) => (
-                  <div key={group}>
-                    {/* Schema group header */}
-                    <div className="px-4 py-2 bg-[#0f0f11] flex items-center gap-2">
-                      <svg className="w-3.5 h-3.5 text-indigo-400/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
-                      <span className="text-[12px] font-semibold text-indigo-400/80 tracking-wide">{group}</span>
-                      <span className="text-[11px] text-white/30 ml-auto">{groupTables.length} tables</span>
-                    </div>
-                    {groupTables.map(table => {
-                      const shortName = table.table_name.split(".").pop() || table.table_name;
-                      const isExpanded = expandedTable === table.id;
-                      return (
-                        <div key={table.id}>
-                          <button
-                            className="w-full px-6 py-2.5 flex items-center gap-3 hover:bg-white/[0.02] transition-colors group text-left"
-                            onClick={() => setExpandedTable(isExpanded ? null : table.id)}>
-                            <svg className={["w-3.5 h-3.5 text-white/30 transition-transform", isExpanded ? "rotate-90" : ""].join(" ")} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M9 18l6-6-6-6"/></svg>
-                            <svg className="w-4 h-4 text-emerald-400/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
-                            <span className="text-[13px] text-white/80 group-hover:text-white transition-colors font-medium">{shortName}</span>
-                            <span className="ml-auto text-[11px] text-white/30">{table.columns.length} cols</span>
-                          </button>
-                          {isExpanded && (
-                            <div className="bg-[#0a0a0c] border-t border-white/[0.04]">
-                              <table className="w-full text-[12px]">
-                                <thead>
-                                  <tr className="border-b border-white/[0.04]">
-                                    <th className="text-left px-8 py-2 text-white/30 font-medium">Column</th>
-                                    <th className="text-left px-4 py-2 text-white/30 font-medium">Type</th>
-                                    <th className="text-left px-4 py-2 text-white/30 font-medium">Nullable</th>
-                                    <th className="text-left px-4 py-2 text-white/30 font-medium">PK</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-white/[0.02]">
-                                  {table.columns.map(col => (
-                                    <tr key={col.id} className="hover:bg-white/[0.01]">
-                                      <td className="px-8 py-1.5 text-white/70 font-mono">{col.column_name}</td>
-                                      <td className="px-4 py-1.5 text-violet-400/70">{col.data_type}</td>
-                                      <td className="px-4 py-1.5 text-white/40">{col.nullable ? "yes" : "no"}</td>
-                                      <td className="px-4 py-1.5">{col.is_primary_key ? <span className="text-amber-400">🔑</span> : <span className="text-white/20">—</span>}</td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {!loading && tables.length === 0 && !error && (
-            <div className="text-center py-12 text-white/30">
-              <div className="text-4xl mb-3">🗄</div>
-              <p className="text-sm">No tables in catalog yet.</p>
-              <p className="text-xs mt-1">Click &quot;Refresh Scan&quot; to discover Unity Catalog tables.</p>
-            </div>
-          )}
-        </>
+      {loading && (
+        <div className="flex items-center justify-center py-16 gap-3">
+          <div className="w-5 h-5 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+          <span className="text-white/40 text-sm">Loading Unity Catalog…</span>
+        </div>
       )}
 
-      {!selectedConn && databricksConns.length > 0 && (
-        <div className="text-center py-12 text-white/30">
-          <div className="text-4xl mb-3">🏔</div>
-          <p className="text-sm">Select a Databricks connection above to browse Unity Catalog.</p>
+      {!loading && total === 0 && !error && (
+        <div className="text-center py-16">
+          <div className="text-5xl mb-4">🗄</div>
+          <p className="text-white/40 text-sm">No tables discovered yet.</p>
+          <p className="text-white/25 text-xs mt-1">The app auto-discovers your Unity Catalog on startup. If you just deployed, wait a moment and click Refresh.</p>
+        </div>
+      )}
+
+      {!loading && filteredGroups.length > 0 && (
+        <div className="flex flex-col gap-6">
+          <p className="text-white/40 text-sm">{total} tables discovered across {groups.length} connection{groups.length !== 1 ? "s" : ""}</p>
+          {filteredGroups.map(group => {
+            const schemaMap = groupBySchema(group.tables);
+            return (
+              <div key={group.connection_id} className="rounded-xl border border-white/[0.06] overflow-hidden">
+                {/* Connection header */}
+                <div className="bg-[#111] px-5 py-3 flex items-center justify-between border-b border-white/[0.06]">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center">
+                      <span className="text-sm">🏔</span>
+                    </div>
+                    <div>
+                      <p className="text-[14px] font-semibold text-white/90">{group.connection_name}</p>
+                      <p className="text-[11px] text-white/40 capitalize">{group.connection_type} · {group.tables.length} tables</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => triggerScan(group.connection_id)}
+                    disabled={scanning}
+                    className="px-3 py-1.5 rounded-lg bg-indigo-600/70 hover:bg-indigo-600 text-white text-[12px] font-semibold border border-indigo-500/40 transition-colors disabled:opacity-50">
+                    {scanning ? "Scanning…" : "Re-scan"}
+                  </button>
+                </div>
+
+                {/* Schema groups */}
+                <div className="divide-y divide-white/[0.03]">
+                  {Object.entries(schemaMap).map(([schema, schemaTables]) => (
+                    <div key={schema}>
+                      {/* Schema label */}
+                      <div className="px-5 py-2 bg-[#0f0f11] flex items-center gap-2">
+                        <svg className="w-3.5 h-3.5 text-violet-400/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+                        <span className="text-[12px] font-semibold text-violet-400/80">{schema}</span>
+                        <span className="ml-auto text-[11px] text-white/30">{schemaTables.length} tables</span>
+                      </div>
+
+                      {/* Tables */}
+                      {schemaTables.map(table => {
+                        const shortName = table.table_name.split(".").pop() || table.table_name;
+                        const isExpanded = expandedTable === table.id;
+                        return (
+                          <div key={table.id}>
+                            <button
+                              className="w-full px-8 py-2.5 flex items-center gap-3 hover:bg-white/[0.02] transition-colors group text-left"
+                              onClick={() => setExpandedTable(isExpanded ? null : table.id)}>
+                              <svg className={["w-3 h-3 text-white/30 transition-transform flex-shrink-0", isExpanded ? "rotate-90" : ""].join(" ")} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M9 18l6-6-6-6"/></svg>
+                              <svg className="w-4 h-4 text-emerald-400/60 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M2 15h20"/></svg>
+                              <span className="text-[13px] text-white/80 group-hover:text-white transition-colors font-medium">{shortName}</span>
+                              <span className="ml-auto text-[11px] text-white/30 flex-shrink-0">{table.columns.length} cols</span>
+                            </button>
+
+                            {isExpanded && (
+                              <div className="bg-[#080809] border-t border-white/[0.03]">
+                                <table className="w-full text-[12px]">
+                                  <thead>
+                                    <tr className="border-b border-white/[0.04]">
+                                      <th className="text-left px-10 py-2 text-white/30 font-medium w-1/3">Column</th>
+                                      <th className="text-left px-4 py-2 text-white/30 font-medium w-1/3">Type</th>
+                                      <th className="text-left px-4 py-2 text-white/30 font-medium">Nullable</th>
+                                      <th className="text-left px-4 py-2 text-white/30 font-medium">PK</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-white/[0.02]">
+                                    {table.columns
+                                      .sort((a, b) => a.ordinal_position - b.ordinal_position)
+                                      .map(col => (
+                                        <tr key={col.id} className="hover:bg-white/[0.01]">
+                                          <td className="px-10 py-1.5 text-white/70 font-mono text-[11px]">{col.column_name}</td>
+                                          <td className="px-4 py-1.5 text-violet-400/70">{col.data_type}</td>
+                                          <td className="px-4 py-1.5 text-white/40">{col.nullable ? "yes" : "no"}</td>
+                                          <td className="px-4 py-1.5">{col.is_primary_key ? <span className="text-amber-400 text-[10px] font-bold">PK</span> : <span className="text-white/20">—</span>}</td>
+                                        </tr>
+                                      ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -716,7 +735,7 @@ export default function ConnectorsPage() {
                 <span className="text-white/40 text-sm">Loading connections…</span>
               </div>
             ) : (
-              <CatalogBrowser connections={connections} />
+              <CatalogBrowser />
             )}
           </div>
         )}
