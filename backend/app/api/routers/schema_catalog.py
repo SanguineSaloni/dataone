@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_role
@@ -58,17 +58,48 @@ def _table_response(table: CatalogTable) -> CatalogTableResponse:
 def list_all_catalog_tables(
     q: Optional[str] = Query(None),
     db: Session = Depends(get_db),
+    request: Request = None,
 ):
-    """Return all catalog tables across every connection (no owner filter).
-    Used by the Unity Catalog browser tab which shows workspace-wide tables."""
+    """Return catalog tables for the current user's Databricks connections.
+
+    Scoping rules:
+    - Returns connections owned by the logged-in user (owner_email = user.email)
+    - Falls back to shared connections (owner_email IS NULL) if no user-specific ones exist
+    Used by the Unity Catalog browser tab.
+    """
     from sqlalchemy.orm import joinedload as jl
+    from collections import defaultdict
     from app.models.connection import DBConnection
+    from fastapi import Request as FastAPIRequest
+
+    # Resolve caller email from DataOne JWT (best-effort, non-blocking)
+    caller_email: Optional[str] = None
+    try:
+        if request is not None:
+            auth_header = request.headers.get("Authorization", "")
+            if auth_header.startswith("Bearer "):
+                token = auth_header[7:]
+                from app.services.auth_service import AuthService
+                payload = AuthService.verify_token(token)
+                caller_email = payload.get("sub") if payload else None
+    except Exception:
+        pass  # anonymous — fall back to shared tables
+
+    # Build connection filter: prefer user-specific, fall back to shared (NULL owner)
+    conn_query = db.query(DBConnection).filter(DBConnection.is_deleted == False)  # noqa: E712
+    if caller_email:
+        conn_query = conn_query.filter(
+            (DBConnection.owner_email == caller_email) | (DBConnection.owner_email.is_(None))
+        )
+    user_conn_ids = [c.id for c in conn_query.all()]
+
+    if not user_conn_ids:
+        return {"total": 0, "connections": []}
 
     query = (
         db.query(CatalogTable)
         .options(jl(CatalogTable.columns))
-        .join(DBConnection, CatalogTable.connection_id == DBConnection.id)
-        .filter(DBConnection.is_deleted == False)  # noqa: E712
+        .filter(CatalogTable.connection_id.in_(user_conn_ids))
     )
     if q:
         needle = f"%{q.lower()}%"
@@ -76,16 +107,20 @@ def list_all_catalog_tables(
 
     tables = query.order_by(CatalogTable.table_name).all()
 
-    # Group by connection
-    from collections import defaultdict
     by_conn: dict = defaultdict(list)
     for t in tables:
         by_conn[t.connection_id].append(_table_response(t))
 
-    # Fetch connection names
-    conn_ids = list(by_conn.keys())
-    conns = db.query(DBConnection).filter(DBConnection.id.in_(conn_ids)).all()
-    conn_map = {c.id: c for c in conns}
+    # Sort: user-specific connections first, shared (null owner) last
+    conn_objs = db.query(DBConnection).filter(DBConnection.id.in_(list(by_conn.keys()))).all()
+    conn_map = {c.id: c for c in conn_objs}
+
+    def sort_key(cid: int) -> tuple:
+        c = conn_map.get(cid)
+        is_user_owned = c.owner_email == caller_email if c else False
+        return (0 if is_user_owned else 1, conn_map[cid].name if cid in conn_map else "")
+
+    sorted_conn_ids = sorted(by_conn.keys(), key=sort_key)
 
     return {
         "total": len(tables),
@@ -94,9 +129,10 @@ def list_all_catalog_tables(
                 "connection_id": cid,
                 "connection_name": conn_map[cid].name if cid in conn_map else f"Connection {cid}",
                 "connection_type": conn_map[cid].type if cid in conn_map else "unknown",
+                "is_personal": conn_map[cid].owner_email == caller_email if cid in conn_map else False,
                 "tables": by_conn[cid],
             }
-            for cid in by_conn
+            for cid in sorted_conn_ids
         ],
     }
 

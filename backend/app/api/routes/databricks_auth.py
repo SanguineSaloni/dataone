@@ -96,6 +96,16 @@ async def databricks_app_login(request: Request, db: Session = Depends(get_db)):
         db.refresh(user)
         logger.info(f"[databricks-app-login] Provisioned new user: {email} role=viewer")
 
+    # Provision per-user Databricks connection + kick off Unity Catalog discovery
+    if access_token:
+        try:
+            from app.services.databricks_autodiscovery import DatabricksAutoDiscoveryService
+            DatabricksAutoDiscoveryService.provision_user_connection(
+                db=db, user_email=email, access_token=access_token
+            )
+        except Exception as _exc:
+            logger.warning(f"[databricks-app-login] per-user provision failed (non-fatal): {_exc}")
+
     # Issue a DataOne JWT
     dataone_token = AuthService.create_access_token(
         data={"sub": user.email, "user_id": user.id, "role": user.role}
@@ -159,6 +169,16 @@ async def databricks_login(
                 db.commit()
                 db.refresh(user)
                 logger.info(f"[databricks-login] Auto-provisioned new user: {email}")
+
+            # Provision per-user Databricks connection + kick off Unity Catalog discovery
+            if access_token:
+                try:
+                    from app.services.databricks_autodiscovery import DatabricksAutoDiscoveryService
+                    DatabricksAutoDiscoveryService.provision_user_connection(
+                        db=db, user_email=email, access_token=access_token
+                    )
+                except Exception as _exc:
+                    logger.warning(f"[databricks-login] per-user provision failed (non-fatal): {_exc}")
 
             dataone_token = AuthService.create_access_token(
                 data={"sub": user.email, "user_id": user.id, "role": user.role}

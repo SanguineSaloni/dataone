@@ -95,7 +95,115 @@ class DatabricksAutoDiscoveryService:
             }
             
         return None
-    
+
+    @staticmethod
+    def provision_user_connection(
+        db: Session,
+        user_email: str,
+        access_token: str,
+    ) -> Optional[DBConnection]:
+        """
+        Create or refresh a per-user Databricks connection at login time.
+
+        Called every time a user successfully authenticates via Databricks SSO.
+        Uses the user's personal X-Forwarded-Access-Token so their Unity Catalog
+        view is scoped to their own permissions.
+
+        Returns the upserted DBConnection, or None on failure.
+        """
+        if not access_token:
+            logger.info(
+                f"[user-provision] {user_email} has no Databricks token — skipping per-user connection"
+            )
+            return None
+
+        # Pull workspace coordinates from environment (same as the shared connection).
+        host = (
+            os.getenv("DATABRICKS_WORKSPACE_HOST")
+            or os.getenv("DATABRICKS_SERVER_HOSTNAME")
+            or os.getenv("DATABRICKS_HOST")
+        )
+        http_path = os.getenv("DATABRICKS_WAREHOUSE_PATH") or os.getenv("DATABRICKS_HTTP_PATH")
+
+        if not host or not http_path:
+            # Try to borrow from the shared auto-connection config if present
+            shared = db.query(DBConnection).filter(
+                DBConnection.name == "Databricks Workspace (Auto)",
+                DBConnection.is_deleted == False,  # noqa: E712
+            ).first()
+            if shared and shared.config:
+                host = host or shared.config.get("server_hostname")
+                http_path = http_path or shared.config.get("http_path")
+
+        if not host or not http_path:
+            logger.warning(
+                f"[user-provision] Cannot provision connection for {user_email}: "
+                "no host/http_path available"
+            )
+            return None
+
+        conn_name = f"Databricks — {user_email}"
+        logger.info(f"[user-provision] Upserting per-user connection: {conn_name}")
+
+        try:
+            # Upsert: find existing user connection or create new one
+            existing = db.query(DBConnection).filter(
+                DBConnection.name == conn_name,
+                DBConnection.is_deleted == False,  # noqa: E712
+            ).first()
+
+            new_config = {
+                "server_hostname": host,
+                "http_path": http_path,
+                "access_token": access_token,
+                "auto_discovered": True,
+                "per_user": True,
+                "host": host,
+                "port": 443,
+                "database": "main",
+                "catalog": "main",
+                "schema": "default",
+            }
+
+            if existing:
+                # Always refresh the token so it stays current
+                existing.config = new_config
+                db.commit()
+                db.refresh(existing)
+                connection = existing
+                logger.info(f"[user-provision] Refreshed token for {conn_name}")
+            else:
+                connection = DBConnection(
+                    name=conn_name,
+                    type="databricks",
+                    config=new_config,
+                    owner_email=user_email,  # per-user — only visible to this user
+                )
+                db.add(connection)
+                db.commit()
+                db.refresh(connection)
+                logger.info(f"[user-provision] Created new connection for {conn_name}")
+
+            # Kick off catalog discovery in a background thread so login is fast
+            import threading
+            def _discover():
+                from app.core.database import SessionLocal
+                bg_db = SessionLocal()
+                try:
+                    DatabricksAutoDiscoveryService.discover_and_cache_schema(bg_db, connection)
+                except Exception as exc:
+                    logger.warning(f"[user-provision] Background catalog discovery failed: {exc}")
+                finally:
+                    bg_db.close()
+
+            threading.Thread(target=_discover, daemon=True).start()
+            return connection
+
+        except Exception as e:
+            logger.error(f"[user-provision] Failed to provision connection for {user_email}: {e}")
+            db.rollback()
+            return None
+
     @staticmethod
     def create_auto_connection(db: Session) -> Optional[DBConnection]:
         """

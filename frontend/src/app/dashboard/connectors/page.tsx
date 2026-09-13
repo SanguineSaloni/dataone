@@ -179,6 +179,7 @@ interface CatalogGroup {
   connection_id: number;
   connection_name: string;
   connection_type: string;
+  is_personal: boolean;
   tables: CatalogTable[];
 }
 
@@ -296,7 +297,13 @@ function CatalogBrowser() {
                     </div>
                     <div>
                       <p className="text-[14px] font-semibold text-white/90">{group.connection_name}</p>
-                      <p className="text-[11px] text-white/40 capitalize">{group.connection_type} · {group.tables.length} tables</p>
+                      <p className="text-[11px] text-white/40 capitalize flex items-center gap-2">
+                        {group.connection_type} · {group.tables.length} tables
+                        {group.is_personal
+                          ? <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 text-[10px] font-semibold">Your workspace</span>
+                          : <span className="px-1.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-white/30 text-[10px] font-semibold">Shared</span>
+                        }
+                      </p>
                     </div>
                   </div>
                   <button
