@@ -171,7 +171,7 @@ export default function LoginPage() {
 
         {/* Brand */}
         <div className="relative z-10">
-          <Link href="/login" className="flex items-center gap-3">
+          <Link href="/signin" className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/25">
               <span className="text-white text-lg font-bold">D</span>
             </div>
