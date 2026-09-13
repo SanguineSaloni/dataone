@@ -136,13 +136,60 @@ def list_all_catalog_tables(
         ],
     }
 
-
 @router.post("/scan/{connection_id}", response_model=ScanResult, status_code=201)
 def scan_connection(
-    connection_id: int, db: Session = Depends(get_db),
-    user: User = Depends(require_role("admin", "analyst")),
+    connection_id: int,
+    db: Session = Depends(get_db),
+    request: Request = None,
 ):
-    result = SchemaCatalogService.scan_connection(db, connection_id, actor=user.email)
+    """Trigger a schema scan for a connection.
+
+    Access rules:
+    - Any authenticated user can scan a connection they own (owner_email = their email)
+    - Admin / analyst can scan any connection
+    """
+    from app.api.deps import get_current_user
+    from app.models.connection import DBConnection
+
+    # Resolve caller from JWT (best-effort)
+    caller_email: Optional[str] = None
+    caller_role: str = "viewer"
+    try:
+        if request is not None:
+            auth_header = request.headers.get("Authorization", "")
+            if auth_header.startswith("Bearer "):
+                token = auth_header[7:]
+                from app.services.auth_service import AuthService
+                payload = AuthService.verify_token(token)
+                if payload:
+                    caller_email = payload.get("sub")
+                    caller_role = payload.get("role", "viewer")
+    except Exception:
+        pass
+
+    if not caller_email:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    # Authorise: admin/analyst may scan anything; viewer only their own connections
+    conn = db.query(DBConnection).filter(
+        DBConnection.id == connection_id,
+        DBConnection.is_deleted == False,  # noqa: E712
+    ).first()
+    if not conn:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Connection not found")
+
+    is_privileged = caller_role in ("admin", "analyst")
+    is_owner = conn.owner_email == caller_email or conn.owner_email is None
+    if not is_privileged and not is_owner:
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=403,
+            detail="You can only scan connections you own. Ask an admin to grant you analyst access.",
+        )
+
+    result = SchemaCatalogService.scan_connection(db, connection_id, actor=caller_email)
     return ScanResult(**result)
 
 

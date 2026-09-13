@@ -297,20 +297,27 @@ class DatabricksAutoDiscoveryService:
             # Discover catalogs
             catalogs = connector.get_catalogs()
             logger.info(f"Discovered {len(catalogs)} catalogs")
-            
+
+            # System schemas to skip — they contain no user tables
+            SKIP_SCHEMAS = {"information_schema", "__databricks_internal", "system"}
+
             schema_service = SchemaCatalogService()
-            
-            for catalog_info in catalogs[:3]:  # Limit to first 3 catalogs to avoid timeout
+
+            for catalog_info in catalogs:  # All catalogs — no limit
                 catalog_name = catalog_info["name"]
                 logger.info(f"Processing catalog: {catalog_name}")
-                
+
                 # Get schemas in this catalog
                 schemas = connector.get_schemas(catalog_name)
-                
-                for schema_info in schemas[:5]:  # Limit schemas per catalog
-                    schema_name = schema_info["name"] 
+
+                for schema_info in schemas:  # All schemas — no limit
+                    schema_name = schema_info["name"]
+                    if schema_name.lower() in SKIP_SCHEMAS:
+                        logger.debug(f"Skipping system schema: {catalog_name}.{schema_name}")
+                        continue
+
                     logger.info(f"Processing schema: {catalog_name}.{schema_name}")
-                    
+
                     # Temporarily switch connector to this catalog/schema
                     schema_connector = DatabricksConnector(
                         server_hostname=config["server_hostname"],
@@ -319,36 +326,37 @@ class DatabricksAutoDiscoveryService:
                         catalog=catalog_name,
                         schema=schema_name
                     )
-                    
-                    # Get tables in this schema
-                    tables = schema_connector.get_tables()
-                    
-                    for table_name in tables[:10]:  # Limit tables per schema
-                        try:
-                            # Get table schema
-                            columns = schema_connector.get_table_schema(table_name)
-                            
-                            # Store in DataOne catalog
-                            full_table_name = f"{catalog_name}.{schema_name}.{table_name}"
-                            schema_service.store_table_metadata(
-                                db=db,
-                                connection_id=connection.id,
-                                table_name=full_table_name,
-                                columns=columns,
-                                source_type="unity_catalog"
-                            )
-                            
-                            logger.debug(f"Cached schema for {full_table_name}")
-                            
-                        except Exception as e:
-                            logger.warning(f"Could not cache schema for {catalog_name}.{schema_name}.{table_name}: {e}")
-                    
-                    schema_connector.close()
-            
+
+                    try:
+                        # Get tables in this schema
+                        tables = schema_connector.get_tables()
+
+                        for table_name in tables:  # All tables — no limit
+                            try:
+                                # Get table schema
+                                columns = schema_connector.get_table_schema(table_name)
+
+                                # Store in DataOne catalog
+                                full_table_name = f"{catalog_name}.{schema_name}.{table_name}"
+                                schema_service.store_table_metadata(
+                                    db=db,
+                                    connection_id=connection.id,
+                                    table_name=full_table_name,
+                                    columns=columns,
+                                    source_type="unity_catalog"
+                                )
+
+                                logger.debug(f"Cached schema for {full_table_name}")
+
+                            except Exception as e:
+                                logger.warning(f"Could not cache schema for {catalog_name}.{schema_name}.{table_name}: {e}")
+                    finally:
+                        schema_connector.close()
+
             connector.close()
             logger.info("✅ Unity Catalog auto-discovery completed successfully")
             return True
-            
+
         except Exception as e:
             logger.error(f"Auto-discovery failed: {e}")
             return False

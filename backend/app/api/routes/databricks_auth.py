@@ -78,15 +78,20 @@ async def databricks_app_login(request: Request, db: Session = Depends(get_db)):
         if access_token:
             user.databricks_access_token = access_token
         user.is_active = True
+        # Upgrade viewer → analyst on re-login (Databricks SSO = trusted identity)
+        if user.role == "viewer":
+            user.role = "analyst"
+            logger.info(f"[databricks-app-login] Upgraded {email} viewer → analyst")
         db.commit()
         logger.info(f"[databricks-app-login] Updated existing user: {email}")
     else:
-        # Auto-provision: new Databricks users get 'viewer' role by default.
-        # An admin can promote them later via the Users admin panel.
+        # Auto-provision Databricks SSO users as 'analyst' — they're authenticated
+        # by Databricks itself (SSO-level trust) so they get sufficient access to
+        # scan their own connections and browse their Unity Catalog.
         user = User(
             email=email,
             full_name=username or email,
-            role="viewer",
+            role="analyst",
             is_active=True,
             hashed_password=None,  # OAuth user — no password
             databricks_access_token=access_token,
@@ -94,7 +99,7 @@ async def databricks_app_login(request: Request, db: Session = Depends(get_db)):
         db.add(user)
         db.commit()
         db.refresh(user)
-        logger.info(f"[databricks-app-login] Provisioned new user: {email} role=viewer")
+        logger.info(f"[databricks-app-login] Provisioned new user: {email} role=analyst")
 
     # Provision per-user Databricks connection + kick off Unity Catalog discovery
     if access_token:
@@ -155,12 +160,16 @@ async def databricks_login(
                 if access_token:
                     user.databricks_access_token = access_token
                 user.is_active = True
+                # Upgrade viewer → analyst on re-login (Databricks SSO = trusted identity)
+                if user.role == "viewer":
+                    user.role = "analyst"
+                    logger.info(f"[databricks-login] Upgraded {email} viewer → analyst")
                 db.commit()
             else:
                 user = User(
                     email=email,
                     full_name=username or email,
-                    role="viewer",
+                    role="analyst",
                     is_active=True,
                     hashed_password=None,
                     databricks_access_token=access_token,
@@ -168,7 +177,7 @@ async def databricks_login(
                 db.add(user)
                 db.commit()
                 db.refresh(user)
-                logger.info(f"[databricks-login] Auto-provisioned new user: {email}")
+                logger.info(f"[databricks-login] Auto-provisioned new user: {email} role=analyst")
 
             # Provision per-user Databricks connection + kick off Unity Catalog discovery
             if access_token:
