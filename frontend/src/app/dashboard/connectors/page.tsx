@@ -471,28 +471,38 @@ export default function ConnectorsPage() {
         name: cleanName(`${source.dbType}_${source.host || source.database || "source"}`),
         type: source.dbType,
         environment: "prod",
-        config: { host: source.host, port: source.port, database: source.database, username: source.username, password: source.password, ssl: source.ssl },
+        config: { host: source.host, port: source.port, dbname: source.database, user: source.username, password: source.password, ssl_mode: source.ssl },
       };
       const srcConn = await api.post<{ id: number }>("/api/v1/connectors/", srcPayload);
 
-      const tgtPayload = {
-        name: cleanName(`databricks_target_${target.catalog || "main"}_${target.schema || "default"}`),
-        type: target.dbType,
-        environment: "prod",
-        config: {
-          host: target.host, port: target.port,
-          catalog: target.catalog || "main",
-          schema: target.schema || "dataone_ingested",
-          username: target.username, password: target.password, ssl: target.ssl,
-        },
-      };
-      const tgtConn = await api.post<{ id: number }>("/api/v1/connectors/", tgtPayload);
+      let tgtConnId: number | null = null;
+      if (target.dbType !== "databricks") {
+        const tgtPayload = {
+          name: cleanName(`${target.dbType}_target_${target.database || "db"}`),
+          type: target.dbType,
+          environment: "prod",
+          config: {
+            host: target.host, port: target.port,
+            dbname: target.database,
+            user: target.username, password: target.password, ssl_mode: target.ssl,
+          },
+        };
+        const tgtConn = await api.post<{ id: number }>("/api/v1/connectors/", tgtPayload);
+        tgtConnId = tgtConn.id;
+      }
+
       setRunStatus("triggering");
 
-      const ingestionRun = await api.post<IngestionRun>("/api/v1/databricks/ingest/trigger", {
+      const triggerPayload: any = {
         source_connection_id: srcConn.id,
-        target_connection_id: tgtConn.id,
-      });
+        target_connection_id: tgtConnId,
+      };
+      if (target.dbType === "databricks") {
+        triggerPayload.target_catalog = target.catalog || "main";
+        triggerPayload.target_schema = target.schema || "dataone_ingested";
+      }
+
+      const ingestionRun = await api.post<IngestionRun>("/api/v1/databricks/ingest/trigger", triggerPayload);
 
       setCurrentRun(ingestionRun);
       setRuns(prev => [ingestionRun, ...prev]);

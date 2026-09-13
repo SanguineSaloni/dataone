@@ -406,6 +406,8 @@ class DatabricksIngestionService:
     def trigger_ingestion(
         source_connection_id: int,
         target_connection_id: Optional[int],
+        target_catalog: str,
+        target_schema: str,
         db: Session,
         actor: str,
         user_token: Optional[str] = None,
@@ -443,6 +445,10 @@ class DatabricksIngestionService:
 
         # Build params
         params = _build_job_params(source_conn, target_conn)
+        
+        # Override target catalog/schema if explicitly provided (even if target_conn is None)
+        params["dataone.target.catalog"] = target_catalog or "main"
+        params["dataone.target.schema"] = target_schema or "dataone_ingested"
 
         # Create IngestionRun record
         run_record = IngestionRun(

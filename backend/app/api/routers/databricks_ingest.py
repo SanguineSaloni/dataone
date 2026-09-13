@@ -27,6 +27,8 @@ router = APIRouter()
 class TriggerIngestionRequest(BaseModel):
     source_connection_id: int
     target_connection_id: Optional[int] = None
+    target_catalog: Optional[str] = None
+    target_schema: Optional[str] = None
 
 
 class GenieRequest(BaseModel):
@@ -58,6 +60,8 @@ def trigger_ingestion(
         result = DatabricksIngestionService.trigger_ingestion(
             source_connection_id=req.source_connection_id,
             target_connection_id=req.target_connection_id,
+            target_catalog=req.target_catalog or "main",
+            target_schema=req.target_schema or "dataone_ingested",
             db=db,
             actor=user.email,
             user_token=_get_user_token(request),
