@@ -438,6 +438,14 @@ def health_check():
 # Next.js export at every non-API path. This makes frontend + backend run as
 # a single Databricks App at the same origin, eliminating cross-origin issues.
 _frontend_out = os.environ.get("FRONTEND_OUT_DIR", "")
+if not _frontend_out:
+    # Fallback to computing the path relative to main.py
+    # __file__ = backend/app/main.py
+    _repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    _fallback_out = os.path.join(_repo_root, "frontend", "out")
+    if os.path.isdir(_fallback_out):
+        _frontend_out = _fallback_out
+
 if _frontend_out and os.path.isdir(_frontend_out):
     logger.info("[startup] Unified mode: serving frontend from %s", _frontend_out)
 
