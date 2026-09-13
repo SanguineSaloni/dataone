@@ -22,12 +22,14 @@ databricks_port = int(
 is_databricks = bool(os.getenv("DATABRICKS_APP_PORT"))
 
 # Single app URL — frontend and backend are served from the same Databricks App
-BACKEND_APP_URL = "https://dataonetest-7474652115156015.aws.databricksapps.com"
+BACKEND_APP_URL = os.getenv("DATABRICKS_APP_URL") or "https://dataonetest-7474652115156015.aws.databricksapps.com"
 
 if is_databricks:
-    backend_url   = BACKEND_APP_URL
-    frontend_url  = BACKEND_APP_URL       # same app serves the frontend
-    frontend_login_url = BACKEND_APP_URL + "/signin"
+    # Ensure it doesn't end with a slash
+    base_url = BACKEND_APP_URL.rstrip("/")
+    backend_url   = base_url
+    frontend_url  = base_url       # same app serves the frontend
+    frontend_login_url = base_url + "/signin"
 else:
     backend_url        = f"http://localhost:{databricks_port}"
     frontend_url       = f"http://localhost:{databricks_port}"
