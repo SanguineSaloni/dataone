@@ -138,16 +138,16 @@ class DatabricksAutoDiscoveryService:
             connection = DBConnection(
                 name="Databricks Workspace (Auto)",
                 type="databricks",
-                host=details["server_hostname"],
-                port=443,  # HTTPS
-                database="main",  # Default catalog
-                username="auto-discovered",
                 # Store connection details in config JSON
                 config={
                     "server_hostname": details["server_hostname"],
                     "http_path": details["http_path"],
                     "access_token": details["access_token"],
                     "auto_discovered": True,
+                    "host": details["server_hostname"],
+                    "port": 443,
+                    "database": "main",
+                    "username": "auto-discovered",
                     "catalog": "main",
                     "schema": "default"
                 },
