@@ -76,16 +76,9 @@ class SchemaCatalogService:
                     table_id=table.id,
                     column_name=col_info["name"],
                     data_type=col_info["type"],
-                    is_nullable=col_info.get("nullable", True),
+                    nullable=col_info.get("nullable", True),
+                    is_primary_key=col_info.get("is_primary_key", False),
                     ordinal_position=col_info.get("ordinal_position", 0),
-                    default_value=col_info.get("default"),
-                    comment=col_info.get("comment"),
-                    # Store additional metadata in extras
-                    extras={
-                        "source_type": source_type,
-                        "databricks": col_info.get("databricks", {}),
-                        "auto_discovered": True
-                    }
                 )
                 db.add(column)
             
