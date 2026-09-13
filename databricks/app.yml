@@ -245,7 +245,7 @@ services:
     
     health_check:
       type: http
-      path: /
+      path: /health
       port: 3000
       interval_seconds: 15
       timeout_seconds: 10

@@ -151,7 +151,6 @@ class DatabricksAutoDiscoveryService:
                     "catalog": "main",
                     "schema": "default"
                 },
-                is_active=True,
                 owner_email="admin@dataplane.ai"  # Default admin
             )
             
