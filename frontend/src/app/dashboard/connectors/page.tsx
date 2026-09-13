@@ -465,8 +465,10 @@ export default function ConnectorsPage() {
     setError("");
     setRunStatus("connecting");
     try {
+      const cleanName = (str: string) => str.replace(/[^A-Za-z0-9_\-]/g, "_").replace(/_+/g, "_").substring(0, 100).replace(/_$/, "");
+      
       const srcPayload = {
-        name: `${source.dbType.toUpperCase()} — ${source.host || "source"}`,
+        name: cleanName(`${source.dbType}_${source.host || source.database || "source"}`),
         type: source.dbType,
         environment: "prod",
         config: { host: source.host, port: source.port, database: source.database, username: source.username, password: source.password, ssl: source.ssl },
@@ -474,13 +476,13 @@ export default function ConnectorsPage() {
       const srcConn = await api.post<{ id: number }>("/api/v1/connectors/", srcPayload);
 
       const tgtPayload = {
-        name: `Databricks Target — ${target.database}`,
+        name: cleanName(`databricks_target_${target.catalog || "main"}_${target.schema || "default"}`),
         type: target.dbType,
         environment: "prod",
         config: {
           host: target.host, port: target.port,
-          catalog: target.database.split(".")[0] || "main",
-          schema: target.database.split(".")[1] || "dataone_ingested",
+          catalog: target.catalog || "main",
+          schema: target.schema || "dataone_ingested",
           username: target.username, password: target.password, ssl: target.ssl,
         },
       };
