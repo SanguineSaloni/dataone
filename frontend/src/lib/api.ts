@@ -204,6 +204,38 @@ export const api = {
     if (!res.ok) await throwApiError(res);
     return res.json() as Promise<T>;
   },
+
+  // ── Databricks Ingestion typed helpers ──
+  async triggerIngestion(sourceConnectionId: number, targetConnectionId?: number) {
+    return this.post<{
+      id: number; databricks_run_id: number | null; databricks_job_id: number;
+      source_type: string; status: string; databricks_run_url: string | null;
+    }>("/api/v1/databricks/ingest/trigger", {
+      source_connection_id: sourceConnectionId,
+      target_connection_id: targetConnectionId,
+    });
+  },
+
+  async getIngestionRunStatus(ingestionRunId: number) {
+    return this.get<{
+      id: number; databricks_run_id: number | null; status: string;
+      rows_ingested: number | null; error_message: string | null;
+      completed_at: string | null; databricks_run_url: string | null;
+    }>(`/api/v1/databricks/ingest/runs/${ingestionRunId}`);
+  },
+
+  async listIngestionPipelines() {
+    return this.get<{ pipelines: Array<{ id: number; source_type: string; job_id: number; job_name: string }> }>(
+      "/api/v1/databricks/ingest/pipelines"
+    );
+  },
+
+  async triggerGenieAI(question: string, spaceId?: string) {
+    return this.post<{ answer: string | null; conversation_id?: string; error?: string }>(
+      "/api/v1/databricks/ingest/genie",
+      { question, space_id: spaceId }
+    );
+  },
 };
 
 export class ApiError extends Error {

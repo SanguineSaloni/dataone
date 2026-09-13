@@ -50,6 +50,18 @@ x-backend-env: &backend-env
   FRONTEND_LOGIN_URL: ${FRONTEND_LOGIN_URL:-http://localhost:3011/login}
   # TEMPORARY stopgap — see .env.example. Leave unset in normal operation.
   ENTRA_AUTO_PROVISION_DOMAIN: ${ENTRA_AUTO_PROVISION_DOMAIN:-}
+  # ── Databricks Integration ──────────────────────────────────
+  DATABRICKS_WORKSPACE_URL: ${DATABRICKS_WORKSPACE_URL:-}
+  DATABRICKS_ACCESS_TOKEN: ${DATABRICKS_ACCESS_TOKEN:-}
+  DATABRICKS_USE_LLM: ${DATABRICKS_USE_LLM:-false}
+  DATABRICKS_LLM_ENDPOINT: ${DATABRICKS_LLM_ENDPOINT:-}
+  DATABRICKS_GENIE_SPACE_ID: ${DATABRICKS_GENIE_SPACE_ID:-}
+  DATABRICKS_NATIVE_MODE: ${DATABRICKS_NATIVE_MODE:-false}
+  DATABRICKS_HOST: ${DATABRICKS_HOST:-}
+  DATABRICKS_OAUTH_CLIENT_ID: ${DATABRICKS_OAUTH_CLIENT_ID:-}
+  DATABRICKS_OAUTH_CLIENT_SECRET: ${DATABRICKS_OAUTH_CLIENT_SECRET:-}
+  ENABLE_UNITY_CATALOG: ${ENABLE_UNITY_CATALOG:-true}
+  ENABLE_EXTERNAL_CONNECTORS: ${ENABLE_EXTERNAL_CONNECTORS:-true}
 
 services:
   # ── PostgreSQL ─────────────────────────────────────────────
@@ -97,7 +109,7 @@ services:
 
   # ── FastAPI Backend ────────────────────────────────────────
   api:
-    image: dataone-backend:latest
+    image: salonisidheshwar/dataone-backend:v1.0.0
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -129,7 +141,7 @@ services:
 
   # ── Celery Worker ──────────────────────────────────────────
   worker:
-    image: dataone-backend:latest
+    image: salonisidheshwar/dataone-backend:v1.0.0
     container_name: dataone-worker
     restart: unless-stopped
     command: celery -A app.core.celery_app worker --loglevel=info --concurrency=2
@@ -157,7 +169,7 @@ services:
 
   # ── Celery Beat Scheduler ─────────────────────────────────
   beat:
-    image: dataone-backend:latest
+    image: salonisidheshwar/dataone-backend:v1.0.0
     container_name: dataone-beat
     restart: unless-stopped
     command: celery -A app.core.celery_app beat --loglevel=info
@@ -185,14 +197,14 @@ services:
 
   # ── Frontend (nginx) ───────────────────────────────────────
   frontend:
-    image: dataone-frontend:latest
+    image: salonisidheshwar/dataone-frontend:v1.0.0
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8011}
         NEXT_PUBLIC_ENTRA_ENABLED: ${NEXT_PUBLIC_ENTRA_ENABLED:-false}
-        NEXT_PUBLIC_DATABRICKS_MODE: ${NEXT_PUBLIC_DATABRICKS_MODE:-false}
+        NEXT_PUBLIC_DATABRICKS_MODE: ${NEXT_PUBLIC_DATABRICKS_MODE:-true}
     container_name: dataone-frontend
     restart: unless-stopped
     ports:

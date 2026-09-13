@@ -1,23 +1,11 @@
 "use client";
 
-/**
- * Login page — theme_redesign_tasks #3
- * --------------------------------------------------------------
- * Two-column layout at md+ (left: copy + Unsplash illustration;
- * right: form card). Single column on mobile. All zinc-* classes
- * swapped for semantic tokens defined in app/globals.css
- * (#theme_foundation). The mapper_tasks #5 flag-bearer comment
- * below MUST stay intact — it explains how the session-expired
- * banner is hydrated across a redirect.
- */
-
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Brand } from "@/components/Brand";
 import { api, ApiError } from "@/lib/api";
 import { auth } from "@/lib/auth";
-import { ThemeToggle } from "@/lib/theme";
 
 const ENTRA_ENABLED = process.env.NEXT_PUBLIC_ENTRA_ENABLED === "true";
 const DATABRICKS_MODE = process.env.NEXT_PUBLIC_DATABRICKS_MODE === "true";
@@ -25,52 +13,96 @@ const DATABRICKS_MODE = process.env.NEXT_PUBLIC_DATABRICKS_MODE === "true";
 const ENTRA_ERROR_MESSAGES: Record<string, string> = {
   no_account: "No DataOne account exists for that Microsoft identity. Contact your administrator.",
 };
-const ENTRA_ERROR_FALLBACK = "Unable to sign in with Microsoft. Please try again.";
 
 const DATABRICKS_ERROR_MESSAGES: Record<string, string> = {
   no_account: "No DataOne account exists for your Databricks user. Contact your administrator.",
   no_permissions: "You don't have the required Unity Catalog permissions.",
-  oauth_not_configured: "Databricks OAuth is not configured on this server. Please sign in with your email and password below.",
-  oauth_failed: "Databricks sign-in failed. Please try again or use your email and password below.",
+  oauth_not_configured: "Databricks OAuth is not configured. Please sign in with email and password below.",
+  oauth_failed: "Databricks sign-in failed. Please try again or use email and password below.",
 };
-const DATABRICKS_ERROR_FALLBACK = "Unable to sign in with Databricks. Please try again.";
 
-// Isolated so only this invisible leaf (not the whole statically-exported
-// form) depends on useSearchParams — keeping it out of the page body avoids
-// forcing the entire login page behind a client-only Suspense boundary.
-function EntraRedirectListener({
+function RedirectListener({
   onError,
   onShowEmailForm,
 }: {
-  onError: (message: string) => void;
+  onError: (msg: string) => void;
   onShowEmailForm: () => void;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-
-  // Completes the Microsoft Entra redirect round trip: the backend appends
-  // ?entra_token=... on success or ?entra_error=... on rejection (e.g. no
-  // matching DataOne account — Entra login never auto-creates one).
-  // Also handles Databricks OAuth: ?token=... on success or ?error=... on failure
   useEffect(() => {
     const token = searchParams.get("entra_token") || searchParams.get("token");
     const entraError = searchParams.get("entra_error");
     const databricksError = searchParams.get("error");
-    
     if (token) {
       auth.setToken(token);
-      router.replace("/dashboard");
+      router.replace("/dashboard/connectors");
     } else if (entraError) {
-      onError(ENTRA_ERROR_MESSAGES[entraError] ?? ENTRA_ERROR_FALLBACK);
+      onError(ENTRA_ERROR_MESSAGES[entraError] ?? "Unable to sign in with Microsoft.");
     } else if (databricksError) {
-      onError(DATABRICKS_ERROR_MESSAGES[databricksError] ?? DATABRICKS_ERROR_FALLBACK);
-      // Auto-show the email form so the user can log in with password right away
+      onError(DATABRICKS_ERROR_MESSAGES[databricksError] ?? "Unable to sign in with Databricks.");
       onShowEmailForm();
     }
   }, [searchParams, router, onError, onShowEmailForm]);
-
-
   return null;
+}
+
+// Floating node animation component
+function FloatingNodes() {
+  const nodes = [
+    { x: 15, y: 20, size: 6, delay: 0, duration: 8 },
+    { x: 75, y: 15, size: 4, delay: 1.5, duration: 10 },
+    { x: 35, y: 65, size: 8, delay: 0.8, duration: 7 },
+    { x: 80, y: 55, size: 5, delay: 2.2, duration: 9 },
+    { x: 55, y: 80, size: 6, delay: 1, duration: 11 },
+    { x: 20, y: 45, size: 4, delay: 3, duration: 8 },
+    { x: 90, y: 30, size: 7, delay: 0.5, duration: 12 },
+    { x: 45, y: 35, size: 5, delay: 2, duration: 9 },
+    { x: 65, y: 70, size: 4, delay: 1.8, duration: 10 },
+    { x: 10, y: 75, size: 6, delay: 2.5, duration: 8 },
+  ];
+  // Connection lines between some nodes
+  const lines = [
+    { x1: 15, y1: 20, x2: 35, y2: 65 },
+    { x1: 35, y1: 65, x2: 55, y2: 80 },
+    { x1: 75, y1: 15, x2: 80, y2: 55 },
+    { x1: 45, y1: 35, x2: 65, y2: 70 },
+    { x1: 20, y1: 45, x2: 45, y2: 35 },
+    { x1: 80, y1: 55, x2: 65, y2: 70 },
+  ];
+  return (
+    <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <defs>
+        <style>{`
+          @keyframes float-node { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3%); } }
+          @keyframes pulse-opacity { 0%,100% { opacity: 0.3; } 50% { opacity: 0.7; } }
+          @keyframes dash-flow { to { stroke-dashoffset: -20; } }
+        `}</style>
+      </defs>
+      {lines.map((l, i) => (
+        <line
+          key={i}
+          x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
+          stroke="rgba(129,140,248,0.2)"
+          strokeWidth="0.3"
+          strokeDasharray="2 2"
+          style={{ animation: `dash-flow ${4 + i * 0.5}s linear infinite` }}
+        />
+      ))}
+      {nodes.map((n, i) => (
+        <circle
+          key={i}
+          cx={n.x} cy={n.y} r={n.size / 10}
+          fill="rgba(129,140,248,0.15)"
+          stroke="rgba(129,140,248,0.4)"
+          strokeWidth="0.2"
+          style={{
+            animation: `pulse-opacity ${n.duration}s ${n.delay}s ease-in-out infinite, float-node ${n.duration}s ${n.delay}s ease-in-out infinite`,
+          }}
+        />
+      ))}
+    </svg>
+  );
 }
 
 export default function LoginPage() {
@@ -82,12 +114,6 @@ export default function LoginPage() {
   const [showEmailForm, setShowEmailForm] = useState(!DATABRICKS_MODE && !ENTRA_ENABLED);
   const router = useRouter();
 
-  // mapper_tasks #5 completeness fix: this flag is set by useMapping's 401
-  // handler when the session expired with unsaved edits queued. The toast
-  // shown at that moment can be lost if the page unloads before it paints;
-  // this banner is the durable signal that survives the redirect. Read
-  // once on mount and clear immediately so it doesn't reappear on a later
-  // visit to /login.
   useEffect(() => {
     try {
       const raw = localStorage.getItem("dp_session_expired_with_pending");
@@ -96,9 +122,7 @@ export default function LoginPage() {
         if (Number.isFinite(count) && count > 0) setSessionExpiredPending(count);
         localStorage.removeItem("dp_session_expired_with_pending");
       }
-    } catch {
-      // localStorage may be unavailable (private mode etc.) — no banner.
-    }
+    } catch { /* localStorage unavailable */ }
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -107,12 +131,10 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await auth.login(email, password);
-      router.replace("/dashboard");
+      router.replace("/dashboard/connectors");
     } catch (err) {
       setError(
-        err instanceof ApiError
-          ? err.message
-          : "Unable to connect to the authentication service.",
+        err instanceof ApiError ? err.message : "Unable to connect to the authentication service.",
       );
     } finally {
       setLoading(false);
@@ -120,199 +142,215 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-background font-sans text-fg">
+    <div className="flex min-h-screen bg-[#09090b] font-sans text-white overflow-hidden">
       <Suspense fallback={null}>
-        <EntraRedirectListener onError={setError} onShowEmailForm={() => setShowEmailForm(true)} />
+        <RedirectListener onError={setError} onShowEmailForm={() => setShowEmailForm(true)} />
       </Suspense>
 
-      {/* ─────────────────────────── Left column (md+) ─────────────────────────── */}
-      <aside className="hidden md:flex md:w-1/2 relative overflow-hidden flex-col justify-between p-10 bg-gradient-to-br from-blue-600 via-indigo-700 to-violet-800 text-white">
-        <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-violet-400/20 rounded-full blur-3xl pointer-events-none" />
+      {/* ── Left hero panel ── */}
+      <div className="hidden lg:flex lg:w-[55%] relative flex-col justify-between p-10 overflow-hidden">
+        {/* Gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0f0f1a] via-[#0d0d1f] to-[#09090b]" />
+        <div className="absolute inset-0 bg-gradient-to-tr from-indigo-900/20 via-transparent to-violet-900/10" />
+        {/* Ambient glow orbs */}
+        <div className="absolute top-1/4 left-1/3 w-96 h-96 bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-violet-600/10 rounded-full blur-[100px] pointer-events-none" />
+        {/* Animated data nodes */}
+        <div className="absolute inset-0 overflow-hidden">
+          <FloatingNodes />
+        </div>
 
-        <div className="relative">
-          <Link href="/" aria-label="DataOne home">
-            <Brand inverse />
+        {/* Grid pattern overlay */}
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: `linear-gradient(rgba(255,255,255,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.8) 1px, transparent 1px)`,
+            backgroundSize: "40px 40px",
+          }}
+        />
+
+        {/* Brand */}
+        <div className="relative z-10">
+          <Link href="/login" className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/25">
+              <span className="text-white text-lg font-bold">D</span>
+            </div>
+            <div>
+              <span className="text-xs text-white/50 tracking-widest uppercase font-medium">Veltris</span>
+              <div className="text-white font-bold text-lg leading-none">DataOne</div>
+            </div>
           </Link>
         </div>
 
-        <div className="relative flex flex-col gap-6 max-w-md">
-          <h2 className="text-3xl font-bold leading-tight">
-            Intelligent data engineering, on autopilot.
-          </h2>
-          <p className="text-blue-100 leading-relaxed">
-            Sign in to manage connectors, design visual pipelines, and let AI
-            propose SQL transformations — all while PII stays inside your perimeter.
+        {/* Hero copy */}
+        <div className="relative z-10 flex flex-col gap-6 max-w-xl">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold w-fit">
+            <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse" />
+            Powered by Databricks
+          </div>
+          <h1 className="text-4xl xl:text-5xl font-bold leading-tight text-white">
+            Intelligent Data
+            <span className="block bg-gradient-to-r from-indigo-400 via-violet-400 to-purple-400 bg-clip-text text-transparent">
+              Orchestration
+            </span>
+          </h1>
+          <p className="text-white/60 leading-relaxed text-lg">
+            Connect your sources, map schemas with AI precision, and trigger
+            Databricks ingestion pipelines — all from one unified platform.
           </p>
 
-          <div className="relative mt-2">
-            <img
-              src="https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=1000&q=70"
-              alt=""
-              loading="lazy"
-              className="rounded-2xl border border-white/20 shadow-2xl w-full h-auto"
-            />
-          </div>
-
-          <div className="flex items-center gap-4 text-xs text-blue-100 mt-2">
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" /> SOC 2 ready
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" /> Private inference
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" /> Audit trail
-            </span>
-          </div>
-        </div>
-
-        <p className="relative text-xs text-blue-200/70">
-          © 2026 DataOne. All rights reserved.
-        </p>
-      </aside>
-
-      {/* ─────────────────────────── Right column (form) ─────────────────────────── */}
-      <main className="flex-1 flex flex-col">
-        {/* Top bar with back link + theme toggle */}
-        <div className="flex items-center justify-between p-6">
-          <Link
-            href="/"
-            className="text-xs text-fg-muted hover:text-fg transition-colors flex items-center gap-1"
-          >
-            ← Back to home
-          </Link>
-          <ThemeToggle />
-        </div>
-
-        <div className="flex-1 flex items-center justify-center px-6 pb-12 relative">
-          {/* Soft background glow */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-accent-soft rounded-full blur-3xl -z-10 pointer-events-none" />
-
-          <div className="w-full max-w-sm flex flex-col items-stretch">
-            {/* Mobile-only brand mark */}
-            <div className="md:hidden text-center mb-6">
-              <Link href="/" className="inline-flex" aria-label="DataOne home">
-                <Brand />
-              </Link>
-            </div>
-
-            <div className="flex flex-col gap-1.5 mb-6">
-              <h1 className="text-2xl font-bold text-fg">Welcome back</h1>
-              <p className="text-sm text-fg-muted">
-                Enter your credentials to continue.
-              </p>
-            </div>
-
-            {sessionExpiredPending !== null && (
-              <div className="w-full p-3 mb-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-xs flex items-start gap-2">
-                <span className="text-base leading-none">⚠️</span>
-                <span>
-                  Your session expired with {sessionExpiredPending} unsaved change
-                  {sessionExpiredPending === 1 ? "" : "s"}. Log back in and re-apply it.
-                </span>
-              </div>
-            )}
-
-            {error && (
-              <div className="w-full p-3 mb-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-700 dark:text-red-400 text-xs flex items-start gap-2">
-                <span className="text-base leading-none">⚠️</span>
-                <span>{error}</span>
-              </div>
-            )}
-
-            {DATABRICKS_MODE && (
-              /*
-               * IMPORTANT: This must be a full browser navigation (<a href>), NOT
-               * a fetch(). The Databricks Apps proxy injects X-Forwarded-Email only
-               * on direct browser navigations to the backend URL (session cookies are
-               * sent). A cross-origin fetch() is blocked by the proxy with 401.
-               *
-               * Flow:
-               *   browser → GET backend/api/v1/auth/databricks/login
-               *   Databricks proxy injects X-Forwarded-Email → backend reads it
-               *   backend issues JWT → 302 redirect to frontend/login?token=<jwt>
-               *   EntraRedirectListener reads ?token → stores it → /dashboard
-               */
-              <a
-                href={`${api.base}/api/v1/auth/databricks/login`}
-                className="w-full py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-orange-500 rounded-xl hover:opacity-90 transition-all shadow-md flex items-center justify-center gap-2"
+          {/* Feature pills */}
+          <div className="flex flex-wrap gap-3 mt-2">
+            {[
+              { icon: "⚡", label: "One-click Databricks trigger" },
+              { icon: "🧠", label: "AI schema mapping" },
+              { icon: "🛡", label: "Built-in data quality" },
+              { icon: "📊", label: "Live pipeline tracking" },
+            ].map((f) => (
+              <div
+                key={f.label}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/70 text-sm"
               >
-                🧱 Sign in with Databricks
-              </a>
-            )}
+                <span>{f.icon}</span>
+                <span>{f.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-white/10">
+            {[
+              { value: "99.9%", label: "Uptime SLA" },
+              { value: "10+", label: "Source connectors" },
+              { value: "<1s", label: "Pipeline trigger" },
+            ].map((s) => (
+              <div key={s.label}>
+                <div className="text-2xl font-bold text-white">{s.value}</div>
+                <div className="text-xs text-white/50 mt-0.5">{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <p className="relative z-10 text-xs text-white/30">© 2026 Veltris / DataOne. All rights reserved.</p>
+      </div>
+
+      {/* ── Right sign-in panel ── */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 relative">
+        {/* Subtle glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-600/5 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="w-full max-w-sm flex flex-col gap-6 relative z-10">
+          {/* Mobile brand */}
+          <div className="lg:hidden flex items-center gap-3 mb-2">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
+              <span className="text-white font-bold">D</span>
+            </div>
+            <div>
+              <div className="text-[10px] text-white/50 tracking-widest uppercase">Veltris</div>
+              <div className="text-white font-bold">DataOne</div>
+            </div>
+          </div>
+
+          {/* Heading */}
+          <div>
+            <h2 className="text-2xl font-bold text-white">Welcome back</h2>
+            <p className="text-sm text-white/50 mt-1">Sign in to your DataOne workspace</p>
+          </div>
+
+          {/* Session expired banner */}
+          {sessionExpiredPending !== null && (
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs flex items-start gap-2">
+              <span className="text-base">⚠️</span>
+              <span>Your session expired with {sessionExpiredPending} unsaved change{sessionExpiredPending === 1 ? "" : "s"}. Log back in and re-apply.</span>
+            </div>
+          )}
+
+          {/* Error banner */}
+          {error && (
+            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-start gap-2">
+              <span className="text-base">⚠️</span>
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Databricks sign-in (primary) */}
+          <div className="flex flex-col gap-3">
+            <a
+              id="databricks-signin-btn"
+              href={`${api.base}/api/v1/auth/databricks/login`}
+              className="w-full py-3.5 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-orange-500 rounded-xl hover:opacity-90 active:scale-[0.98] transition-all shadow-lg shadow-red-900/30 flex items-center justify-center gap-3"
+            >
+              <span className="text-lg">🧱</span>
+              Sign in with Databricks
+            </a>
 
             {ENTRA_ENABLED && (
               <a
                 href={`${api.base}/api/v1/auth/entra/login`}
-                className="w-full py-2.5 text-sm font-semibold text-accent-fg bg-accent rounded-xl hover:opacity-90 transition-all shadow-md flex items-center justify-center gap-2"
+                className="w-full py-3 text-sm font-semibold text-white/90 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all flex items-center justify-center gap-2"
               >
-                Sign in with Microsoft
+                <span>🪟</span> Sign in with Microsoft
               </a>
             )}
-
-            {(DATABRICKS_MODE || ENTRA_ENABLED) && !showEmailForm && (
-              <button
-                type="button"
-                onClick={() => setShowEmailForm(true)}
-                className="mt-4 text-xs text-fg-muted hover:text-fg text-center underline underline-offset-2 transition-colors"
-              >
-                Sign in with a different email
-              </button>
-            )}
-
-            {showEmailForm && (
-              <>
-                {(DATABRICKS_MODE || ENTRA_ENABLED) && (
-                  <div className="flex items-center gap-3 my-4 text-xs text-fg-subtle">
-                    <span className="flex-1 h-px bg-border" />
-                    or
-                    <span className="flex-1 h-px bg-border" />
-                  </div>
-                )}
-
-                <form onSubmit={handleLogin} className="w-full flex flex-col gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-medium text-fg-muted">Email Address</label>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="name@company.com"
-                      className="px-4 py-2.5 rounded-xl bg-surface-elevated border border-border text-sm focus:outline-none focus:border-accent transition-colors text-fg placeholder:text-fg-subtle"
-                      required
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-medium text-fg-muted">Password</label>
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="px-4 py-2.5 rounded-xl bg-surface-elevated border border-border text-sm focus:outline-none focus:border-accent transition-colors text-fg placeholder:text-fg-subtle"
-                      required
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full mt-2 py-2.5 text-sm font-semibold text-accent-fg bg-accent rounded-xl hover:opacity-90 transition-all shadow-md flex items-center justify-center disabled:opacity-60"
-                  >
-                    {loading ? "Signing in…" : "Sign In"}
-                  </button>
-                </form>
-              </>
-            )}
-
-            <p className="mt-6 text-xs text-fg-muted text-center">
-              Access is managed by your DataOne administrator.
-            </p>
           </div>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3">
+            <span className="flex-1 h-px bg-white/10" />
+            <button
+              type="button"
+              onClick={() => setShowEmailForm((v) => !v)}
+              className="text-xs text-white/40 hover:text-white/60 transition-colors flex items-center gap-1"
+            >
+              {showEmailForm ? "hide" : "continue with email"}
+            </button>
+            <span className="flex-1 h-px bg-white/10" />
+          </div>
+
+          {/* Email form */}
+          {showEmailForm && (
+            <form onSubmit={handleLogin} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-white/50">Email Address</label>
+                <input
+                  id="email-input"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@company.com"
+                  required
+                  className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-indigo-500/60 transition-colors"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-white/50">Password</label>
+                <input
+                  id="password-input"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-indigo-500/60 transition-colors"
+                />
+              </div>
+              <button
+                id="email-signin-btn"
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 rounded-xl transition-all shadow-md shadow-indigo-900/40"
+              >
+                {loading ? "Signing in…" : "Sign In"}
+              </button>
+            </form>
+          )}
+
+          <p className="text-xs text-white/30 text-center">
+            Access is managed by your DataOne administrator.
+          </p>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

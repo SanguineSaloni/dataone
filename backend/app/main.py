@@ -76,6 +76,8 @@ from app.models.schema_design_plan import SchemaDesignPlan  # noqa: F401
 from app.models.notification_setting import NotificationSetting  # noqa: F401
 from app.models.in_app_notification import InAppNotification, InAppNotificationRead  # noqa: F401
 from app.models.connection_secret import ConnectionSecret  # noqa: F401
+from app.models.ingestion_run import IngestionRun, IngestionPipelineCatalog  # noqa: F401
+from app.api.routers import databricks_ingest as databricks_ingest_router
 
 # ── Structured logging setup ──────────────────────────────────────────────────
 logging.config.dictConfig({
@@ -380,6 +382,7 @@ app.include_router(governance_router.router, prefix="/api/v1/governance", tags=[
 app.include_router(schema_comparison_router.router, prefix="/api/v1/schema-comparison", tags=["Schema Comparison"])
 app.include_router(workspace_layout_router.router, prefix="/api/v1/workspace-layout", tags=["Dockable Workspace Shell"])
 app.include_router(demo_data_router.router, prefix="/api/v1/demo-data", tags=["Demo Data"])
+app.include_router(databricks_ingest_router.router, prefix="/api/v1/databricks/ingest", tags=["Databricks Ingestion"])
 
 
 @app.get("/health")
