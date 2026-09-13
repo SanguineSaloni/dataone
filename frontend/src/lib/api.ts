@@ -84,7 +84,7 @@ function handle401() {
       }
     }
     localStorage.removeItem("dp_token");
-    window.location.href = "/login";
+    window.location.href = "/signin";
   }
 }
 

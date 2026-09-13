@@ -32,7 +32,7 @@ export default function PipelinesPage() {
 
   useEffect(() => {
     if (p.detailError && p.detailError.toLowerCase().includes("not authenticated")) {
-      router.push("/login");
+      router.push("/signin");
     }
   }, [p.detailError, router]);
 

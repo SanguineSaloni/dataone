@@ -164,7 +164,7 @@ async def databricks_login(
                 data={"sub": user.email, "user_id": user.id, "role": user.role}
             )
             # Redirect to frontend login page with token — same pattern as Entra SSO
-            frontend_login = settings.FRONTEND_LOGIN_URL or f"{settings.FRONTEND_URL}/login"
+            frontend_login = settings.FRONTEND_LOGIN_URL or f"{settings.FRONTEND_URL}/signin"
             return RedirectResponse(
                 url=f"{frontend_login}?token={dataone_token}",
                 status_code=302,
@@ -189,7 +189,7 @@ async def databricks_login(
         "[databricks-login] No auth method available. "
         "X-Forwarded-Email header not present and OAuth client not configured."
     )
-    frontend_login = settings.FRONTEND_LOGIN_URL or f"{settings.FRONTEND_URL}/login"
+    frontend_login = settings.FRONTEND_LOGIN_URL or f"{settings.FRONTEND_URL}/signin"
     return RedirectResponse(
         url=f"{frontend_login}?error=oauth_not_configured",
         status_code=302,

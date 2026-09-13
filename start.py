@@ -27,11 +27,11 @@ BACKEND_APP_URL = "https://dataonetest-7474652115156015.aws.databricksapps.com"
 if is_databricks:
     backend_url   = BACKEND_APP_URL
     frontend_url  = BACKEND_APP_URL       # same app serves the frontend
-    frontend_login_url = BACKEND_APP_URL + "/login"
+    frontend_login_url = BACKEND_APP_URL + "/signin"
 else:
     backend_url        = f"http://localhost:{databricks_port}"
     frontend_url       = f"http://localhost:{databricks_port}"
-    frontend_login_url = f"http://localhost:{databricks_port}/login"
+    frontend_login_url = f"http://localhost:{databricks_port}/signin"
 
 # ── Environment variables ─────────────────────────────────────────────────────
 os.environ["DATABASE_URL"]   = "sqlite:///./dataone.db"

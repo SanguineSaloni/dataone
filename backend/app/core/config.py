@@ -108,7 +108,7 @@ class Settings(BaseSettings):
     ENTRA_TENANT_ID: str | None = None
     ENTRA_CLIENT_SECRET: str | None = None
     ENTRA_REDIRECT_URI: str | None = None
-    FRONTEND_LOGIN_URL: str = "http://localhost:3011/login"
+    FRONTEND_LOGIN_URL: str = "http://localhost:3011/signin"
     # Temporary stopgap: when set (e.g. "veltris.com"), any Entra login whose
     # email domain matches is auto-provisioned as admin if no DataOne account
     # exists yet. Unset to go back to matching pre-existing accounts only —

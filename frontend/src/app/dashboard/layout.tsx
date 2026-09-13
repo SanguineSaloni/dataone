@@ -57,7 +57,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [collapsed, setCollapsed] = useState(false);
 
   const validateSession = useCallback(async () => {
-    if (!auth.hasSession()) { router.replace("/login"); return; }
+    if (!auth.hasSession()) { router.replace("/signin"); return; }
     try {
       const currentUser = await auth.currentUser();
       setUser(currentUser);

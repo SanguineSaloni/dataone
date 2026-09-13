@@ -27,7 +27,7 @@ export default function SchemaIntelPage() {
 
   useEffect(() => {
     if (c.catalogError && c.catalogError.toLowerCase().includes("not authenticated")) {
-      router.push("/login");
+      router.push("/signin");
     }
   }, [c.catalogError, router]);
 
