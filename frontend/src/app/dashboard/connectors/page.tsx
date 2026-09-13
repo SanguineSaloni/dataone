@@ -26,9 +26,10 @@ const TARGET_TYPES = [
 interface DBForm {
   dbType: string; host: string; port: string;
   database: string; username: string; password: string; ssl: boolean;
+  catalog?: string; schema?: string;
 }
 const defaultSource: DBForm = { dbType: "mysql", host: "", port: "3306", database: "", username: "", password: "", ssl: false };
-const defaultTarget: DBForm = { dbType: "databricks", host: "", port: "", database: "main.dataone_ingested", username: "", password: "", ssl: true };
+const defaultTarget: DBForm = { dbType: "databricks", host: "", port: "", database: "", username: "", password: "", ssl: true, catalog: "main", schema: "dataone_ingested" };
 
 type RunStatus = "idle" | "connecting" | "triggering" | "running" | "succeeded" | "failed";
 
@@ -104,7 +105,7 @@ function DBFormPanel({ title, subtitle, form, onChange, types, showPassword, onT
             </div>
           </div>
         </div>
-        {form.dbType !== "s3" && form.dbType !== "salesforce" && (
+        {form.dbType !== "s3" && form.dbType !== "salesforce" && form.dbType !== "databricks" && (
           <>
             <div className="flex items-center">
               <label className="text-[13px] text-white/60 w-[160px] flex-shrink-0">Host / Hostname</label>
@@ -118,37 +119,54 @@ function DBFormPanel({ title, subtitle, form, onChange, types, showPassword, onT
             </div>
           </>
         )}
-        <div className="flex items-center">
-          <label className="text-[13px] text-white/60 w-[160px] flex-shrink-0">Database Name</label>
-          <input type="text" value={form.database} onChange={set("database")} placeholder="source_db"
-            className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-[#1a1a1a] border border-white/10 text-white text-[13px] placeholder:text-white/20 focus:outline-none focus:border-white/30 transition-colors" />
-        </div>
-        <div className="flex items-center">
-          <label className="text-[13px] text-white/60 w-[160px] flex-shrink-0">Username</label>
-          <input type="text" value={form.username} onChange={set("username")} placeholder="admin"
-            className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-[#1a1a1a] border border-white/10 text-white text-[13px] placeholder:text-white/20 focus:outline-none focus:border-white/30 transition-colors" />
-        </div>
-        <div className="flex items-center">
-          <label className="text-[13px] text-white/60 w-[160px] flex-shrink-0">Password</label>
-          <div className="relative flex-1">
-            <input type={showPassword ? "text" : "password"} value={form.password} onChange={set("password")} placeholder="••••••••"
-              className="w-full px-3 py-2 pr-10 rounded-lg bg-[#1a1a1a] border border-white/10 text-white text-[13px] placeholder:text-white/20 focus:outline-none focus:border-white/30 transition-colors" />
-            <button type="button" onClick={onTogglePassword} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
-              {showPassword
-                ? <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22" /></svg>
-                : <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-              }
-            </button>
-          </div>
-        </div>
-        <div className="flex items-center mt-2">
-          <label className="text-[13px] text-white/60 w-[160px] flex-shrink-0">SSL Connection</label>
-          <button type="button" onClick={() => onChange({ ...form, ssl: !form.ssl })}
-            className={["relative w-10 h-5 rounded-full transition-colors", form.ssl ? "bg-indigo-500" : "bg-white/20"].join(" ")}>
-            <div className={["absolute top-0.5 w-4 h-4 rounded-full shadow transition-transform",
-              form.ssl ? "translate-x-5 bg-white" : "translate-x-0.5 bg-white"].join(" ")} />
-          </button>
-        </div>
+        {form.dbType === "databricks" ? (
+          <>
+            <div className="flex items-center">
+              <label className="text-[13px] text-white/60 w-[160px] flex-shrink-0">Catalog Name</label>
+              <input type="text" value={form.catalog || ""} onChange={set("catalog")} placeholder="main"
+                className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-[#1a1a1a] border border-white/10 text-white text-[13px] placeholder:text-white/20 focus:outline-none focus:border-white/30 transition-colors" />
+            </div>
+            <div className="flex items-center">
+              <label className="text-[13px] text-white/60 w-[160px] flex-shrink-0">Schema Name</label>
+              <input type="text" value={form.schema || ""} onChange={set("schema")} placeholder="default"
+                className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-[#1a1a1a] border border-white/10 text-white text-[13px] placeholder:text-white/20 focus:outline-none focus:border-white/30 transition-colors" />
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center">
+              <label className="text-[13px] text-white/60 w-[160px] flex-shrink-0">Database Name</label>
+              <input type="text" value={form.database} onChange={set("database")} placeholder="source_db"
+                className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-[#1a1a1a] border border-white/10 text-white text-[13px] placeholder:text-white/20 focus:outline-none focus:border-white/30 transition-colors" />
+            </div>
+            <div className="flex items-center">
+              <label className="text-[13px] text-white/60 w-[160px] flex-shrink-0">Username</label>
+              <input type="text" value={form.username} onChange={set("username")} placeholder="admin"
+                className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-[#1a1a1a] border border-white/10 text-white text-[13px] placeholder:text-white/20 focus:outline-none focus:border-white/30 transition-colors" />
+            </div>
+            <div className="flex items-center">
+              <label className="text-[13px] text-white/60 w-[160px] flex-shrink-0">Password</label>
+              <div className="relative flex-1">
+                <input type={showPassword ? "text" : "password"} value={form.password} onChange={set("password")} placeholder="••••••••"
+                  className="w-full px-3 py-2 pr-10 rounded-lg bg-[#1a1a1a] border border-white/10 text-white text-[13px] placeholder:text-white/20 focus:outline-none focus:border-white/30 transition-colors" />
+                <button type="button" onClick={onTogglePassword} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
+                  {showPassword
+                    ? <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22" /></svg>
+                    : <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                  }
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center mt-2">
+              <label className="text-[13px] text-white/60 w-[160px] flex-shrink-0">SSL Connection</label>
+              <button type="button" onClick={() => onChange({ ...form, ssl: !form.ssl })}
+                className={["relative w-10 h-5 rounded-full transition-colors", form.ssl ? "bg-indigo-500" : "bg-white/20"].join(" ")}>
+                <div className={["absolute top-0.5 w-4 h-4 rounded-full shadow transition-transform",
+                  form.ssl ? "translate-x-5 bg-white" : "translate-x-0.5 bg-white"].join(" ")} />
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
