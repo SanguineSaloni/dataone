@@ -234,6 +234,7 @@ def _get_workspace_client(token: Optional[str] = None):
     try:
         from databricks.sdk import WorkspaceClient
         from databricks.sdk.config import Config
+        import os
         
         # Native Databricks Apps mode uses DATABRICKS_HOST
         host = settings.DATABRICKS_WORKSPACE_URL
@@ -241,23 +242,44 @@ def _get_workspace_client(token: Optional[str] = None):
             host = f"https://{settings.DATABRICKS_HOST}"
 
         if token:
-            # When user token is provided, use ONLY that token (ignore env OAuth)
-            # Create explicit config to override environment variables
-            config = Config(
-                host=host,
-                token=token,
-                client_id=None,  # Explicitly disable OAuth
-                client_secret=None,
-            )
-            return WorkspaceClient(config=config)
+            # When user token is provided, use ONLY that token
+            # Temporarily unset OAuth env vars to prevent SDK auto-detection
+            saved_client_id = os.environ.pop('DATABRICKS_CLIENT_ID', None)
+            saved_client_secret = os.environ.pop('DATABRICKS_CLIENT_SECRET', None)
+            
+            try:
+                config = Config(
+                    host=host,
+                    token=token,
+                )
+                client = WorkspaceClient(config=config)
+            finally:
+                # Restore env vars
+                if saved_client_id:
+                    os.environ['DATABRICKS_CLIENT_ID'] = saved_client_id
+                if saved_client_secret:
+                    os.environ['DATABRICKS_CLIENT_SECRET'] = saved_client_secret
+            
+            return client
+            
         elif settings.DATABRICKS_ACCESS_TOKEN:
-            config = Config(
-                host=host,
-                token=settings.DATABRICKS_ACCESS_TOKEN,
-                client_id=None,
-                client_secret=None,
-            )
-            return WorkspaceClient(config=config)
+            # Env token provided - also need to disable OAuth
+            saved_client_id = os.environ.pop('DATABRICKS_CLIENT_ID', None)
+            saved_client_secret = os.environ.pop('DATABRICKS_CLIENT_SECRET', None)
+            
+            try:
+                config = Config(
+                    host=host,
+                    token=settings.DATABRICKS_ACCESS_TOKEN,
+                )
+                client = WorkspaceClient(config=config)
+            finally:
+                if saved_client_id:
+                    os.environ['DATABRICKS_CLIENT_ID'] = saved_client_id
+                if saved_client_secret:
+                    os.environ['DATABRICKS_CLIENT_SECRET'] = saved_client_secret
+            
+            return client
         else:
             # Fall back to M2M OAuth (via DATABRICKS_CLIENT_ID / DATABRICKS_CLIENT_SECRET from env)
             return WorkspaceClient(host=host)
@@ -387,12 +409,13 @@ class DatabricksIngestionService:
 
             # Create Databricks Job with embedded Python script
             from databricks.sdk.service.jobs import (
-                JobSettings, Task, SparkPythonTask
+                JobSettings, Task, SparkPythonTask, JobTaskSettings
             )
             from databricks.sdk.service.workspace import ImportFormat
             
             script_path = f"/DataOne/Scripts/{source_type}_ingestion.py"
 
+            # For serverless compute, use new_cluster instead of environment
             job_settings = JobSettings(
                 name=job_name,
                 tasks=[
@@ -402,17 +425,20 @@ class DatabricksIngestionService:
                             python_file=f"/Workspace{script_path}",
                         ),
                         timeout_seconds=7200,
-                        # Add serverless compute environment
-                        environment_key="default",
+                        # Use serverless compute
+                        new_cluster={
+                            "spark_version": "auto:latest-lts",
+                            "node_type_id": {"AWS": "i3.xlarge", "Azure": "Standard_DS3_v2", "GCP": "n1-standard-4"}.get(
+                                "AWS", "i3.xlarge"  # Default to AWS
+                            ),
+                            "num_workers": 1,
+                            "spark_conf": {
+                                "spark.databricks.cluster.profile": "serverless",
+                                "spark.databricks.delta.preview.enabled": "true",
+                            },
+                        },
                     )
                 ],
-                # Define the serverless environment
-                environments=[{
-                    "environment_key": "default",
-                    "spec": {
-                        "client": "1"  # Use serverless compute
-                    }
-                }],
             )
 
             # Upload the script to Workspace Files instead of DBFS
