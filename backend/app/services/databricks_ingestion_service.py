@@ -409,7 +409,7 @@ class DatabricksIngestionService:
 
             # Create Databricks Job with embedded Python script
             from databricks.sdk.service.jobs import (
-                JobSettings, Task, SparkPythonTask, JobTaskSettings
+                JobSettings, Task, SparkPythonTask
             )
             from databricks.sdk.service.workspace import ImportFormat
             
