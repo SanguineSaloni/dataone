@@ -72,7 +72,12 @@ export default function SchemaMapperWorkbenchPage() {
     setSelectedTable(t);
   };
   
-  const generatedMappings = selectedTable ? selectedTable.columns.map(c => ({
+  const generatedMappings: Array<{
+    source: { name: string; type: string };
+    target: { name: string; type: string };
+    match: string;
+    sub?: string;
+  }> = selectedTable ? selectedTable.columns.map(c => ({
     source: { name: c.column_name, type: c.data_type },
     target: { name: c.column_name, type: c.data_type },
     match: "100% Match"
