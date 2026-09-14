@@ -36,7 +36,6 @@ const NAV_ITEMS: NavItem[] = [
   { id: "schema-mapper", label: "Schema Mapper", icon: <Icon path="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3" />, href: "/dashboard/schema-mapper" },
   { id: "governance", label: "Autopilot Governance", icon: <Icon path="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />, href: "/dashboard/governance" },
   { id: "askdata", label: "AskData (NL2SQL)", icon: <Icon path="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />, href: "/dashboard/query-workspace" },
-  { id: "data-quality", label: "Data Quality", icon: <Icon path="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />, href: "/dashboard/data-quality" },
   { id: "visualize", label: "Data Visualization", icon: <Icon path="M18 20V10M12 20V4M6 20v-6" />, href: "/dashboard/visualize" },
   { id: "audit", label: "Audit Trail &\nCross-Source Intelligence", icon: <Icon path="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />, href: "/dashboard/audit" },
 ];

@@ -32,14 +32,6 @@ const SOURCE_FIELDS = [
 
 // Remove hardcoded MAPPINGS, SOURCE_FIELDS, TARGET_FIELDS
 
-const PREVIEW_ROWS = [
-  { id: 1, first_name: "John", last_name: "Doe", email: "john.doe@acme.com", created_at: "2024-01-15 10:21:45", country: "US" },
-  { id: 2, first_name: "Sarah", last_name: "Smith", email: "sarah.smith@acme.com", created_at: "2024-02-10 14:11:22", country: "UK" },
-  { id: 3, first_name: "Michael", last_name: "Brown", email: "michael.brown@acme.com", created_at: "2024-03-05 09:18:30", country: "CA" },
-];
-
-const GENERATED_SQL = `SELECT * FROM source;`;
-
 export default function SchemaMapperWorkbenchPage() {
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [bottomTab, setBottomTab] = useState<BottomTab>("preview");
@@ -287,60 +279,18 @@ export default function SchemaMapperWorkbenchPage() {
 
         {/* Bottom content */}
         <div className="flex flex-1 overflow-hidden min-h-0 bg-[#09090b] p-4 gap-4">
-          {/* Tab content (Data Preview) */}
-          <div className="flex-1 bg-[#121214] border border-white/[0.06] rounded-xl flex flex-col overflow-hidden">
-            <div className="px-4 py-2 border-b border-white/[0.06] flex items-center justify-between">
-              <span className="text-[12px] font-semibold text-white/90">Preview: customer_db.customers (Source)</span>
-              <span className="text-[11px] text-white/40">Rows: 5</span>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-[12px] text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-white/[0.06]">
-                    <th className="py-2.5 px-4 font-medium text-white/40">id</th>
-                    <th className="py-2.5 px-4 font-medium text-white/40">first_name</th>
-                    <th className="py-2.5 px-4 font-medium text-white/40">last_name</th>
-                    <th className="py-2.5 px-4 font-medium text-white/40">email</th>
-                    <th className="py-2.5 px-4 font-medium text-white/40">created_at</th>
-                    <th className="py-2.5 px-4 font-medium text-white/40">country</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {PREVIEW_ROWS.map((row) => (
-                    <tr key={row.id} className="border-b border-white/[0.03] hover:bg-white/[0.02]">
-                      <td className="py-2.5 px-4 text-white/70">{row.id}</td>
-                      <td className="py-2.5 px-4 text-white/70">{row.first_name}</td>
-                      <td className="py-2.5 px-4 text-white/70">{row.last_name}</td>
-                      <td className="py-2.5 px-4 text-white/70">{row.email}</td>
-                      <td className="py-2.5 px-4 text-white/70">{row.created_at}</td>
-                      <td className="py-2.5 px-4 text-white/70">{row.country}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          <div className="flex-1 bg-[#121214] border border-white/[0.06] rounded-xl flex flex-col items-center justify-center text-center p-8">
+            <svg className="w-12 h-12 text-white/10 mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 12V7H5a2 2 0 010-4h14v4" />
+              <path d="M3 5v14a2 2 0 002 2h16v-5" />
+              <path d="M18 12h-4" />
+            </svg>
+            <h3 className="text-[14px] font-semibold text-white/80 mb-2">Awaiting Live Databricks Data</h3>
+            <p className="text-[12px] text-white/40 max-w-sm">
+              Data preview, transformation logic, and generated SQL will be dynamically populated directly from your Databricks cluster once the ingestion pipeline completes.
+            </p>
           </div>
-
-          {/* SQL panel */}
-          <div className="flex-1 bg-[#121214] border border-white/[0.06] rounded-xl flex flex-col overflow-hidden">
-            <div className="px-4 py-2 border-b border-white/[0.06] flex items-center justify-between">
-              <span className="text-[12px] font-semibold text-white/90">Generated SQL (Transformation)</span>
-              <button className="flex items-center gap-1.5 text-[11px] text-white/40 hover:text-white/80">
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg>
-                Copy
-              </button>
-            </div>
-            <div className="flex flex-1 overflow-auto bg-[#0a0a0c]">
-              <div className="py-4 px-2 text-right border-r border-white/5 select-none text-[#4b5563] text-[12px] font-mono leading-[1.6]">
-                {GENERATED_SQL.split('\n').map((_, i) => <div key={i}>{i + 1}</div>)}
-              </div>
-              <pre className="p-4 text-[12px] font-mono leading-[1.6] overflow-x-auto text-[#e2e8f0]">
-                {GENERATED_SQL.split('\n').map((line, i) => (
-                  <div key={i}>{line}</div>
-                ))}
-              </pre>
-            </div>
-          </div>
+        </div>
         </div>
       </div>
     </div>

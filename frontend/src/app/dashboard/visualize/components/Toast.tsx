@@ -12,7 +12,7 @@ export default function Toast({ toast, onDismiss }: ToastProps) {
     toast.kind === "error"
       ? "bg-danger/10 border-danger/30 text-danger"
       : "bg-success/10 border-success/30 text-success";
-  const icon = toast.kind === "error" ? "⚠️" : "✅";
+  const icon = toast.kind === "error" ? "" : "";
   return (
     <div
       role="status"

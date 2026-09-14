@@ -801,19 +801,19 @@ export default function TopologyPage() {
                 } text-left hover:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/50`}
                 aria-label={`Focus ${a.node_id}: ${a.message}`}
               >
-                <div className="font-semibold">{a.type === "error" ? "❌" : "⚠️"} {a.message}</div>
+                <div className="font-semibold">{a.type === "error" ? "" : ""} {a.message}</div>
                 <div className="text-[10px] opacity-60 mt-0.5">{a.node_id}</div>
               </button>
             ))}
             {annotations.length === 0 && (
-              <div className="text-xs text-fg-subtle text-center py-4">No issues detected ✅</div>
+              <div className="text-xs text-fg-subtle text-center py-4">No issues detected </div>
             )}
           </div>}
 
           {/* Selected Node Detail */}
           {selectedNode && (
             <div className="border-t border-border p-4">
-              <h4 className="text-sm font-semibold text-fg mb-2">📋 {selectedNode.label}</h4>
+              <h4 className="text-sm font-semibold text-fg mb-2"> {selectedNode.label}</h4>
               <div className="flex flex-col gap-1.5 text-xs">
                 <div className="flex justify-between">
                   <span className="text-fg-subtle">Database</span>

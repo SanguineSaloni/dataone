@@ -143,7 +143,7 @@ function QueryWorkspaceInner() {
       {handoffBanner && (
         <div className="flex items-center justify-between border-b border-accent/20 bg-accent-soft px-4 py-2">
           <span className="text-xs text-accent">
-            📋 Investigating: {handoffBanner.summary} — from{" "}
+             Investigating: {handoffBanner.summary} — from{" "}
             {MODE_DISPLAY_NAMES[handoffBanner.sourceModule] ?? handoffBanner.sourceModule}
           </span>
           <button
