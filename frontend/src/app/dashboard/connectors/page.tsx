@@ -558,7 +558,7 @@ export default function ConnectorsPage() {
 
   const isSubmitting = ["connecting", "triggering", "running"].includes(runStatus);
 
-  const tabs: { id: Tab; label: string; icon: string }[] = [
+  const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "new",       label: "New Connection",    icon: "➕" },
     { id: "connections", label: "Saved Connections", icon: "🔗" },
     { id: "pipelines", label: "Active Pipelines",  icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> },

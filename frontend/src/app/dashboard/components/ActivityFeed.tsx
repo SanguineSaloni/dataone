@@ -1,9 +1,10 @@
 "use client";
+import { ReactNode } from "react";
 import Link from "next/link";
 import { DashboardWidget } from "./DashboardWidget";
 import type { FeedItemData } from "../types";
 
-const EVENT_TYPE_META: Record<string, { icon: string; label: string }> = {
+const EVENT_TYPE_META: Record<string, { icon: ReactNode; label: string }> = {
   connector_created: { icon: "➕", label: "Connector added" },
   connector_deleted: { icon: "🗑️", label: "Connector removed" },
   connector_tested: { icon: "✅", label: "Connection tested" },
