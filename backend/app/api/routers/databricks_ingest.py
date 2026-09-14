@@ -65,7 +65,7 @@ def trigger_ingestion(
             target_schema=req.target_schema or "dataone_ingested",
             db=db,
             actor=user.email,
-            user_token=user.databricks_access_token,
+            user_token=None # Use M2M to avoid scope issues,
         )
         record_audit(db, "ingestion_triggered", actor=user.email,
                      payload={"run_id": result.get("id"), "source_type": result.get("source_type")})
@@ -90,7 +90,7 @@ def get_run_status(
         return DatabricksIngestionService.get_run_status(
             ingestion_run_id=ingestion_run_id,
             db=db,
-            user_token=user.databricks_access_token,
+            user_token=None # Use M2M to avoid scope issues,
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -133,7 +133,7 @@ def trigger_genie(
         db=db,
         actor=user.email,
         space_id=req.space_id,
-        user_token=user.databricks_access_token,
+        user_token=None # Use M2M to avoid scope issues,
     )
 @router.get("/catalogs")
 def get_databricks_catalogs(
@@ -143,39 +143,14 @@ def get_databricks_catalogs(
     """Fetch available Databricks Unity Catalog names."""
     try:
         from app.services.databricks_ingestion_service import _get_workspace_client
-        
-        # Check both user token and environment token
-        user_token = user.databricks_access_token
-        env_token = settings.DATABRICKS_ACCESS_TOKEN if hasattr(settings, 'DATABRICKS_ACCESS_TOKEN') else None
-        
-        # Log for debugging
-        logger.info(
-            f"[get_catalogs] user={user.email} user_token={bool(user_token)} "
-            f"env_token={bool(env_token)} user_id={user.id}"
-        )
-        
-        # Try user token first, fall back to env token
-        token = user_token or env_token
-        
-        if not token:
-            logger.warning(f"[get_catalogs] No token available for user {user.email}")
-            raise HTTPException(
-                status_code=401,
-                detail="No Databricks authentication token found. Please sign in with Databricks."
-            )
-        
-        logger.info(f"[get_catalogs] Using {'user' if user_token else 'env'} token for {user.email}")
-        
-        wc = _get_workspace_client(token)
+        # M2M token fallback avoids OAuth scope issues
+        wc = _get_workspace_client(None)
         catalogs = []
         for cat in wc.catalogs.list():
             catalogs.append({"name": cat.name})
         
         logger.info(f"[get_catalogs] Successfully fetched {len(catalogs)} catalogs for {user.email}")
         return {"catalogs": catalogs}
-        
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"[get_catalogs] Failed for user {user.email}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -190,36 +165,16 @@ def get_databricks_schemas(
     """Fetch schemas within a Databricks catalog."""
     try:
         from app.services.databricks_ingestion_service import _get_workspace_client
-        
-        # Try user token first, fall back to env token
-        user_token = user.databricks_access_token
-        env_token = settings.DATABRICKS_ACCESS_TOKEN if hasattr(settings, 'DATABRICKS_ACCESS_TOKEN') else None
-        token = user_token or env_token
-        
-        if not token:
-            raise HTTPException(
-                status_code=401,
-                detail="No Databricks authentication token found."
-            )
-        
-        logger.info(f"[get_schemas] catalog={catalog_name} user={user.email} using_{'user' if user_token else 'env'}_token")
-        
-        wc = _get_workspace_client(token)
+        # M2M token fallback avoids OAuth scope issues
+        wc = _get_workspace_client(None)
         schemas = []
         for schema in wc.schemas.list(catalog_name=catalog_name):
             schemas.append({"name": schema.name})
         
         logger.info(f"[get_schemas] Found {len(schemas)} schemas in {catalog_name}")
         return {"schemas": schemas}
-        
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"[get_schemas] Failed for catalog {catalog_name}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
-        return {"schemas": schemas}
-    except Exception as e:
-        logger.error("[databricks_ingest] get_schemas failed: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
 
 

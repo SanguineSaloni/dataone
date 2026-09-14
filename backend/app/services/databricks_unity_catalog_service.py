@@ -468,44 +468,11 @@ def get_unity_catalog_service_for_user(
     db_session=None
 ) -> UnityCatalogService:
     """
-    Factory function to create Unity Catalog service with proper token.
+    Factory function to create Unity Catalog service.
     
-    In Databricks native mode (OAuth), this uses the user's OAuth token.
-    In standalone mode (PAT), this uses the connection's access token.
-    
-    Args:
-        connection: DBConnection model
-        user: Current User object (for OAuth mode)
-        db_session: Database session (for token refresh if needed)
-        
-    Returns:
-        UnityCatalogService instance with appropriate token
+    DataOne always uses its own Service Principal (M2M) token 
+    instead of the user's OAuth token to prevent 'Invalid scope' 
+    errors with Unity Catalog APIs.
     """
-    is_native_mode = getattr(settings, "DATABRICKS_NATIVE_MODE", False)
-    
-    if is_native_mode and user:
-        # OAuth mode: use user's token
-        from app.services.databricks_auth_service import databricks_auth_service
-        
-        # Ensure token is valid (refresh if needed)
-        if db_session:
-            import asyncio
-            access_token = asyncio.run(
-                databricks_auth_service.ensure_token_valid(user, db_session)
-            )
-        else:
-            access_token = user.databricks_access_token
-        
-        if not access_token:
-            raise ValueError(
-                "User does not have Databricks OAuth token. "
-                "Please authenticate via /auth/databricks/login"
-            )
-        
-        logger.info(f"Creating UC service with OAuth token for user {user.email}")
-        return UnityCatalogService(connection, user_access_token=access_token)
-    
-    else:
-        # PAT mode: use connection's token
-        logger.info("Creating UC service with connection PAT token")
-        return UnityCatalogService(connection)
+    logger.info("Creating UC service with DataOne Service Principal (M2M)")
+    return UnityCatalogService(connection)

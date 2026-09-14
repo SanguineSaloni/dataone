@@ -223,8 +223,8 @@ function DBFormPanel({ title, subtitle, form, onChange, types, showPassword, onT
             </div>
             {catalogs.length === 0 && !loadingCatalogs && (
               <div className="text-[12px] text-amber-400/80 bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 mt-2">
-                <p className="font-semibold mb-1">⚠️ Authentication Required</p>
-                <p>Please authenticate with Databricks to access your Unity Catalog. Catalogs and schemas are fetched from your authenticated workspace.</p>
+                <p className="font-semibold mb-1">⚠️ Unable to load catalogs</p>
+                <p>Make sure your DataOne Service Principal has the correct Unity Catalog permissions.</p>
               </div>
             )}
           </>
