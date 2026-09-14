@@ -375,12 +375,6 @@ class DatabricksIngestionService:
 
             job_settings = JobSettings(
                 name=job_name,
-                environments=[
-                    JobEnvironment(
-                        environment_key="default",
-                        spec=Environment(client="1", environment_version="1")
-                    )
-                ],
                 tasks=[
                     Task(
                         task_key="ingestion",
