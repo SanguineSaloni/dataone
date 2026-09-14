@@ -145,6 +145,23 @@ def create_connection(conn: ConnectionCreate, db: Session = Depends(get_db),
         environment=conn.environment,
         actor=_actor(user), owner_email=user.email,
     )
+    
+    # Automatically trigger Databricks ingestion pipeline if it's a source connector
+    if conn.type.lower() != "databricks":
+        try:
+            from app.services.databricks_ingestion_service import DatabricksIngestionService
+            logger.info(f"Automatically triggering Databricks pipeline for new connector {created.id}")
+            DatabricksIngestionService.trigger_ingestion(
+                source_connection_id=created.id,
+                target_connection_id=None,
+                target_catalog="main",
+                target_schema="dataone_ingested",
+                db=db,
+                actor=_actor(user)
+            )
+        except Exception as e:
+            logger.error(f"Failed to auto-trigger Databricks pipeline: {e}")
+            
     return _to_response(created)
 
 

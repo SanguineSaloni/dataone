@@ -235,7 +235,11 @@ def _get_workspace_client(token: Optional[str] = None):
 
         if token:
             return WorkspaceClient(host=host, token=token)
-        return WorkspaceClient(host=host, token=settings.DATABRICKS_ACCESS_TOKEN)
+        elif settings.DATABRICKS_ACCESS_TOKEN:
+            return WorkspaceClient(host=host, token=settings.DATABRICKS_ACCESS_TOKEN)
+        else:
+            # Fall back to M2M OAuth (via DATABRICKS_CLIENT_ID / DATABRICKS_CLIENT_SECRET)
+            return WorkspaceClient(host=host)
     except Exception as e:
         logger.error("[databricks_ingestion] stage=get_client failed: %s", e)
         raise
