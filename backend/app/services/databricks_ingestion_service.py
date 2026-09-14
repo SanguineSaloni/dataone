@@ -409,18 +409,32 @@ class DatabricksIngestionService:
 
             # Create Databricks Job with embedded Python script
             from databricks.sdk.service.jobs import (
-                JobSettings, Task, SparkPythonTask
+                JobSettings, Task, SparkPythonTask, JobCluster
             )
+            from databricks.sdk.service.compute import ClusterSpec
             from databricks.sdk.service.workspace import ImportFormat
             
             script_path = f"/Shared/DataOne/Scripts/{source_type}_ingestion.py"
 
-            # Omit cluster configs entirely to natively trigger Serverless Compute
+            # Use a shared job cluster configuration
             job_settings = JobSettings(
                 name=job_name,
+                job_clusters=[
+                    JobCluster(
+                        job_cluster_key="shared",
+                        new_cluster=ClusterSpec(
+                            spark_version="13.3.x-scala2.12",
+                            node_type_id={"AWS": "i3.xlarge", "Azure": "Standard_DS3_v2", "GCP": "n1-standard-4"}.get(
+                                "AWS", "i3.xlarge"
+                            ),
+                            num_workers=1
+                        )
+                    )
+                ],
                 tasks=[
                     Task(
                         task_key="ingestion",
+                        job_cluster_key="shared",
                         spark_python_task=SparkPythonTask(
                             python_file=f"/Workspace{script_path}",
                         ),
@@ -450,7 +464,8 @@ class DatabricksIngestionService:
 
             created_job = ws.jobs.create(
                 name=job_settings.name,
-                tasks=job_settings.tasks
+                tasks=job_settings.tasks,
+                job_clusters=job_settings.job_clusters
             )
             job_id = created_job.job_id
 
