@@ -442,14 +442,6 @@ class DatabricksIngestionService:
             
             script_path = f"/Shared/DataOne/Notebooks/{source_type}_ingestion.py"
 
-            task_libraries = []
-            if source_type == "mysql":
-                task_libraries.append(Library(maven=MavenLibrary(coordinates="mysql:mysql-connector-java:8.0.33")))
-            elif source_type == "postgres":
-                task_libraries.append(Library(maven=MavenLibrary(coordinates="org.postgresql:postgresql:42.6.0")))
-            elif source_type == "mongodb":
-                task_libraries.append(Library(maven=MavenLibrary(coordinates="org.mongodb.spark:mongo-spark-connector_2.12:3.0.2")))
-
             job_settings = JobSettings(
                 name=job_name,
                 max_concurrent_runs=3,
@@ -459,7 +451,6 @@ class DatabricksIngestionService:
                         notebook_task=NotebookTask(
                             notebook_path=f"/Workspace{script_path}",
                         ),
-                        libraries=task_libraries if task_libraries else None,
                         timeout_seconds=7200,
                     )
                 ],
