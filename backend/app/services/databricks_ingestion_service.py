@@ -305,27 +305,48 @@ class DatabricksIngestionService:
             .first()
         )
         if catalog_entry:
-            logger.info(
-                "[databricks_ingestion] stage=reuse_existing_job job_id=%s",
-                catalog_entry.databricks_job_id,
-            )
-            catalog_entry.last_used_at = datetime.utcnow()
-            db.commit()
-            return {
-                "job_id": catalog_entry.databricks_job_id,
-                "job_name": catalog_entry.job_name,
-                "created": False,
-            }
+            if catalog_entry.pipeline_type == "mock":
+                # If it's a mock pipeline but we now have real credentials, delete it so we can create a real one
+                import os
+                has_creds = bool((settings.DATABRICKS_WORKSPACE_URL and settings.DATABRICKS_ACCESS_TOKEN) or 
+                                 (settings.DATABRICKS_HOST and user_token) or 
+                                 (settings.DATABRICKS_HOST and os.getenv("DATABRICKS_CLIENT_ID")))
+                if has_creds:
+                    logger.info(f"Removing mock pipeline {catalog_entry.databricks_job_id} to create a real one.")
+                    db.delete(catalog_entry)
+                    db.commit()
+                else:
+                    return {
+                        "job_id": catalog_entry.databricks_job_id,
+                        "job_name": catalog_entry.job_name,
+                        "created": False,
+                        "mock": True
+                    }
+            else:
+                logger.info(
+                    "[databricks_ingestion] stage=reuse_existing_job job_id=%s",
+                    catalog_entry.databricks_job_id,
+                )
+                catalog_entry.last_used_at = datetime.utcnow()
+                db.commit()
+                return {
+                    "job_id": catalog_entry.databricks_job_id,
+                    "job_name": catalog_entry.job_name,
+                    "created": False,
+                    "mock": False
+                }
 
         # Get script for this source type (fallback to generic JDBC)
         script = INGESTION_SCRIPTS.get(source_type, INGESTION_SCRIPTS.get("mysql", ""))
         job_name = f"DataOne_{SOURCE_TYPE_DISPLAY.get(source_type, source_type.title())}_Ingestion"
 
-        # Check for either the explicit URL/PAT or Native App Host/user token
+        # Check for either explicit URL/PAT, Native App user token, or M2M OAuth
         has_explicit_creds = bool(settings.DATABRICKS_WORKSPACE_URL and settings.DATABRICKS_ACCESS_TOKEN)
         has_native_creds = bool(settings.DATABRICKS_HOST and user_token)
+        import os
+        has_m2m_creds = bool(settings.DATABRICKS_HOST and os.getenv("DATABRICKS_CLIENT_ID") and os.getenv("DATABRICKS_CLIENT_SECRET"))
         
-        if not has_explicit_creds and not has_native_creds:
+        if not has_explicit_creds and not has_native_creds and not has_m2m_creds:
             logger.warning(
                 "[databricks_ingestion] stage=no_credentials — Databricks not configured, returning mock job_id"
             )
@@ -484,7 +505,7 @@ class DatabricksIngestionService:
             ws = _get_workspace_client(user_token)
 
             # Trigger job run with spark_conf overrides
-            from databricks.sdk.service.jobs import RunNow, SparkConfPair
+            # Trigger job run with spark_conf overrides
             run_response = ws.jobs.run_now(
                 job_id=job_id,
                 job_parameters=params,
