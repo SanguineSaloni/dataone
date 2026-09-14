@@ -33,30 +33,28 @@ logger = logging.getLogger(__name__)
 
 INGESTION_SCRIPTS: Dict[str, str] = {
     "mysql": '''
+# Databricks notebook source
+# COMMAND ----------
 import sys
 import os
-import argparse
 from pyspark.sql import SparkSession
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--source_host")
-parser.add_argument("--source_port", default="3306")
-parser.add_argument("--source_database")
-parser.add_argument("--source_username")
-parser.add_argument("--source_password")
-parser.add_argument("--target_catalog", default="main")
-parser.add_argument("--target_schema", default="dataone_ingested")
-args, _ = parser.parse_known_args()
 
 spark = SparkSession.builder.appName("DataOne_MySQL_Ingestion").getOrCreate()
 
-source_host = args.source_host
-source_port = args.source_port
-source_db = args.source_database
-source_user = args.source_username
-source_password = args.source_password
-target_catalog = args.target_catalog
-target_schema = args.target_schema
+def get_param(name, default_val=None):
+    try:
+        val = dbutils.widgets.get(name)
+        return val if val else default_val
+    except:
+        return default_val
+
+source_host = get_param("dataone.source.host")
+source_port = get_param("dataone.source.port", "3306")
+source_db = get_param("dataone.source.database")
+source_user = get_param("dataone.source.username")
+source_password = get_param("dataone.source.password")
+target_catalog = get_param("dataone.target.catalog", "main")
+target_schema = get_param("dataone.target.schema", "dataone_ingested")
 
 jdbc_url = f"jdbc:mysql://{source_host}:{source_port}/{source_db}"
 connection_properties = {"user": source_user, "password": source_password, "driver": "com.mysql.cj.jdbc.Driver"}
@@ -81,29 +79,27 @@ print("[DataOne] MySQL ingestion complete")
 ''',
 
     "postgres": '''
+# Databricks notebook source
+# COMMAND ----------
 import sys
-import argparse
 from pyspark.sql import SparkSession
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--source_host")
-parser.add_argument("--source_port", default="5432")
-parser.add_argument("--source_database")
-parser.add_argument("--source_username")
-parser.add_argument("--source_password")
-parser.add_argument("--target_catalog", default="main")
-parser.add_argument("--target_schema", default="dataone_ingested")
-args, _ = parser.parse_known_args()
 
 spark = SparkSession.builder.appName("DataOne_PostgreSQL_Ingestion").getOrCreate()
 
-source_host = args.source_host
-source_port = args.source_port
-source_db = args.source_database
-source_user = args.source_username
-source_password = args.source_password
-target_catalog = args.target_catalog
-target_schema = args.target_schema
+def get_param(name, default_val=None):
+    try:
+        val = dbutils.widgets.get(name)
+        return val if val else default_val
+    except:
+        return default_val
+
+source_host = get_param("dataone.source.host")
+source_port = get_param("dataone.source.port", "5432")
+source_db = get_param("dataone.source.database")
+source_user = get_param("dataone.source.username")
+source_password = get_param("dataone.source.password")
+target_catalog = get_param("dataone.target.catalog", "main")
+target_schema = get_param("dataone.target.schema", "dataone_ingested")
 
 jdbc_url = f"jdbc:postgresql://{source_host}:{source_port}/{source_db}"
 props = {"user": source_user, "password": source_password, "driver": "org.postgresql.Driver"}
@@ -123,24 +119,24 @@ print("[DataOne] PostgreSQL ingestion complete")
 ''',
 
     "mongodb": '''
-import argparse
+# Databricks notebook source
+# COMMAND ----------
 from pyspark.sql import SparkSession
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--source_connection_string")
-parser.add_argument("--source_database")
-parser.add_argument("--target_catalog", default="main")
-parser.add_argument("--target_schema", default="dataone_ingested")
-parser.add_argument("--source_collections", default="")
-args, _ = parser.parse_known_args()
 
 spark = SparkSession.builder.appName("DataOne_MongoDB_Ingestion").getOrCreate()
 
-conn_str = args.source_connection_string
-source_db = args.source_database
-target_catalog = args.target_catalog
-target_schema = args.target_schema
-collections = args.source_collections.split(",")
+def get_param(name, default_val=None):
+    try:
+        val = dbutils.widgets.get(name)
+        return val if val else default_val
+    except:
+        return default_val
+
+conn_str = get_param("dataone.source.connection_string")
+source_db = get_param("dataone.source.database")
+target_catalog = get_param("dataone.target.catalog", "main")
+target_schema = get_param("dataone.target.schema", "dataone_ingested")
+collections = get_param("dataone.source.collections", "").split(",")
 
 for collection in [c.strip() for c in collections if c.strip()]:
     df = (spark.read.format("mongodb")
@@ -436,29 +432,24 @@ class DatabricksIngestionService:
         try:
             ws = _get_workspace_client(user_token)
 
-            # Create Databricks Job with embedded Python script
+            # Create Databricks Job with embedded Python Notebook
             from databricks.sdk.service.jobs import (
-                JobSettings, Task, SparkPythonTask, JobEnvironment
+                JobSettings, Task, NotebookTask
             )
-            from databricks.sdk.service.compute import Environment
             from databricks.sdk.service.workspace import ImportFormat
+            from databricks.sdk.service.workspace import Language
             
             script_path = f"/Shared/DataOne/Scripts/{source_type}_ingestion.py"
 
-            # Use Serverless compute by defining a JobEnvironment and omitting job_clusters
+            # Use Serverless compute by defining a NotebookTask
             job_settings = JobSettings(
                 name=job_name,
-                environments=[
-                    JobEnvironment(
-                        environment_key="default"
-                    )
-                ],
                 tasks=[
                     Task(
                         task_key="ingestion",
-                        environment_key="default",
-                        spark_python_task=SparkPythonTask(
-                            python_file=f"/Workspace{script_path}",
+                        notebook_task=NotebookTask(
+                            notebook_path=f"/Workspace{script_path}",
+                            
                         ),
                         timeout_seconds=7200,
                     )
@@ -476,7 +467,8 @@ class DatabricksIngestionService:
                     pass
                 ws.workspace.import_(
                     path=script_path,
-                    format=ImportFormat.AUTO,
+                    format=ImportFormat.SOURCE,
+                    language=Language.PYTHON,
                     content=base64.b64encode(script_bytes).decode("utf-8"),
                     overwrite=True,
                 )
@@ -583,16 +575,10 @@ class DatabricksIngestionService:
         try:
             ws = _get_workspace_client(user_token)
 
-            # Trigger job run with spark_conf overrides
-            # Trigger job run with spark_conf overrides
-            python_params = []
-            for k, v in params.items():
-                arg_name = "--" + k.replace("dataone.", "").replace(".", "_")
-                python_params.extend([arg_name, str(v)])
-
+            # Trigger job run with notebook_params
             run_response = ws.jobs.run_now(
                 job_id=job_id,
-                python_params=python_params,
+                notebook_params={k: str(v) for k, v in params.items()},
             )
             databricks_run_id = run_response.run_id
 
