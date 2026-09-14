@@ -366,48 +366,48 @@ class DatabricksIngestionService:
 
             # Create Databricks Job with embedded Python script
             from databricks.sdk.service.jobs import (
-                JobSettings, Task, SparkPythonTask, JobCluster
+                JobSettings, Task, SparkPythonTask, JobEnvironment
             )
-            from databricks.sdk.service.compute import (
-                ClusterSpec, AutoScale, RuntimeEngine
-            )
+            from databricks.sdk.service.compute import Environment
+            from databricks.sdk.service.workspace import ImportFormat
+            
+            script_path = f"/DataOne/Scripts/{source_type}_ingestion.py"
 
             job_settings = JobSettings(
                 name=job_name,
+                environments=[
+                    JobEnvironment(
+                        environment_key="default",
+                        spec=Environment(client="1")
+                    )
+                ],
                 tasks=[
                     Task(
                         task_key="ingestion",
                         spark_python_task=SparkPythonTask(
-                            python_file=f"dbfs:/dataone/scripts/{source_type}_ingestion.py",
+                            python_file=f"/Workspace{script_path}",
                         ),
-                        job_cluster_key="dataone_cluster",
+                        environment_key="default",
                         timeout_seconds=7200,
-                    )
-                ],
-                job_clusters=[
-                    JobCluster(
-                        job_cluster_key="dataone_cluster",
-                        new_cluster=ClusterSpec(
-                            spark_version="14.3.x-scala2.12",
-                            node_type_id="Standard_DS3_v2",
-                            autoscale=AutoScale(min_workers=1, max_workers=4),
-                            runtime_engine=RuntimeEngine.PHOTON,
-                        ),
                     )
                 ],
             )
 
-            # Upload the script to DBFS first
+            # Upload the script to Workspace Files instead of DBFS
             try:
                 import base64
                 script_bytes = script.encode("utf-8")
-                ws.dbfs.mkdirs("/dataone/scripts")
-                ws.dbfs.put(
-                    path=f"/dataone/scripts/{source_type}_ingestion.py",
-                    contents=base64.b64encode(script_bytes).decode("utf-8"),
+                try:
+                    ws.workspace.mkdirs("/DataOne/Scripts")
+                except Exception:
+                    pass
+                ws.workspace.import_(
+                    path=script_path,
+                    format=ImportFormat.SOURCE,
+                    content=base64.b64encode(script_bytes).decode("utf-8"),
                     overwrite=True,
                 )
-                logger.info("[databricks_ingestion] stage=script_uploaded source_type=%s", source_type)
+                logger.info("[databricks_ingestion] stage=script_uploaded path=%s", script_path)
             except Exception as upload_err:
                 logger.warning("[databricks_ingestion] stage=script_upload_failed: %s", upload_err)
 
