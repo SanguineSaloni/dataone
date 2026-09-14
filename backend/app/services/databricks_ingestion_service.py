@@ -411,11 +411,12 @@ class DatabricksIngestionService:
             from databricks.sdk.service.jobs import (
                 JobSettings, Task, SparkPythonTask
             )
+            from databricks.sdk.service.compute import ClusterSpec
             from databricks.sdk.service.workspace import ImportFormat
             
-            script_path = f"/DataOne/Scripts/{source_type}_ingestion.py"
+            script_path = f"/Shared/DataOne/Scripts/{source_type}_ingestion.py"
 
-            # For serverless compute, use new_cluster instead of environment
+            # Use a proper ClusterSpec object to avoid 'dict object has no attribute as_dict'
             job_settings = JobSettings(
                 name=job_name,
                 tasks=[
@@ -425,18 +426,17 @@ class DatabricksIngestionService:
                             python_file=f"/Workspace{script_path}",
                         ),
                         timeout_seconds=7200,
-                        # Use serverless compute
-                        new_cluster={
-                            "spark_version": "auto:latest-lts",
-                            "node_type_id": {"AWS": "i3.xlarge", "Azure": "Standard_DS3_v2", "GCP": "n1-standard-4"}.get(
-                                "AWS", "i3.xlarge"  # Default to AWS
+                        new_cluster=ClusterSpec(
+                            spark_version="auto:latest-lts",
+                            node_type_id={"AWS": "i3.xlarge", "Azure": "Standard_DS3_v2", "GCP": "n1-standard-4"}.get(
+                                "AWS", "i3.xlarge"
                             ),
-                            "num_workers": 1,
-                            "spark_conf": {
+                            num_workers=1,
+                            spark_conf={
                                 "spark.databricks.cluster.profile": "serverless",
                                 "spark.databricks.delta.preview.enabled": "true",
                             },
-                        },
+                        ),
                     )
                 ],
             )
@@ -446,7 +446,8 @@ class DatabricksIngestionService:
                 import base64
                 script_bytes = script.encode("utf-8")
                 try:
-                    ws.workspace.mkdirs("/DataOne/Scripts")
+                    ws.workspace.mkdirs("/Shared/DataOne")
+                    ws.workspace.mkdirs("/Shared/DataOne/Scripts")
                 except Exception:
                     pass
                 ws.workspace.import_(
@@ -459,7 +460,10 @@ class DatabricksIngestionService:
             except Exception as upload_err:
                 logger.warning("[databricks_ingestion] stage=script_upload_failed: %s", upload_err)
 
-            created_job = ws.jobs.create(**job_settings.__dict__)
+            created_job = ws.jobs.create(
+                name=job_settings.name,
+                tasks=job_settings.tasks
+            )
             job_id = created_job.job_id
 
             logger.info("[databricks_ingestion] stage=job_created job_id=%s source_type=%s", job_id, source_type)
