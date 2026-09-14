@@ -409,32 +409,28 @@ class DatabricksIngestionService:
 
             # Create Databricks Job with embedded Python script
             from databricks.sdk.service.jobs import (
-                JobSettings, Task, SparkPythonTask, JobCluster
+                JobSettings, Task, SparkPythonTask, JobEnvironment
             )
-            from databricks.sdk.service.compute import ClusterSpec
+            from databricks.sdk.service.compute import Environment
             from databricks.sdk.service.workspace import ImportFormat
             
             script_path = f"/Shared/DataOne/Scripts/{source_type}_ingestion.py"
 
-            # Use a shared job cluster configuration
+            # Use Serverless compute by defining a JobEnvironment and omitting job_clusters
             job_settings = JobSettings(
                 name=job_name,
-                job_clusters=[
-                    JobCluster(
-                        job_cluster_key="shared",
-                        new_cluster=ClusterSpec(
-                            spark_version="13.3.x-scala2.12",
-                            node_type_id={"AWS": "i3.xlarge", "Azure": "Standard_DS3_v2", "GCP": "n1-standard-4"}.get(
-                                "AWS", "i3.xlarge"
-                            ),
-                            num_workers=1
+                environments=[
+                    JobEnvironment(
+                        environment_key="default",
+                        spec=Environment(
+                            client="1"
                         )
                     )
                 ],
                 tasks=[
                     Task(
                         task_key="ingestion",
-                        job_cluster_key="shared",
+                        environment_key="default",
                         spark_python_task=SparkPythonTask(
                             python_file=f"/Workspace{script_path}",
                         ),
@@ -465,7 +461,7 @@ class DatabricksIngestionService:
             created_job = ws.jobs.create(
                 name=job_settings.name,
                 tasks=job_settings.tasks,
-                job_clusters=job_settings.job_clusters
+                environments=job_settings.environments
             )
             job_id = created_job.job_id
 
