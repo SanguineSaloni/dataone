@@ -141,9 +141,12 @@ def get_databricks_catalogs(
 ):
     """Fetch available Databricks Unity Catalog names."""
     try:
-        from app.services.databricks_unity_catalog_service import get_unity_catalog_service_for_user
-        svc = get_unity_catalog_service_for_user(request)
-        catalogs = svc.get_catalogs()
+        from app.services.databricks_ingestion_service import _get_workspace_client
+        token = _get_user_token(request)
+        wc = _get_workspace_client(token)
+        catalogs = []
+        for cat in wc.catalogs.list():
+            catalogs.append({"name": cat.name})
         return {"catalogs": catalogs}
     except Exception as e:
         logger.error("[databricks_ingest] get_catalogs failed: %s", e)
@@ -158,9 +161,12 @@ def get_databricks_schemas(
 ):
     """Fetch schemas within a Databricks catalog."""
     try:
-        from app.services.databricks_unity_catalog_service import get_unity_catalog_service_for_user
-        svc = get_unity_catalog_service_for_user(request)
-        schemas = svc.get_schemas(catalog_name)
+        from app.services.databricks_ingestion_service import _get_workspace_client
+        token = _get_user_token(request)
+        wc = _get_workspace_client(token)
+        schemas = []
+        for schema in wc.schemas.list(catalog_name):
+            schemas.append({"name": schema.name})
         return {"schemas": schemas}
     except Exception as e:
         logger.error("[databricks_ingest] get_schemas failed: %s", e)
