@@ -35,19 +35,28 @@ INGESTION_SCRIPTS: Dict[str, str] = {
     "mysql": '''
 import sys
 import os
+import argparse
 from pyspark.sql import SparkSession
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--source_host")
+parser.add_argument("--source_port", default="3306")
+parser.add_argument("--source_database")
+parser.add_argument("--source_username")
+parser.add_argument("--source_password")
+parser.add_argument("--target_catalog", default="main")
+parser.add_argument("--target_schema", default="dataone_ingested")
+args, _ = parser.parse_known_args()
 
 spark = SparkSession.builder.appName("DataOne_MySQL_Ingestion").getOrCreate()
 
-# Read params from Databricks job config
-source_host = spark.conf.get("dataone.source.host")
-source_port = spark.conf.get("dataone.source.port", "3306")
-source_db = spark.conf.get("dataone.source.database")
-source_user = spark.conf.get("dataone.source.username")
-source_password = spark.conf.get("dataone.source.password")
-target_catalog = spark.conf.get("dataone.target.catalog", "main")
-target_schema = spark.conf.get("dataone.target.schema", "dataone_ingested")
-source_table = spark.conf.get("dataone.source.table", "*")
+source_host = args.source_host
+source_port = args.source_port
+source_db = args.source_database
+source_user = args.source_username
+source_password = args.source_password
+target_catalog = args.target_catalog
+target_schema = args.target_schema
 
 jdbc_url = f"jdbc:mysql://{source_host}:{source_port}/{source_db}"
 connection_properties = {"user": source_user, "password": source_password, "driver": "com.mysql.cj.jdbc.Driver"}
@@ -73,17 +82,28 @@ print("[DataOne] MySQL ingestion complete")
 
     "postgres": '''
 import sys
+import argparse
 from pyspark.sql import SparkSession
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--source_host")
+parser.add_argument("--source_port", default="5432")
+parser.add_argument("--source_database")
+parser.add_argument("--source_username")
+parser.add_argument("--source_password")
+parser.add_argument("--target_catalog", default="main")
+parser.add_argument("--target_schema", default="dataone_ingested")
+args, _ = parser.parse_known_args()
 
 spark = SparkSession.builder.appName("DataOne_PostgreSQL_Ingestion").getOrCreate()
 
-source_host = spark.conf.get("dataone.source.host")
-source_port = spark.conf.get("dataone.source.port", "5432")
-source_db = spark.conf.get("dataone.source.database")
-source_user = spark.conf.get("dataone.source.username")
-source_password = spark.conf.get("dataone.source.password")
-target_catalog = spark.conf.get("dataone.target.catalog", "main")
-target_schema = spark.conf.get("dataone.target.schema", "dataone_ingested")
+source_host = args.source_host
+source_port = args.source_port
+source_db = args.source_database
+source_user = args.source_username
+source_password = args.source_password
+target_catalog = args.target_catalog
+target_schema = args.target_schema
 
 jdbc_url = f"jdbc:postgresql://{source_host}:{source_port}/{source_db}"
 props = {"user": source_user, "password": source_password, "driver": "org.postgresql.Driver"}
@@ -103,15 +123,24 @@ print("[DataOne] PostgreSQL ingestion complete")
 ''',
 
     "mongodb": '''
+import argparse
 from pyspark.sql import SparkSession
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--source_connection_string")
+parser.add_argument("--source_database")
+parser.add_argument("--target_catalog", default="main")
+parser.add_argument("--target_schema", default="dataone_ingested")
+parser.add_argument("--source_collections", default="")
+args, _ = parser.parse_known_args()
 
 spark = SparkSession.builder.appName("DataOne_MongoDB_Ingestion").getOrCreate()
 
-conn_str = spark.conf.get("dataone.source.connection_string")
-source_db = spark.conf.get("dataone.source.database")
-target_catalog = spark.conf.get("dataone.target.catalog", "main")
-target_schema = spark.conf.get("dataone.target.schema", "dataone_ingested")
-collections = spark.conf.get("dataone.source.collections", "").split(",")
+conn_str = args.source_connection_string
+source_db = args.source_database
+target_catalog = args.target_catalog
+target_schema = args.target_schema
+collections = args.source_collections.split(",")
 
 for collection in [c.strip() for c in collections if c.strip()]:
     df = (spark.read.format("mongodb")
@@ -559,9 +588,14 @@ class DatabricksIngestionService:
 
             # Trigger job run with spark_conf overrides
             # Trigger job run with spark_conf overrides
+            python_params = []
+            for k, v in params.items():
+                arg_name = "--" + k.replace("dataone.", "").replace(".", "_")
+                python_params.extend([arg_name, str(v)])
+
             run_response = ws.jobs.run_now(
                 job_id=job_id,
-                job_parameters=params,
+                python_params=python_params,
             )
             databricks_run_id = run_response.run_id
 
