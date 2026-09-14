@@ -53,7 +53,7 @@ source_db = dbutils.widgets.get("dataone.source.database")
 source_user = dbutils.widgets.get("dataone.source.username")
 source_password = dbutils.widgets.get("dataone.source.password")
 target_catalog = dbutils.widgets.get("dataone.target.catalog")
-if not target_catalog: target_catalog = "main"
+if not target_catalog: target_catalog = "workspace"
 target_schema = dbutils.widgets.get("dataone.target.schema")
 if not target_schema: target_schema = "dataone_ingested"
 
@@ -109,7 +109,7 @@ source_db = dbutils.widgets.get("dataone.source.database")
 source_user = dbutils.widgets.get("dataone.source.username")
 source_password = dbutils.widgets.get("dataone.source.password")
 target_catalog = dbutils.widgets.get("dataone.target.catalog")
-if not target_catalog: target_catalog = "main"
+if not target_catalog: target_catalog = "workspace"
 target_schema = dbutils.widgets.get("dataone.target.schema")
 if not target_schema: target_schema = "dataone_ingested"
 
@@ -163,7 +163,7 @@ source_db = dbutils.widgets.get("dataone.source.database")
 source_user = dbutils.widgets.get("dataone.source.username")
 source_password = dbutils.widgets.get("dataone.source.password")
 target_catalog = dbutils.widgets.get("dataone.target.catalog")
-if not target_catalog: target_catalog = "main"
+if not target_catalog: target_catalog = "workspace"
 target_schema = dbutils.widgets.get("dataone.target.schema")
 if not target_schema: target_schema = "dataone_ingested"
 
@@ -216,7 +216,7 @@ from pyspark.sql import SparkSession
 spark = SparkSession.builder.appName("DataOne_CSV_Ingestion").getOrCreate()
 
 csv_path = spark.conf.get("dataone.source.path")  # dbfs:// or s3:// or /Volumes/...
-target_catalog = spark.conf.get("dataone.target.catalog", "main")
+target_catalog = spark.conf.get("dataone.target.catalog", "workspace")
 target_schema = spark.conf.get("dataone.target.schema", "dataone_ingested")
 target_table_name = spark.conf.get("dataone.target.table", "csv_import")
 
@@ -241,7 +241,7 @@ sfPassword = spark.conf.get("dataone.source.password")
 sfDatabase = spark.conf.get("dataone.source.database")
 sfSchema = spark.conf.get("dataone.source.schema", "PUBLIC")
 sfWarehouse = spark.conf.get("dataone.source.warehouse", "COMPUTE_WH")
-target_catalog = spark.conf.get("dataone.target.catalog", "main")
+target_catalog = spark.conf.get("dataone.target.catalog", "workspace")
 target_schema_name = spark.conf.get("dataone.target.schema", "dataone_ingested")
 
 snowflake_opts = {
@@ -276,7 +276,7 @@ source_port = spark.conf.get("dataone.source.port", "1433")
 source_db = spark.conf.get("dataone.source.database")
 source_user = spark.conf.get("dataone.source.username")
 source_password = spark.conf.get("dataone.source.password")
-target_catalog = spark.conf.get("dataone.target.catalog", "main")
+target_catalog = spark.conf.get("dataone.target.catalog", "workspace")
 target_schema = spark.conf.get("dataone.target.schema", "dataone_ingested")
 
 jdbc_url = f"jdbc:sqlserver://{source_host}:{source_port};databaseName={source_db};encrypt=true;trustServerCertificate=true"
@@ -402,7 +402,7 @@ def _build_job_params(source_conn: DBConnection, target_conn: Optional[DBConnect
     # Target params
     if target_conn:
         tcfg = target_conn.config or {}
-        params["dataone.target.catalog"] = tcfg.get("catalog", "main")
+        params["dataone.target.catalog"] = tcfg.get("catalog", "workspace")
         params["dataone.target.schema"] = tcfg.get("schema", "dataone_ingested")
 
     return params
@@ -605,7 +605,7 @@ class DatabricksIngestionService:
         params = _build_job_params(source_conn, target_conn)
         
         # Override target catalog/schema if explicitly provided (even if target_conn is None)
-        params["dataone.target.catalog"] = target_catalog or "main"
+        params["dataone.target.catalog"] = target_catalog or "workspace"
         params["dataone.target.schema"] = target_schema or "dataone_ingested"
 
         # Create IngestionRun record
@@ -756,7 +756,7 @@ class DatabricksIngestionService:
             
             # Get target catalog/schema from trigger params
             params = run_record.trigger_params or {}
-            target_catalog = params.get("dataone.target.catalog", "main")
+            target_catalog = params.get("dataone.target.catalog", "workspace")
             target_schema = params.get("dataone.target.schema", "dataone_ingested")
             
             # Get source database name to identify tables
