@@ -37,7 +37,7 @@ export function ReversibleBadge({
 
 export function ConfidenceBadge({ value }: { value: number }): ReactElement {
   return (
-    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/20">
+    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/10 text-white/80 border border-white/10">
       {Math.round(value)}%
     </span>
   );
@@ -65,7 +65,7 @@ export function OutcomeBadge({ outcome }: { outcome: string }): ReactElement {
 }
 
 const STATUS_STYLES: Record<string, string> = {
-  pending: "bg-violet-500/10 text-violet-300 border-violet-500/25",
+  pending: "bg-white/5 text-white/80 border-white/10",
   approved: "bg-blue-500/10 text-blue-300 border-blue-500/25",
   executing: "bg-blue-500/10 text-blue-300 border-blue-500/25",
   executed: "bg-emerald-500/10 text-emerald-300 border-emerald-500/25",

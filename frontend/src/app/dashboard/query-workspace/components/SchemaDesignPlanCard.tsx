@@ -7,7 +7,7 @@ const POLL_MS = 2500;
 
 const STATUS_META: Record<string, { label: string; cls: string }> = {
   generating: { label: "Generating plan…", cls: "text-blue-300 bg-blue-500/10 border-blue-500/30" },
-  ready: { label: "Ready for review", cls: "text-violet-300 bg-violet-500/10 border-violet-500/30" },
+  ready: { label: "Ready for review", cls: "text-white/80 bg-white/5 border-white/20" },
   failed: { label: "Failed", cls: "text-red-300 bg-red-500/10 border-red-500/30" },
   rejected: { label: "Rejected", cls: "text-fg-subtle bg-surface-overlay border-border-strong/30" },
   applying: { label: "Applying…", cls: "text-amber-300 bg-amber-500/10 border-amber-500/30" },
@@ -104,9 +104,9 @@ export default function SchemaDesignPlanCard({ planId }: { planId: number }) {
   const reviewable = plan.status === "ready";
 
   return (
-    <div className="mt-2 rounded-xl border border-violet-500/20 bg-surface-elevated p-3 flex flex-col gap-2">
+    <div className="mt-2 rounded-xl border border-white/10 bg-surface-elevated p-3 flex flex-col gap-2">
       <div className="flex items-center gap-2">
-        <span className="text-[10px] font-semibold text-violet-300">📐 Schema Design Plan #{plan.id}</span>
+        <span className="text-[10px] font-semibold text-white/80">  Schema Design Plan #{plan.id}</span>
         <span className={`text-[10px] px-2 py-0.5 rounded-full border ${meta.cls}`}>
           {meta.label}
         </span>
@@ -117,7 +117,7 @@ export default function SchemaDesignPlanCard({ planId }: { planId: number }) {
 
       {plan.status === "generating" && (
         <div className="flex items-center gap-2 text-[11px] text-fg-subtle">
-          <div className="w-2 h-2 bg-violet-400 rounded-full animate-pulse" />
+          <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
           Grounding in the Schema Intel catalog and profiling stats…
         </div>
       )}
@@ -159,7 +159,7 @@ export default function SchemaDesignPlanCard({ planId }: { planId: number }) {
         <ul className="flex flex-col gap-1.5">
           {dqRules.map((r, i) => (
             <li key={i} className="text-[10px]">
-              <span className="font-mono text-violet-300 uppercase">{r.rule}</span>{" "}
+              <span className="font-mono text-white/80 uppercase">{r.rule}</span>{" "}
               <span className="font-mono text-fg-muted">{r.target_table}.{r.target_column}</span>
               <span className="text-fg0"> — {r.justification}</span>{" "}
               <span className="text-fg-subtle">({Math.round(r.confidence * 100)}% confidence)</span>
@@ -245,7 +245,7 @@ export default function SchemaDesignPlanCard({ planId }: { planId: number }) {
           <button
             onClick={() => setConfirming(true)}
             disabled={!reviewable || acting}
-            className="px-3 py-1.5 text-[11px] font-semibold rounded-lg bg-gradient-to-r from-violet-500 to-blue-600 text-white disabled:opacity-40"
+            className="px-3 py-1.5 text-[11px] font-semibold rounded-lg bg-white text-white disabled:opacity-40"
           >
             Approve &amp; Create
           </button>

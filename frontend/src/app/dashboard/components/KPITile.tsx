@@ -5,7 +5,7 @@ import type { KPITileData } from "../types";
 // Value accent per module, matching the pre-existing dashboard palette.
 const MODULE_COLORS: Record<string, string> = {
   connectors: "text-blue-400",
-  mappings: "text-violet-400",
+  mappings: "text-white",
   pipelines: "text-emerald-400",
   query: "text-cyan-400",
   security: "text-rose-400",

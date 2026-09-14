@@ -172,8 +172,8 @@ export default function SchemaComparisonPage() {
                       </div>
                     ))}
                     {table.changed_constraints.map((c) => (
-                      <div key={`constraint-${c.column}`} className="text-violet-400">
-                        ⚡ Constraint changed: <span className="font-mono">{c.column}</span>
+                      <div key={`constraint-${c.column}`} className="text-white">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> Constraint changed: <span className="font-mono">{c.column}</span>
                         {c.source_primary_key !== c.target_primary_key && ` (primary key: ${c.source_primary_key} → ${c.target_primary_key})`}
                         {c.source_nullable !== c.target_nullable && ` (nullable: ${c.source_nullable} → ${c.target_nullable})`}
                       </div>

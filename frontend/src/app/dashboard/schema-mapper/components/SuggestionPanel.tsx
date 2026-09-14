@@ -75,11 +75,11 @@ export default function SuggestionPanel({
             type="button"
             onClick={onRequest}
             disabled={loading}
-            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-violet-500 to-purple-600 text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Request AI suggestions"
             title={loading ? "AI suggestions are already generating for this mapping" : undefined}
           >
-            {loading ? "Generating…" : "🧠 AI Suggest"}
+            {loading ? "Generating…" : "  AI Suggest"}
           </button>
         )}
       </div>

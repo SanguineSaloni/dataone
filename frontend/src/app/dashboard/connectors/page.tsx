@@ -369,8 +369,8 @@ function CatalogBrowser() {
                     <div key={schema}>
                       {/* Schema label */}
                       <div className="px-5 py-2 bg-[#0f0f11] flex items-center gap-2">
-                        <svg className="w-3.5 h-3.5 text-violet-400/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
-                        <span className="text-[12px] font-semibold text-violet-400/80">{schema}</span>
+                        <svg className="w-3.5 h-3.5 text-white/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+                        <span className="text-[12px] font-semibold text-white/80">{schema}</span>
                         <span className="ml-auto text-[11px] text-white/30">{schemaTables.length} tables</span>
                       </div>
 
@@ -406,7 +406,7 @@ function CatalogBrowser() {
                                       .map(col => (
                                         <tr key={col.id} className="hover:bg-white/[0.01]">
                                           <td className="px-10 py-1.5 text-white/70 font-mono text-[11px]">{col.column_name}</td>
-                                          <td className="px-4 py-1.5 text-violet-400/70">{col.data_type}</td>
+                                          <td className="px-4 py-1.5 text-white/70">{col.data_type}</td>
                                           <td className="px-4 py-1.5 text-white/40">{col.nullable ? "yes" : "no"}</td>
                                           <td className="px-4 py-1.5">{col.is_primary_key ? <span className="text-amber-400 text-[10px] font-bold">PK</span> : <span className="text-white/20">—</span>}</td>
                                         </tr>
@@ -561,7 +561,7 @@ export default function ConnectorsPage() {
   const tabs: { id: Tab; label: string; icon: string }[] = [
     { id: "new",       label: "New Connection",    icon: "➕" },
     { id: "connections", label: "Saved Connections", icon: "🔗" },
-    { id: "pipelines", label: "Active Pipelines",  icon: "⚡" },
+    { id: "pipelines", label: "Active Pipelines",  icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> },
     { id: "catalog",   label: "Unity Catalog",     icon: "🏔" },
   ];
 
@@ -621,7 +621,7 @@ export default function ConnectorsPage() {
                 {currentRun.error_message && <p className="mt-2 text-xs text-red-400">{currentRun.error_message}</p>}
                 {currentRun.status === "running" && (
                   <div className="mt-3 h-1.5 bg-white/5 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full animate-pulse" style={{ width: "60%" }} />
+                    <div className="h-full bg-white rounded-full animate-pulse" style={{ width: "60%" }} />
                   </div>
                 )}
               </div>
@@ -697,14 +697,14 @@ export default function ConnectorsPage() {
             {/* CTA */}
             <div className="flex justify-center w-full pt-2">
               <button id="establish-connection-btn" onClick={handleEstablishConnection} disabled={isSubmitting}
-                className="flex items-center gap-3 px-10 py-4 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-[15px] font-bold hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 transition-all shadow-xl shadow-indigo-900/40">
+                className="flex items-center gap-3 px-10 py-4 rounded-xl bg-white text-black text-[15px] font-bold hover:bg-gray-200 disabled:opacity-50 transition-all shadow-xl shadow-white/10">
                 {isSubmitting ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     {runStatus === "connecting" ? "Connecting…" : runStatus === "triggering" ? "Triggering pipeline…" : "Pipeline running…"}
                   </>
                 ) : (
-                  <>⚡ Establish Connection &amp; Trigger Ingestion</>
+                  <><svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> Establish Connection &amp; Trigger Ingestion</>
                 )}
               </button>
             </div>
@@ -770,7 +770,7 @@ export default function ConnectorsPage() {
               </div>
             ) : runs.length === 0 ? (
               <div className="text-center py-16">
-                <div className="text-5xl mb-4">⚡</div>
+                <div className="text-5xl mb-4"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg></div>
                 <p className="text-white/40 text-sm">No pipelines yet.</p>
                 <p className="text-white/25 text-xs mt-1">Create a connection in the &quot;New Connection&quot; tab to trigger your first Databricks ingestion pipeline.</p>
                 <button onClick={() => setActiveTab("new")}

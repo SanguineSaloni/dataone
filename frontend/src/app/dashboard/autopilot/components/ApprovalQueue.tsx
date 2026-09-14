@@ -69,7 +69,7 @@ export default function ApprovalQueue({
               onClick={() => onStatusFilter(f)}
               className={`px-2.5 py-1 text-xs rounded-lg border ${
                 statusFilter === f
-                  ? "bg-violet-500/15 text-violet-300 border-violet-500/30"
+                  ? "bg-white/10 text-white/80 border-white/20"
                   : "bg-surface text-fg0 border-border hover:text-fg-muted"
               }`}
             >
@@ -82,7 +82,7 @@ export default function ApprovalQueue({
             type="button"
             onClick={onEvaluate}
             disabled={evaluating}
-            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-violet-500 to-purple-600 text-white hover:opacity-90 disabled:opacity-50"
+            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white text-white hover:opacity-90 disabled:opacity-50"
           >
             {evaluating ? "Evaluating…" : "🔎 Evaluate triggers now"}
           </button>

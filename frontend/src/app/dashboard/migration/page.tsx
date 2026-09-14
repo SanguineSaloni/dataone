@@ -100,7 +100,7 @@ export default function MigrationPage() {
         <h1 className="text-sm font-bold text-white/80">Transform Data. Amplify Possibilities.</h1>
         <div className="flex gap-2">
           <Link href="/dashboard" className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/60 text-xs font-semibold hover:bg-white/10 transition-colors">🏠 Dashboard</Link>
-          <Link href="/dashboard/visualize" className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/60 text-xs font-semibold hover:bg-white/10 transition-colors">📊 Data Visualization</Link>
+          <Link href="/dashboard/visualize" className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/60 text-xs font-semibold hover:bg-white/10 transition-colors">  Data Visualization</Link>
         </div>
       </div>
 
@@ -116,7 +116,7 @@ export default function MigrationPage() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold">
-                  ⚡ {AI_CONFIDENCE}% AI Match
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> {AI_CONFIDENCE}% AI Match
                 </span>
                 <Link href="/dashboard/schema-mapper" className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/60 text-xs font-semibold hover:bg-white/10 transition-colors">
                   View Details →
@@ -189,7 +189,7 @@ export default function MigrationPage() {
           <div className="p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <span className="text-lg">🤖</span>
+                <span className="text-lg"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg></span>
                 <h2 className="font-semibold text-white/90">Agentic DBA Copilot</h2>
               </div>
               <Link href="/dashboard/autopilot" className="text-xs text-indigo-400 hover:text-indigo-300">View All →</Link>
@@ -219,8 +219,8 @@ export default function MigrationPage() {
                 </div>
                 <div className="grid grid-cols-3 gap-2 mb-4">
                   {[
-                    { icon: "⚡", value: "1.4s", label: "Est. Execution Time", sub: "Good performance" },
-                    { icon: "📊", value: "100%", label: "Schema Compatibility", sub: "No blocking issues" },
+                    { icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>, value: "1.4s", label: "Est. Execution Time", sub: "Good performance" },
+                    { icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>, value: "100%", label: "Schema Compatibility", sub: "No blocking issues" },
                     { icon: "📋", value: "1.2M", label: "Rows Ready", sub: "Validated" },
                   ].map((m) => (
                     <div key={m.label} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-2.5 text-center">
