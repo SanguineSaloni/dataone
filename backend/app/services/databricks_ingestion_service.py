@@ -449,7 +449,7 @@ class DatabricksIngestionService:
                     Task(
                         task_key="ingestion",
                         notebook_task=NotebookTask(
-                            notebook_path=f"/Workspace{script_path}",
+                            notebook_path=script_path,
                         ),
                         timeout_seconds=7200,
                     )
