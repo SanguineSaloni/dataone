@@ -35,45 +35,55 @@ INGESTION_SCRIPTS: Dict[str, str] = {
     "mysql": '''
 # Databricks notebook source
 # COMMAND ----------
+%pip install pymysql pandas
+dbutils.library.restartPython()
+
+# COMMAND ----------
 import sys
-import os
+import pymysql
+import pandas as pd
 from pyspark.sql import SparkSession
 
 spark = SparkSession.builder.appName("DataOne_MySQL_Ingestion").getOrCreate()
 
-def get_param(name, default_val=None):
-    try:
-        val = dbutils.widgets.get(name)
-        return val if val else default_val
-    except:
-        return default_val
+source_host = dbutils.widgets.get("dataone.source.host")
+source_port = dbutils.widgets.get("dataone.source.port")
+if not source_port: source_port = "3306"
+source_db = dbutils.widgets.get("dataone.source.database")
+source_user = dbutils.widgets.get("dataone.source.username")
+source_password = dbutils.widgets.get("dataone.source.password")
+target_catalog = dbutils.widgets.get("dataone.target.catalog")
+if not target_catalog: target_catalog = "main"
+target_schema = dbutils.widgets.get("dataone.target.schema")
+if not target_schema: target_schema = "dataone_ingested"
 
-source_host = get_param("dataone.source.host")
-source_port = get_param("dataone.source.port", "3306")
-source_db = get_param("dataone.source.database")
-source_user = get_param("dataone.source.username")
-source_password = get_param("dataone.source.password")
-target_catalog = get_param("dataone.target.catalog", "main")
-target_schema = get_param("dataone.target.schema", "dataone_ingested")
+print(f"Connecting to MySQL at {source_host}:{source_port}...")
+conn = pymysql.connect(host=source_host, port=int(source_port), user=source_user, password=source_password, database=source_db)
 
-jdbc_url = f"jdbc:mysql://{source_host}:{source_port}/{source_db}"
-connection_properties = {"user": source_user, "password": source_password, "driver": "com.mysql.cj.jdbc.Driver"}
+try:
+    tables_df = pd.read_sql(f"SELECT table_name FROM information_schema.tables WHERE table_schema='{source_db}'", conn)
+    tables = tables_df.iloc[:, 0].tolist()
 
-# Get list of tables
-tables_query = f"(SELECT table_name FROM information_schema.tables WHERE table_schema='{source_db}') t"
-tables_df = spark.read.jdbc(jdbc_url, tables_query, properties=connection_properties)
-tables = [row[0] for row in tables_df.collect()]
-
-for table in tables:
-    df = spark.read.jdbc(jdbc_url, table, properties=connection_properties)
-    # Data quality: drop exact duplicates, fill nulls for string cols
-    df = df.dropDuplicates()
-    string_cols = [f.name for f in df.schema.fields if str(f.dataType) == "StringType()"]
-    for col in string_cols:
-        df = df.fillna({col: ""})
-    target_table = f"{target_catalog}.{target_schema}.{source_db}_{table}"
-    df.write.format("delta").mode("overwrite").option("mergeSchema", "true").saveAsTable(target_table)
-    print(f"[DataOne] Ingested {df.count()} rows into {target_table}")
+    for table in tables:
+        print(f"Extracting {table}...")
+        df_pd = pd.read_sql(f"SELECT * FROM {table}", conn)
+        
+        if df_pd.empty:
+            print(f"Table {table} is empty. Skipping.")
+            continue
+            
+        df = spark.createDataFrame(df_pd)
+        df = df.dropDuplicates()
+        
+        target_table = f"{target_catalog}.{target_schema}.{source_db}_{table}"
+        
+        # Ensure schema exists
+        spark.sql(f"CREATE SCHEMA IF NOT EXISTS {target_catalog}.{target_schema}")
+        
+        df.write.format("delta").mode("overwrite").option("mergeSchema", "true").saveAsTable(target_table)
+        print(f"[DataOne] Ingested {df.count()} rows into {target_table}")
+finally:
+    conn.close()
 
 print("[DataOne] MySQL ingestion complete")
 ''',
@@ -81,39 +91,53 @@ print("[DataOne] MySQL ingestion complete")
     "postgres": '''
 # Databricks notebook source
 # COMMAND ----------
+%pip install psycopg2-binary pandas
+dbutils.library.restartPython()
+
+# COMMAND ----------
 import sys
+import psycopg2
+import pandas as pd
 from pyspark.sql import SparkSession
 
 spark = SparkSession.builder.appName("DataOne_PostgreSQL_Ingestion").getOrCreate()
 
-def get_param(name, default_val=None):
-    try:
-        val = dbutils.widgets.get(name)
-        return val if val else default_val
-    except:
-        return default_val
+source_host = dbutils.widgets.get("dataone.source.host")
+source_port = dbutils.widgets.get("dataone.source.port")
+if not source_port: source_port = "5432"
+source_db = dbutils.widgets.get("dataone.source.database")
+source_user = dbutils.widgets.get("dataone.source.username")
+source_password = dbutils.widgets.get("dataone.source.password")
+target_catalog = dbutils.widgets.get("dataone.target.catalog")
+if not target_catalog: target_catalog = "main"
+target_schema = dbutils.widgets.get("dataone.target.schema")
+if not target_schema: target_schema = "dataone_ingested"
 
-source_host = get_param("dataone.source.host")
-source_port = get_param("dataone.source.port", "5432")
-source_db = get_param("dataone.source.database")
-source_user = get_param("dataone.source.username")
-source_password = get_param("dataone.source.password")
-target_catalog = get_param("dataone.target.catalog", "main")
-target_schema = get_param("dataone.target.schema", "dataone_ingested")
+print(f"Connecting to Postgres at {source_host}:{source_port}...")
+conn = psycopg2.connect(host=source_host, port=int(source_port), user=source_user, password=source_password, dbname=source_db)
 
-jdbc_url = f"jdbc:postgresql://{source_host}:{source_port}/{source_db}"
-props = {"user": source_user, "password": source_password, "driver": "org.postgresql.Driver"}
+try:
+    tables_df = pd.read_sql("SELECT table_name FROM information_schema.tables WHERE table_schema='public'", conn)
+    tables = tables_df.iloc[:, 0].tolist()
 
-tables_query = "(SELECT table_name FROM information_schema.tables WHERE table_schema='public') t"
-tables_df = spark.read.jdbc(jdbc_url, tables_query, properties=props)
-tables = [row[0] for row in tables_df.collect()]
-
-for table in tables:
-    df = spark.read.jdbc(jdbc_url, f"public.{table}", properties=props)
-    df = df.dropDuplicates()
-    target_table = f"{target_catalog}.{target_schema}.{source_db}_{table}"
-    df.write.format("delta").mode("overwrite").option("mergeSchema", "true").saveAsTable(target_table)
-    print(f"[DataOne] Ingested {df.count()} rows -> {target_table}")
+    for table in tables:
+        print(f"Extracting {table}...")
+        df_pd = pd.read_sql(f"SELECT * FROM public.{table}", conn)
+        
+        if df_pd.empty:
+            print(f"Table {table} is empty. Skipping.")
+            continue
+            
+        df = spark.createDataFrame(df_pd)
+        df = df.dropDuplicates()
+        
+        target_table = f"{target_catalog}.{target_schema}.{source_db}_{table}"
+        
+        spark.sql(f"CREATE SCHEMA IF NOT EXISTS {target_catalog}.{target_schema}")
+        df.write.format("delta").mode("overwrite").option("mergeSchema", "true").saveAsTable(target_table)
+        print(f"[DataOne] Ingested {df.count()} rows into {target_table}")
+finally:
+    conn.close()
 
 print("[DataOne] PostgreSQL ingestion complete")
 ''',
@@ -121,33 +145,67 @@ print("[DataOne] PostgreSQL ingestion complete")
     "mongodb": '''
 # Databricks notebook source
 # COMMAND ----------
+%pip install pymongo pandas
+dbutils.library.restartPython()
+
+# COMMAND ----------
+import sys
+import pymongo
+import pandas as pd
 from pyspark.sql import SparkSession
 
 spark = SparkSession.builder.appName("DataOne_MongoDB_Ingestion").getOrCreate()
 
-def get_param(name, default_val=None):
-    try:
-        val = dbutils.widgets.get(name)
-        return val if val else default_val
-    except:
-        return default_val
+source_host = dbutils.widgets.get("dataone.source.host")
+source_port = dbutils.widgets.get("dataone.source.port")
+if not source_port: source_port = "27017"
+source_db = dbutils.widgets.get("dataone.source.database")
+source_user = dbutils.widgets.get("dataone.source.username")
+source_password = dbutils.widgets.get("dataone.source.password")
+target_catalog = dbutils.widgets.get("dataone.target.catalog")
+if not target_catalog: target_catalog = "main"
+target_schema = dbutils.widgets.get("dataone.target.schema")
+if not target_schema: target_schema = "dataone_ingested"
 
-conn_str = get_param("dataone.source.connection_string")
-source_db = get_param("dataone.source.database")
-target_catalog = get_param("dataone.target.catalog", "main")
-target_schema = get_param("dataone.target.schema", "dataone_ingested")
-collections = get_param("dataone.source.collections", "").split(",")
+print(f"Connecting to MongoDB at {source_host}:{source_port}...")
+mongo_uri = f"mongodb://{source_user}:{source_password}@{source_host}:{source_port}/?authSource={source_db}"
+client = pymongo.MongoClient(mongo_uri)
+db = client[source_db]
 
-for collection in [c.strip() for c in collections if c.strip()]:
-    df = (spark.read.format("mongodb")
-          .option("connection.uri", conn_str)
-          .option("database", source_db)
-          .option("collection", collection)
-          .load())
-    df = df.dropDuplicates()
-    target_table = f"{target_catalog}.{target_schema}.{source_db}_{collection}"
-    df.write.format("delta").mode("overwrite").option("mergeSchema", "true").saveAsTable(target_table)
-    print(f"[DataOne] Ingested MongoDB collection {collection} -> {target_table}")
+try:
+    collections = db.list_collection_names()
+    
+    for coll in collections:
+        print(f"Extracting {coll}...")
+        cursor = db[coll].find()
+        
+        # Convert to pandas
+        records = list(cursor)
+        if not records:
+            print(f"Collection {coll} is empty. Skipping.")
+            continue
+            
+        # Convert ObjectIds to strings
+        for doc in records:
+            if "_id" in doc:
+                doc["_id"] = str(doc["_id"])
+                
+        df_pd = pd.DataFrame(records)
+        # Convert any nested dicts/lists to strings to prevent PySpark schema issues
+        for col in df_pd.columns:
+            if df_pd[col].dtype == 'object':
+                df_pd[col] = df_pd[col].astype(str)
+                
+        df = spark.createDataFrame(df_pd)
+        df = df.dropDuplicates()
+        
+        target_table = f"{target_catalog}.{target_schema}.{source_db}_{coll}"
+        
+        spark.sql(f"CREATE SCHEMA IF NOT EXISTS {target_catalog}.{target_schema}")
+        df.write.format("delta").mode("overwrite").option("mergeSchema", "true").saveAsTable(target_table)
+        print(f"[DataOne] Ingested {df.count()} rows into {target_table}")
+finally:
+    client.close()
 
 print("[DataOne] MongoDB ingestion complete")
 ''',
