@@ -227,6 +227,7 @@ def _get_workspace_client(token: Optional[str] = None):
     """Return a Databricks WorkspaceClient using provided token or env config."""
     try:
         from databricks.sdk import WorkspaceClient
+        from databricks.sdk.config import Config
         
         # Native Databricks Apps mode uses DATABRICKS_HOST
         host = settings.DATABRICKS_WORKSPACE_URL
@@ -234,11 +235,25 @@ def _get_workspace_client(token: Optional[str] = None):
             host = f"https://{settings.DATABRICKS_HOST}"
 
         if token:
-            return WorkspaceClient(host=host, token=token)
+            # When user token is provided, use ONLY that token (ignore env OAuth)
+            # Create explicit config to override environment variables
+            config = Config(
+                host=host,
+                token=token,
+                client_id=None,  # Explicitly disable OAuth
+                client_secret=None,
+            )
+            return WorkspaceClient(config=config)
         elif settings.DATABRICKS_ACCESS_TOKEN:
-            return WorkspaceClient(host=host, token=settings.DATABRICKS_ACCESS_TOKEN)
+            config = Config(
+                host=host,
+                token=settings.DATABRICKS_ACCESS_TOKEN,
+                client_id=None,
+                client_secret=None,
+            )
+            return WorkspaceClient(config=config)
         else:
-            # Fall back to M2M OAuth (via DATABRICKS_CLIENT_ID / DATABRICKS_CLIENT_SECRET)
+            # Fall back to M2M OAuth (via DATABRICKS_CLIENT_ID / DATABRICKS_CLIENT_SECRET from env)
             return WorkspaceClient(host=host)
     except Exception as e:
         logger.error("[databricks_ingestion] stage=get_client failed: %s", e)
