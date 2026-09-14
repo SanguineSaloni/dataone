@@ -134,3 +134,34 @@ def trigger_genie(
         space_id=req.space_id,
         user_token=_get_user_token(request),
     )
+@router.get("/catalogs")
+def get_databricks_catalogs(
+    request: Request,
+    user: User = Depends(get_current_user)
+):
+    """Fetch available Databricks Unity Catalog names."""
+    try:
+        from app.services.databricks_unity_catalog_service import get_unity_catalog_service_for_user
+        svc = get_unity_catalog_service_for_user(request)
+        catalogs = svc.get_catalogs()
+        return {"catalogs": catalogs}
+    except Exception as e:
+        logger.error("[databricks_ingest] get_catalogs failed: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/catalogs/{catalog_name}/schemas")
+def get_databricks_schemas(
+    catalog_name: str,
+    request: Request,
+    user: User = Depends(get_current_user)
+):
+    """Fetch schemas within a Databricks catalog."""
+    try:
+        from app.services.databricks_unity_catalog_service import get_unity_catalog_service_for_user
+        svc = get_unity_catalog_service_for_user(request)
+        schemas = svc.get_schemas(catalog_name)
+        return {"schemas": schemas}
+    except Exception as e:
+        logger.error("[databricks_ingest] get_schemas failed: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))

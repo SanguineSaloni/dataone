@@ -77,6 +77,21 @@ function DBFormPanel({ title, subtitle, form, onChange, types, showPassword, onT
   types: { value: string; label: string; port?: string }[];
   showPassword: boolean; onTogglePassword: () => void;
 }) {
+  const [catalogs, setCatalogs] = useState<any[]>([]);
+  const [schemas, setSchemas] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (form.dbType === "databricks") {
+      api.get("/api/v1/databricks/ingest/catalogs").then((res: any) => setCatalogs(res.catalogs || [])).catch(() => {});
+    }
+  }, [form.dbType]);
+
+  useEffect(() => {
+    if (form.dbType === "databricks" && form.catalog) {
+      api.get(`/api/v1/databricks/ingest/catalogs/${form.catalog}/schemas`).then((res: any) => setSchemas(res.schemas || [])).catch(() => {});
+    }
+  }, [form.dbType, form.catalog]);
+
   const set = (k: keyof DBForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const val = k === "ssl" ? (e.target as HTMLInputElement).checked : e.target.value;
     const updated = { ...form, [k]: val };
@@ -123,13 +138,29 @@ function DBFormPanel({ title, subtitle, form, onChange, types, showPassword, onT
           <>
             <div className="flex items-center">
               <label className="text-[13px] text-white/60 w-[160px] flex-shrink-0">Catalog Name</label>
-              <input type="text" value={form.catalog || ""} onChange={set("catalog")} placeholder="main"
-                className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-[#1a1a1a] border border-white/10 text-white text-[13px] placeholder:text-white/20 focus:outline-none focus:border-white/30 transition-colors" />
+              <div className="relative flex-1">
+                <select value={form.catalog || ""} onChange={set("catalog")}
+                  className="w-full px-3 py-2 rounded-lg bg-[#1a1a1a] border border-white/10 text-white text-[13px] appearance-none focus:outline-none focus:border-white/30 transition-colors">
+                  <option value="" disabled>Select Catalog...</option>
+                  {catalogs.map(c => <option key={c.name} value={c.name} className="bg-[#1a1a1a]">{c.name}</option>)}
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/30">
+                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M6 9l6 6 6-6" /></svg>
+                </div>
+              </div>
             </div>
             <div className="flex items-center">
               <label className="text-[13px] text-white/60 w-[160px] flex-shrink-0">Schema Name</label>
-              <input type="text" value={form.schema || ""} onChange={set("schema")} placeholder="default"
-                className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-[#1a1a1a] border border-white/10 text-white text-[13px] placeholder:text-white/20 focus:outline-none focus:border-white/30 transition-colors" />
+              <div className="relative flex-1">
+                <select value={form.schema || ""} onChange={set("schema")}
+                  className="w-full px-3 py-2 rounded-lg bg-[#1a1a1a] border border-white/10 text-white text-[13px] appearance-none focus:outline-none focus:border-white/30 transition-colors">
+                  <option value="" disabled>Select Schema...</option>
+                  {schemas.map(s => <option key={s.name} value={s.name} className="bg-[#1a1a1a]">{s.name}</option>)}
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/30">
+                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M6 9l6 6 6-6" /></svg>
+                </div>
+              </div>
             </div>
           </>
         ) : (

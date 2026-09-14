@@ -366,8 +366,10 @@ class DatabricksIngestionService:
 
             # Create Databricks Job with embedded Python script
             from databricks.sdk.service.jobs import (
-                JobSettings, Task, SparkPythonTask, JobCluster,
-                ClusterSpec, AutoScale, RuntimeEngine,
+                JobSettings, Task, SparkPythonTask, JobCluster
+            )
+            from databricks.sdk.service.compute import (
+                ClusterSpec, AutoScale, RuntimeEngine
             )
 
             job_settings = JobSettings(
