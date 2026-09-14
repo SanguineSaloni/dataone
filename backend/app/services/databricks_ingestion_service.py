@@ -411,12 +411,11 @@ class DatabricksIngestionService:
             from databricks.sdk.service.jobs import (
                 JobSettings, Task, SparkPythonTask
             )
-            from databricks.sdk.service.compute import ClusterSpec
             from databricks.sdk.service.workspace import ImportFormat
             
             script_path = f"/Shared/DataOne/Scripts/{source_type}_ingestion.py"
 
-            # Use a proper ClusterSpec object to avoid 'dict object has no attribute as_dict'
+            # Omit cluster configs entirely to natively trigger Serverless Compute
             job_settings = JobSettings(
                 name=job_name,
                 tasks=[
@@ -426,17 +425,6 @@ class DatabricksIngestionService:
                             python_file=f"/Workspace{script_path}",
                         ),
                         timeout_seconds=7200,
-                        new_cluster=ClusterSpec(
-                            spark_version="auto:latest-lts",
-                            node_type_id={"AWS": "i3.xlarge", "Azure": "Standard_DS3_v2", "GCP": "n1-standard-4"}.get(
-                                "AWS", "i3.xlarge"
-                            ),
-                            num_workers=1,
-                            spark_conf={
-                                "spark.databricks.cluster.profile": "serverless",
-                                "spark.databricks.delta.preview.enabled": "true",
-                            },
-                        ),
                     )
                 ],
             )
