@@ -381,7 +381,6 @@ class DatabricksIngestionService:
                         spark_python_task=SparkPythonTask(
                             python_file=f"/Workspace{script_path}",
                         ),
-                        environment_key="default",
                         timeout_seconds=7200,
                     )
                 ],
