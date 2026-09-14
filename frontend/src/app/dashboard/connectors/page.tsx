@@ -41,6 +41,7 @@ interface IngestionRun {
   databricks_run_url: string | null;
   error_message: string | null;
   created_at?: string;
+  source_connection_id?: number;
 }
 
 interface Connection {
