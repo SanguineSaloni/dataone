@@ -224,7 +224,13 @@ SOURCE_TYPE_DISPLAY = {
 
 
 def _get_workspace_client(token: Optional[str] = None):
-    """Return a Databricks WorkspaceClient using provided token or env config."""
+    """Return a Databricks WorkspaceClient using provided token or env config.
+    
+    Priority order:
+    1. User token passed as parameter (from user.databricks_access_token)
+    2. Environment DATABRICKS_ACCESS_TOKEN
+    3. OAuth M2M credentials from environment
+    """
     try:
         from databricks.sdk import WorkspaceClient
         from databricks.sdk.config import Config
@@ -381,9 +387,8 @@ class DatabricksIngestionService:
 
             # Create Databricks Job with embedded Python script
             from databricks.sdk.service.jobs import (
-                JobSettings, Task, SparkPythonTask, JobEnvironment
+                JobSettings, Task, SparkPythonTask
             )
-            from databricks.sdk.service.compute import Environment
             from databricks.sdk.service.workspace import ImportFormat
             
             script_path = f"/DataOne/Scripts/{source_type}_ingestion.py"
@@ -397,8 +402,17 @@ class DatabricksIngestionService:
                             python_file=f"/Workspace{script_path}",
                         ),
                         timeout_seconds=7200,
+                        # Add serverless compute environment
+                        environment_key="default",
                     )
                 ],
+                # Define the serverless environment
+                environments=[{
+                    "environment_key": "default",
+                    "spec": {
+                        "client": "1"  # Use serverless compute
+                    }
+                }],
             )
 
             # Upload the script to Workspace Files instead of DBFS
