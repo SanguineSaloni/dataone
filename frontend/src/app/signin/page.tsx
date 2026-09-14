@@ -3,7 +3,6 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Brand } from "@/components/Brand";
 import { api, ApiError } from "@/lib/api";
 import { auth } from "@/lib/auth";
 
@@ -47,61 +46,73 @@ function RedirectListener({
   return null;
 }
 
-// Floating node animation component
-function FloatingNodes() {
-  const nodes = [
-    { x: 15, y: 20, size: 6, delay: 0, duration: 8 },
-    { x: 75, y: 15, size: 4, delay: 1.5, duration: 10 },
-    { x: 35, y: 65, size: 8, delay: 0.8, duration: 7 },
-    { x: 80, y: 55, size: 5, delay: 2.2, duration: 9 },
-    { x: 55, y: 80, size: 6, delay: 1, duration: 11 },
-    { x: 20, y: 45, size: 4, delay: 3, duration: 8 },
-    { x: 90, y: 30, size: 7, delay: 0.5, duration: 12 },
-    { x: 45, y: 35, size: 5, delay: 2, duration: 9 },
-    { x: 65, y: 70, size: 4, delay: 1.8, duration: 10 },
-    { x: 10, y: 75, size: 6, delay: 2.5, duration: 8 },
+function RotatingHero() {
+  const [index, setIndex] = useState(0);
+
+  const slides = [
+    {
+      title: "AI Schema Mapping",
+      subtitle: "Precision Mapping",
+      desc: "Automatically analyze and map source schemas to target Databricks Delta Lake tables using our intelligent schema engine.",
+      icon: (
+        <svg className="w-24 h-24 text-white/20 mb-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3" />
+        </svg>
+      )
+    },
+    {
+      title: "Conversational Query",
+      subtitle: "NL2SQL Genie",
+      desc: "Ask questions in plain English and instantly get insights back. No SQL required to query your data in Databricks.",
+      icon: (
+        <svg className="w-24 h-24 text-white/20 mb-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3" />
+        </svg>
+      )
+    },
+    {
+      title: "Ingestion Pipelines",
+      subtitle: "Unified Orchestration",
+      desc: "Trigger, monitor, and manage end-to-end Databricks ingestion pipelines directly from a single unified control plane.",
+      icon: (
+        <svg className="w-24 h-24 text-white/20 mb-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+      )
+    }
   ];
-  // Connection lines between some nodes
-  const lines = [
-    { x1: 15, y1: 20, x2: 35, y2: 65 },
-    { x1: 35, y1: 65, x2: 55, y2: 80 },
-    { x1: 75, y1: 15, x2: 80, y2: 55 },
-    { x1: 45, y1: 35, x2: 65, y2: 70 },
-    { x1: 20, y1: 45, x2: 45, y2: 35 },
-    { x1: 80, y1: 55, x2: 65, y2: 70 },
-  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIndex((i) => (i + 1) % slides.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [slides.length]);
+
   return (
-    <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-      <defs>
-        <style>{`
-          @keyframes float-node { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3%); } }
-          @keyframes pulse-opacity { 0%,100% { opacity: 0.3; } 50% { opacity: 0.7; } }
-          @keyframes dash-flow { to { stroke-dashoffset: -20; } }
-        `}</style>
-      </defs>
-      {lines.map((l, i) => (
-        <line
-          key={i}
-          x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
-          stroke="rgba(129,140,248,0.2)"
-          strokeWidth="0.3"
-          strokeDasharray="2 2"
-          style={{ animation: `dash-flow ${4 + i * 0.5}s linear infinite` }}
-        />
-      ))}
-      {nodes.map((n, i) => (
-        <circle
-          key={i}
-          cx={n.x} cy={n.y} r={n.size / 10}
-          fill="rgba(129,140,248,0.15)"
-          stroke="rgba(129,140,248,0.4)"
-          strokeWidth="0.2"
-          style={{
-            animation: `pulse-opacity ${n.duration}s ${n.delay}s ease-in-out infinite, float-node ${n.duration}s ${n.delay}s ease-in-out infinite`,
-          }}
-        />
-      ))}
-    </svg>
+    <div className="relative z-10 flex flex-col gap-6 max-w-xl transition-all duration-500 min-h-[300px]">
+      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-white text-xs font-semibold w-fit mb-4">
+        <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+        {slides[index].subtitle}
+      </div>
+      {slides[index].icon}
+      <h1 className="text-4xl xl:text-5xl font-bold leading-tight text-white transition-opacity duration-500">
+        <span className="block bg-gradient-to-r from-white via-gray-300 to-gray-500 bg-clip-text text-transparent">
+          {slides[index].title}
+        </span>
+      </h1>
+      <p className="text-white/60 leading-relaxed text-lg transition-opacity duration-500">
+        {slides[index].desc}
+      </p>
+      
+      {/* Slide Indicators */}
+      <div className="flex items-center gap-2 mt-4">
+        {slides.map((_, i) => (
+          <div key={i} className={`h-1 rounded-full transition-all duration-500 ${i === index ? "w-8 bg-white" : "w-2 bg-white/20"}`} />
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -150,19 +161,11 @@ export default function LoginPage() {
       {/* ── Left hero panel ── */}
       <div className="hidden lg:flex lg:w-[55%] relative flex-col justify-between p-10 overflow-hidden">
         {/* Gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a1a] via-[#0a0a0a] to-[#000000]" />
-        <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-white/5" />
-        {/* Ambient glow orbs */}
-        <div className="absolute top-1/4 left-1/3 w-96 h-96 bg-white/5 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-white/5 rounded-full blur-[100px] pointer-events-none" />
-        {/* Animated data nodes */}
-        <div className="absolute inset-0 overflow-hidden">
-          <FloatingNodes />
-        </div>
-
+        <div className="absolute inset-0 bg-[#0c0c0e]" />
+        
         {/* Grid pattern overlay */}
         <div
-          className="absolute inset-0 opacity-[0.03]"
+          className="absolute inset-0 opacity-[0.02]"
           style={{
             backgroundImage: `linear-gradient(rgba(255,255,255,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.8) 1px, transparent 1px)`,
             backgroundSize: "40px 40px",
@@ -183,40 +186,9 @@ export default function LoginPage() {
         </div>
 
         {/* Hero copy */}
-        <div className="relative z-10 flex flex-col gap-6 max-w-xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-white text-xs font-semibold w-fit">
-            <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-            Powered by Databricks
-          </div>
-          <h1 className="text-4xl xl:text-5xl font-bold leading-tight text-white">
-            Intelligent Data
-            <span className="block bg-gradient-to-r from-white via-gray-300 to-gray-500 bg-clip-text text-transparent">
-              Orchestration
-            </span>
-          </h1>
-          <p className="text-white/60 leading-relaxed text-lg">
-            Connect your sources, map schemas with AI precision, and trigger
-            Databricks ingestion pipelines — all from one unified platform.
-          </p>
+        <RotatingHero />
 
-          {/* Feature pills */}
-          <div className="flex flex-wrap gap-3 mt-2">
-            {[
-              { icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>, label: "One-click Databricks trigger" },
-              { icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>, label: "AI schema mapping" },
-              { icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.956 11.956 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>, label: "Built-in data quality" },
-              { icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>, label: "Live pipeline tracking" },
-            ].map((f) => (
-              <div
-                key={f.label}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/70 text-sm"
-              >
-                <span>{f.icon}</span>
-                <span>{f.label}</span>
-              </div>
-            ))}
-          </div>
-
+        <div className="relative z-10 w-full max-w-xl">
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-white/10">
             {[
@@ -236,9 +208,7 @@ export default function LoginPage() {
       </div>
 
       {/* ── Right sign-in panel ── */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 relative">
-        {/* Subtle glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-white/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 relative bg-[#09090b]">
 
         <div className="w-full max-w-sm flex flex-col gap-6 relative z-10">
           {/* Mobile brand */}

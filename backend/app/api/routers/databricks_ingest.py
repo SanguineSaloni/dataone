@@ -64,7 +64,7 @@ def trigger_ingestion(
             target_schema=req.target_schema or "dataone_ingested",
             db=db,
             actor=user.email,
-            user_token=_get_user_token(request),
+            user_token=user.databricks_access_token,
         )
         record_audit(db, "ingestion_triggered", actor=user.email,
                      payload={"run_id": result.get("id"), "source_type": result.get("source_type")})
@@ -89,7 +89,7 @@ def get_run_status(
         return DatabricksIngestionService.get_run_status(
             ingestion_run_id=ingestion_run_id,
             db=db,
-            user_token=_get_user_token(request),
+            user_token=user.databricks_access_token,
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -132,7 +132,7 @@ def trigger_genie(
         db=db,
         actor=user.email,
         space_id=req.space_id,
-        user_token=_get_user_token(request),
+        user_token=user.databricks_access_token,
     )
 @router.get("/catalogs")
 def get_databricks_catalogs(
@@ -142,7 +142,7 @@ def get_databricks_catalogs(
     """Fetch available Databricks Unity Catalog names."""
     try:
         from app.services.databricks_ingestion_service import _get_workspace_client
-        token = _get_user_token(request)
+        token = user.databricks_access_token
         wc = _get_workspace_client(token)
         catalogs = []
         for cat in wc.catalogs.list():
@@ -162,10 +162,10 @@ def get_databricks_schemas(
     """Fetch schemas within a Databricks catalog."""
     try:
         from app.services.databricks_ingestion_service import _get_workspace_client
-        token = _get_user_token(request)
+        token = user.databricks_access_token
         wc = _get_workspace_client(token)
         schemas = []
-        for schema in wc.schemas.list(catalog_name):
+        for schema in wc.schemas.list(catalog_name=catalog_name):
             schemas.append({"name": schema.name})
         return {"schemas": schemas}
     except Exception as e:
