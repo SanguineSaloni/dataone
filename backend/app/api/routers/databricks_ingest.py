@@ -142,30 +142,41 @@ def get_databricks_catalogs(
     """Fetch available Databricks Unity Catalog names."""
     try:
         from app.services.databricks_ingestion_service import _get_workspace_client
-        token = user.databricks_access_token
+        
+        # Check both user token and environment token
+        user_token = user.databricks_access_token
+        env_token = settings.DATABRICKS_ACCESS_TOKEN if hasattr(settings, 'DATABRICKS_ACCESS_TOKEN') else None
         
         # Log for debugging
         logger.info(
-            f"[get_catalogs] user={user.email} has_token={bool(token)} "
-            f"token_length={len(token) if token else 0}"
+            f"[get_catalogs] user={user.email} user_token={bool(user_token)} "
+            f"env_token={bool(env_token)} user_id={user.id}"
         )
         
+        # Try user token first, fall back to env token
+        token = user_token or env_token
+        
         if not token:
-            logger.warning(f"[get_catalogs] User {user.email} has no databricks_access_token")
+            logger.warning(f"[get_catalogs] No token available for user {user.email}")
             raise HTTPException(
                 status_code=401,
                 detail="No Databricks authentication token found. Please sign in with Databricks."
             )
         
+        logger.info(f"[get_catalogs] Using {'user' if user_token else 'env'} token for {user.email}")
+        
         wc = _get_workspace_client(token)
         catalogs = []
         for cat in wc.catalogs.list():
             catalogs.append({"name": cat.name})
+        
+        logger.info(f"[get_catalogs] Successfully fetched {len(catalogs)} catalogs for {user.email}")
         return {"catalogs": catalogs}
+        
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("[databricks_ingest] get_catalogs failed: %s", e)
+        logger.error(f"[get_catalogs] Failed for user {user.email}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -178,11 +189,33 @@ def get_databricks_schemas(
     """Fetch schemas within a Databricks catalog."""
     try:
         from app.services.databricks_ingestion_service import _get_workspace_client
-        token = user.databricks_access_token
+        
+        # Try user token first, fall back to env token
+        user_token = user.databricks_access_token
+        env_token = settings.DATABRICKS_ACCESS_TOKEN if hasattr(settings, 'DATABRICKS_ACCESS_TOKEN') else None
+        token = user_token or env_token
+        
+        if not token:
+            raise HTTPException(
+                status_code=401,
+                detail="No Databricks authentication token found."
+            )
+        
+        logger.info(f"[get_schemas] catalog={catalog_name} user={user.email} using_{'user' if user_token else 'env'}_token")
+        
         wc = _get_workspace_client(token)
         schemas = []
         for schema in wc.schemas.list(catalog_name=catalog_name):
             schemas.append({"name": schema.name})
+        
+        logger.info(f"[get_schemas] Found {len(schemas)} schemas in {catalog_name}")
+        return {"schemas": schemas}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[get_schemas] Failed for catalog {catalog_name}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
         return {"schemas": schemas}
     except Exception as e:
         logger.error("[databricks_ingest] get_schemas failed: %s", e)
