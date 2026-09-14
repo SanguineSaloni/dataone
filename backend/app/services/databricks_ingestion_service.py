@@ -60,9 +60,9 @@ jdbc_url = f"jdbc:mysql://{source_host}:{source_port}/{source_db}"
 connection_properties = {"user": source_user, "password": source_password, "driver": "com.mysql.cj.jdbc.Driver"}
 
 # Get list of tables
-tables_df = spark.read.jdbc(jdbc_url, "information_schema.tables",
-    properties={**connection_properties, "query": f"SELECT table_name FROM information_schema.tables WHERE table_schema='{source_db}'"})
-tables = [row.table_name for row in tables_df.collect()]
+tables_query = f"(SELECT table_name FROM information_schema.tables WHERE table_schema='{source_db}') t"
+tables_df = spark.read.jdbc(jdbc_url, tables_query, properties=connection_properties)
+tables = [row[0] for row in tables_df.collect()]
 
 for table in tables:
     df = spark.read.jdbc(jdbc_url, table, properties=connection_properties)
@@ -106,7 +106,7 @@ props = {"user": source_user, "password": source_password, "driver": "org.postgr
 
 tables_query = "(SELECT table_name FROM information_schema.tables WHERE table_schema='public') t"
 tables_df = spark.read.jdbc(jdbc_url, tables_query, properties=props)
-tables = [row.table_name for row in tables_df.collect()]
+tables = [row[0] for row in tables_df.collect()]
 
 for table in tables:
     df = spark.read.jdbc(jdbc_url, f"public.{table}", properties=props)
@@ -438,8 +438,17 @@ class DatabricksIngestionService:
             )
             from databricks.sdk.service.workspace import ImportFormat
             from databricks.sdk.service.workspace import Language
+            from databricks.sdk.service.compute import Library, MavenLibrary
             
             script_path = f"/Shared/DataOne/Notebooks/{source_type}_ingestion.py"
+
+            task_libraries = []
+            if source_type == "mysql":
+                task_libraries.append(Library(maven=MavenLibrary(coordinates="mysql:mysql-connector-java:8.0.33")))
+            elif source_type == "postgres":
+                task_libraries.append(Library(maven=MavenLibrary(coordinates="org.postgresql:postgresql:42.6.0")))
+            elif source_type == "mongodb":
+                task_libraries.append(Library(maven=MavenLibrary(coordinates="org.mongodb.spark:mongo-spark-connector_2.12:3.0.2")))
 
             job_settings = JobSettings(
                 name=job_name,
@@ -450,6 +459,7 @@ class DatabricksIngestionService:
                         notebook_task=NotebookTask(
                             notebook_path=f"/Workspace{script_path}",
                         ),
+                        libraries=task_libraries if task_libraries else None,
                         timeout_seconds=7200,
                     )
                 ],
