@@ -378,7 +378,7 @@ class DatabricksIngestionService:
                 environments=[
                     JobEnvironment(
                         environment_key="default",
-                        spec=Environment(client="1")
+                        spec=Environment(dependencies=[])
                     )
                 ],
                 tasks=[
