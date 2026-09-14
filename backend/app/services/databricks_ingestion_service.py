@@ -436,7 +436,6 @@ class DatabricksIngestionService:
             from databricks.sdk.service.jobs import (
                 JobSettings, Task, NotebookTask
             )
-            from databricks.sdk.service.compute import AutoScale
             from databricks.sdk.service.workspace import ImportFormat
             from databricks.sdk.service.workspace import Language
             
@@ -453,18 +452,6 @@ class DatabricksIngestionService:
                             notebook_path=f"/Workspace{script_path}",
                         ),
                         timeout_seconds=7200,
-                        new_cluster={
-                            "spark_version": "13.3.x-scala2.12",
-                            "node_type_id": "i3.xlarge",
-                            "autoscale": {
-                                "min_workers": 1,
-                                "max_workers": 2
-                            },
-                            "spark_conf": {
-                                "spark.databricks.cluster.profile": "serverless",
-                                "spark.databricks.repl.allowedLanguages": "python,sql"
-                            }
-                        }
                     )
                 ],
             )
