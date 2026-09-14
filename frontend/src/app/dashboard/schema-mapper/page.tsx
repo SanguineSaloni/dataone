@@ -291,7 +291,6 @@ export default function SchemaMapperWorkbenchPage() {
             </p>
           </div>
         </div>
-        </div>
       </div>
     </div>
   );
