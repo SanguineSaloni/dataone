@@ -282,7 +282,7 @@ export default function LoginPage() {
               className="w-full py-3.5 text-sm font-semibold text-white bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 backdrop-blur-md active:scale-[0.98] transition-all flex items-center justify-center gap-3"
             >
               <svg role="img" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-[#FF3621]">
-                <path d="M11.996 0L.925 5.253v13.528L11.996 24l11.07-5.22V5.253zM18.89 16.634l-6.894 3.242-6.894-3.242V9.014l6.894-3.242 6.894 3.242zM11.996 11.365l-4.174-1.956 4.174-1.957 4.174 1.957z"/>
+                <path d="M12.012 0L.925 5.253v13.528l11.087 5.219 11.087-5.219V5.253zm0 2.22l8.816 4.148-8.816 4.148-8.816-4.148zm0 9.878l4.408-2.074 4.408 2.074-8.816 4.148-8.816-4.148 4.408-2.074zm0 5.485l4.408-2.074 4.408 2.074-8.816 4.148-8.816-4.148 4.408-2.074z"/>
               </svg>
               Sign in with Databricks
             </a>

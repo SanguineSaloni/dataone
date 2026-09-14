@@ -380,7 +380,7 @@ function CreateMappingModal({
             type="button"
             onClick={submit}
             disabled={submitting}
-            className="px-4 py-2 text-sm font-semibold bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:opacity-90 disabled:opacity-50"
+            className="px-4 py-2 text-sm font-semibold bg-gradient-to-r from-blue-500 to-white/20 text-white rounded-lg hover:opacity-90 disabled:opacity-50"
           >
             {submitting ? "Creating…" : "Create draft"}
           </button>

@@ -136,7 +136,7 @@ export default function TransformEditor({
               "px-4 py-2 text-sm font-semibold rounded-lg",
               issues.length > 0
                 ? "bg-surface-overlay text-fg-subtle cursor-not-allowed"
-                : "bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:opacity-90",
+                : "bg-gradient-to-r from-blue-500 to-white/20 text-white hover:opacity-90",
             )}
           >
             Apply

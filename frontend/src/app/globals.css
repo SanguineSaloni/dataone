@@ -45,7 +45,7 @@
   --border-strong: #d4d4d8;    /* zinc-300 */
 
   /* ─── Accent (indigo) ─── */
-  --accent: #4f46e5;           /* indigo-600 */
+  --accent: #4f46e5;           /* white/20 */
   --accent-fg: #ffffff;
   --accent-soft: rgba(79, 70, 229, 0.08);
   --accent-glow: 0 0 16px rgba(79, 70, 229, 0.25);

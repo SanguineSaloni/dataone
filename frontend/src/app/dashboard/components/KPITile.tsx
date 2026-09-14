@@ -10,7 +10,7 @@ const MODULE_COLORS: Record<string, string> = {
   query: "text-cyan-400",
   security: "text-rose-400",
   schema_intel: "text-amber-400",
-  autopilot: "text-indigo-400",
+  autopilot: "text-white/80",
 };
 
 // 1234 → "1,234"; 12345 → "12.3k"; 1234567 → "1.2M" (dashboard_tasks #4).

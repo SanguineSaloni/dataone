@@ -43,7 +43,7 @@ const AI_CONFIDENCE = 96;
 
 function ConfidenceBadge({ pct, transformation }: { pct: number; transformation?: string }) {
   const color = pct >= 95 ? "text-emerald-400 border-emerald-500/20 bg-emerald-500/5"
-    : pct >= 90 ? "text-blue-400 border-blue-500/20 bg-blue-500/5"
+    : pct >= 90 ? "text-blue-400 border-white/10 bg-blue-500/5"
     : "text-amber-400 border-amber-500/20 bg-amber-500/5";
   return (
     <div className={`px-3 py-1 rounded-lg border text-xs font-semibold text-center min-w-[90px] ${color}`}>
@@ -115,7 +115,7 @@ export default function MigrationPage() {
                 <p className="text-xs text-white/40 mt-0.5">Visualize and map your source and target schemas with AI-powered suggestions.</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold">
+                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10/10 border border-white/20/20 text-white/80 text-xs font-bold">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> {AI_CONFIDENCE}% AI Match
                 </span>
                 <Link href="/dashboard/schema-mapper" className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/60 text-xs font-semibold hover:bg-white/10 transition-colors">
@@ -154,7 +154,7 @@ export default function MigrationPage() {
                     <div className={`px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap border ${
                       f.confidence && f.confidence >= 96 ? "text-emerald-400 border-emerald-500/20 bg-emerald-500/5"
                         : f.transformation ? "text-amber-400 border-amber-500/20 bg-amber-500/5"
-                        : "text-blue-400 border-blue-500/20 bg-blue-500/5"
+                        : "text-blue-400 border-white/10 bg-blue-500/5"
                     }`}>
                       {f.transformation ? f.transformation.split(":")[0] : `Direct Match ${f.confidence}%`}
                     </div>
@@ -192,7 +192,7 @@ export default function MigrationPage() {
                 <span className="text-lg"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg></span>
                 <h2 className="font-semibold text-white/90">Agentic DBA Copilot</h2>
               </div>
-              <Link href="/dashboard/autopilot" className="text-xs text-indigo-400 hover:text-indigo-300">View All →</Link>
+              <Link href="/dashboard/autopilot" className="text-xs text-white/80 hover:text-white/60">View All →</Link>
             </div>
             <p className="text-xs text-white/30 mb-3">AI-driven insights to optimize your data transformation.</p>
 
@@ -245,7 +245,7 @@ export default function MigrationPage() {
             {copilotTab !== "migration" && (
               <div className="flex flex-col items-center justify-center py-8 text-white/20 text-xs">
                 <p>{copilotTab === "schema" ? "Schema recommendations will appear here after analysis." : "Impact analysis runs after migration is triggered."}</p>
-                <Link href="/dashboard/autopilot" className="mt-3 text-indigo-400 text-xs">Open Copilot →</Link>
+                <Link href="/dashboard/autopilot" className="mt-3 text-white/80 text-xs">Open Copilot →</Link>
               </div>
             )}
           </div>
@@ -311,10 +311,10 @@ export default function MigrationPage() {
                 onChange={(e) => setNlQuery(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleRunQuery()}
                 placeholder="Ask any question about your data..."
-                className="flex-1 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs placeholder:text-white/20 focus:outline-none focus:border-indigo-500/40 transition-colors"
+                className="flex-1 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs placeholder:text-white/20 focus:outline-none focus:border-white/20/40 transition-colors"
               />
               <button onClick={handleRunQuery} disabled={queryRunning}
-                className="px-3 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-500 disabled:opacity-50 transition-colors flex-shrink-0">
+                className="px-3 py-2 rounded-xl bg-white/20 text-white text-xs font-semibold hover:bg-white/10 disabled:opacity-50 transition-colors flex-shrink-0">
                 {queryRunning ? <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" /> : "▶"}
               </button>
             </div>
@@ -344,7 +344,7 @@ export default function MigrationPage() {
             </div>
 
             <button onClick={handleRunQuery} disabled={queryRunning}
-              className="mt-3 w-full py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-500 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
+              className="mt-3 w-full py-2.5 rounded-xl bg-white/20 text-white text-xs font-semibold hover:bg-white/10 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><polygon points="5 3 19 12 5 21 5 3" /></svg>
               Run Query
             </button>

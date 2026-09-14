@@ -49,7 +49,7 @@ export default function PipelineList({
           <button
             type="button"
             onClick={() => setShowCreate(true)}
-            className="px-3 py-1.5 text-xs font-semibold bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:opacity-90"
+            className="px-3 py-1.5 text-xs font-semibold bg-gradient-to-r from-blue-500 to-white/20 text-white rounded-lg hover:opacity-90"
             aria-label="Create new pipeline"
           >
             + New
@@ -292,7 +292,7 @@ function CreatePipelineModal({
             type="button"
             onClick={submit}
             disabled={submitting || loadingRefs || mappings.length === 0}
-            className="px-4 py-2 text-sm font-semibold bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:opacity-90 disabled:opacity-50"
+            className="px-4 py-2 text-sm font-semibold bg-gradient-to-r from-blue-500 to-white/20 text-white rounded-lg hover:opacity-90 disabled:opacity-50"
           >
             {submitting ? "Creating…" : "Create pipeline"}
           </button>

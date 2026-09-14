@@ -75,7 +75,7 @@ export default function TenantCreateForm({ onClose, onCreated }: TenantCreateFor
             <button type="button" onClick={onClose} className="flex-1 py-2 bg-surface-overlay hover:bg-surface-overlay rounded-xl text-sm font-semibold text-fg-subtle">
               Cancel
             </button>
-            <button type="submit" disabled={creating} className="flex-1 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl text-sm font-semibold text-white disabled:opacity-50">
+            <button type="submit" disabled={creating} className="flex-1 py-2 bg-gradient-to-r from-blue-500 to-white/20 rounded-xl text-sm font-semibold text-white disabled:opacity-50">
               {creating ? "Creating..." : "Create Tenant"}
             </button>
           </div>

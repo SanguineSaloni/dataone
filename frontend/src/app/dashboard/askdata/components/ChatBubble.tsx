@@ -12,7 +12,7 @@ export default function ChatBubble({ turn, connectionId, onEditInSql }: { turn: 
       <div
         className={`max-w-[80%] rounded-2xl px-4 py-3 ${
           isUser
-            ? "bg-blue-600/20 border border-blue-500/20 text-fg-muted"
+            ? "bg-blue-600/20 border border-white/10 text-fg-muted"
             : "bg-surface-elevated border border-border text-fg-muted"
         }`}
       >

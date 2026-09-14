@@ -73,7 +73,7 @@ export function DemoDataBanner({ onChange }: DemoDataBannerProps) {
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border border-blue-500/20">
+    <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-gradient-to-br from-white/5 to-white/5 border border-white/10">
       <div>
         <h3 className="text-sm font-semibold text-fg">Explore with sample data</h3>
         <p className="text-xs text-fg-muted mt-0.5">

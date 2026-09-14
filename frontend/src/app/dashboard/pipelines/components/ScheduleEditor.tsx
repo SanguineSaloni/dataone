@@ -136,7 +136,7 @@ export default function ScheduleEditor({
               type="button"
               onClick={() => void saveSchedule()}
               disabled={saving}
-              className="px-3 py-1.5 text-xs font-semibold bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:opacity-90 disabled:opacity-50"
+              className="px-3 py-1.5 text-xs font-semibold bg-gradient-to-r from-blue-500 to-white/20 text-white rounded-lg hover:opacity-90 disabled:opacity-50"
             >
               {saving ? "Saving…" : schedule ? "Update schedule" : "Create schedule"}
             </button>

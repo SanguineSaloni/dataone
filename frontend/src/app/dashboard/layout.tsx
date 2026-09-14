@@ -86,13 +86,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="max-w-sm rounded-2xl bg-white/5 border border-white/10 p-6 text-center">
             <p className="text-sm text-red-400">{authError}</p>
             <button onClick={() => { setAuthError(""); void validateSession(); }}
-              className="mt-4 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white">
+              className="mt-4 rounded-lg bg-white/20 px-4 py-2 text-sm font-semibold text-white">
               Retry
             </button>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-3">
-            <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-white/20 border-t-transparent rounded-full animate-spin" />
             <p className="text-sm text-white/40">Validating session…</p>
           </div>
         )}
@@ -172,7 +172,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
             {!collapsed && (
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-medium text-white truncate">Saloni S.</div>
+                <div className="text-sm font-medium text-white truncate">{user?.email ? user.email.split("@")[0] : "User"}</div>
                 <div className="text-xs text-white/40 truncate">Data Engineer</div>
               </div>
             )}

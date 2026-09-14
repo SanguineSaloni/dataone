@@ -88,7 +88,7 @@ export default function DriftHistoryPanel({ history, onRescan, role, connectionI
                           });
                           router.push("/dashboard/query-workspace");
                         }}
-                        className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20 hover:bg-blue-500/20"
+                        className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-white/10 hover:bg-blue-500/20"
                       >
                         Investigate {tableName} →
                       </button>

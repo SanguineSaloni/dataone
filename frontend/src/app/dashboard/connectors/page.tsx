@@ -111,7 +111,7 @@ function DBFormPanel({ title, subtitle, form, onChange, types, showPassword, onT
       <div className="flex flex-col gap-4">
         <div className="flex items-center">
           <label className="text-[13px] text-white/60 w-[160px] flex-shrink-0">Database Type</label>
-          <div className="relative flex-1">
+          <div className="relative flex-1 min-w-0">
             <select value={form.dbType} onChange={set("dbType")}
               className="w-full px-3 py-2 rounded-lg bg-[#1a1a1a] border border-white/10 text-white text-[13px] appearance-none focus:outline-none focus:border-white/30 transition-colors">
               {types.map(t => <option key={t.value} value={t.value} className="bg-[#1a1a1a]">{t.label}</option>)}
@@ -139,7 +139,7 @@ function DBFormPanel({ title, subtitle, form, onChange, types, showPassword, onT
           <>
             <div className="flex items-center">
               <label className="text-[13px] text-white/60 w-[160px] flex-shrink-0">Catalog Name</label>
-              <div className="relative flex-1">
+              <div className="relative flex-1 min-w-0">
                 <select value={form.catalog || ""} onChange={set("catalog")}
                   className="w-full px-3 py-2 rounded-lg bg-[#1a1a1a] border border-white/10 text-white text-[13px] appearance-none focus:outline-none focus:border-white/30 transition-colors">
                   <option value="" disabled>Select Catalog...</option>
@@ -152,7 +152,7 @@ function DBFormPanel({ title, subtitle, form, onChange, types, showPassword, onT
             </div>
             <div className="flex items-center">
               <label className="text-[13px] text-white/60 w-[160px] flex-shrink-0">Schema Name</label>
-              <div className="relative flex-1">
+              <div className="relative flex-1 min-w-0">
                 <select value={form.schema || ""} onChange={set("schema")}
                   className="w-full px-3 py-2 rounded-lg bg-[#1a1a1a] border border-white/10 text-white text-[13px] appearance-none focus:outline-none focus:border-white/30 transition-colors">
                   <option value="" disabled>Select Schema...</option>
@@ -178,7 +178,7 @@ function DBFormPanel({ title, subtitle, form, onChange, types, showPassword, onT
             </div>
             <div className="flex items-center">
               <label className="text-[13px] text-white/60 w-[160px] flex-shrink-0">Password</label>
-              <div className="relative flex-1">
+              <div className="relative flex-1 min-w-0">
                 <input type={showPassword ? "text" : "password"} value={form.password} onChange={set("password")} placeholder="••••••••"
                   className="w-full px-3 py-2 pr-10 rounded-lg bg-[#1a1a1a] border border-white/10 text-white text-[13px] placeholder:text-white/20 focus:outline-none focus:border-white/30 transition-colors" />
                 <button type="button" onClick={onTogglePassword} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
@@ -192,7 +192,7 @@ function DBFormPanel({ title, subtitle, form, onChange, types, showPassword, onT
             <div className="flex items-center mt-2">
               <label className="text-[13px] text-white/60 w-[160px] flex-shrink-0">SSL Connection</label>
               <button type="button" onClick={() => onChange({ ...form, ssl: !form.ssl })}
-                className={["relative w-10 h-5 rounded-full transition-colors", form.ssl ? "bg-indigo-500" : "bg-white/20"].join(" ")}>
+                className={["relative w-10 h-5 rounded-full transition-colors", form.ssl ? "bg-white/10" : "bg-white/20"].join(" ")}>
                 <div className={["absolute top-0.5 w-4 h-4 rounded-full shadow transition-transform",
                   form.ssl ? "translate-x-5 bg-white" : "translate-x-0.5 bg-white"].join(" ")} />
               </button>
@@ -207,7 +207,7 @@ function DBFormPanel({ title, subtitle, form, onChange, types, showPassword, onT
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { color: string; label: string; dot: string }> = {
     pending:   { color: "text-amber-400 bg-amber-500/10 border-amber-500/20",   label: "Pending",   dot: "bg-amber-400" },
-    running:   { color: "text-blue-400 bg-blue-500/10 border-blue-500/20",      label: "Running",   dot: "bg-blue-400 animate-pulse" },
+    running:   { color: "text-blue-400 bg-blue-500/10 border-white/10",      label: "Running",   dot: "bg-blue-400 animate-pulse" },
     succeeded: { color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20", label: "Succeeded", dot: "bg-emerald-400" },
     failed:    { color: "text-red-400 bg-red-500/10 border-red-500/20",         label: "Failed",    dot: "bg-red-400" },
     cancelled: { color: "text-zinc-400 bg-zinc-500/10 border-zinc-500/20",      label: "Cancelled", dot: "bg-zinc-400" },
@@ -298,7 +298,7 @@ function CatalogBrowser() {
     <div className="flex flex-col gap-4">
       {/* Search + refresh */}
       <div className="flex gap-3">
-        <div className="relative flex-1">
+        <div className="relative flex-1 min-w-0">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
           <input
             value={search}
@@ -319,7 +319,7 @@ function CatalogBrowser() {
 
       {loading && (
         <div className="flex items-center justify-center py-16 gap-3">
-          <div className="w-5 h-5 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+          <div className="w-5 h-5 border-2 border-white/20/30 border-t-white rounded-full animate-spin" />
           <span className="text-white/40 text-sm">Loading Unity Catalog…</span>
         </div>
       )}
@@ -342,7 +342,7 @@ function CatalogBrowser() {
                 {/* Connection header */}
                 <div className="bg-[#111] px-5 py-3 flex items-center justify-between border-b border-white/[0.06]">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-lg bg-white/10/20 border border-white/20/30 flex items-center justify-center">
                       <span className="text-sm">🏔</span>
                     </div>
                     <div>
@@ -359,7 +359,7 @@ function CatalogBrowser() {
                   <button
                     onClick={() => triggerScan(group.connection_id)}
                     disabled={scanning}
-                    className="px-3 py-1.5 rounded-lg bg-indigo-600/70 hover:bg-indigo-600 text-white text-[12px] font-semibold border border-indigo-500/40 transition-colors disabled:opacity-50">
+                    className="px-3 py-1.5 rounded-lg bg-white/20/70 hover:bg-white/20 text-white text-[12px] font-semibold border border-white/20/40 transition-colors disabled:opacity-50">
                     {scanning ? "Scanning…" : "Re-scan"}
                   </button>
                 </div>
@@ -560,17 +560,23 @@ export default function ConnectorsPage() {
   const isSubmitting = ["connecting", "triggering", "running"].includes(runStatus);
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: "new",       label: "New Connection",    icon: "➕" },
-    { id: "connections", label: "Saved Connections", icon: "🔗" },
+    { id: "new",       label: "New Connection",    icon: <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M12 5v14M5 12h14" /></svg> },
+    { id: "connections", label: "Saved Connections", icon: <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg> },
     { id: "pipelines", label: "Active Pipelines",  icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> },
-    { id: "catalog",   label: "Unity Catalog",     icon: "🏔" },
+    { id: "catalog",   label: "Unity Catalog",     icon: <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M4 20L12 4l8 16" /><path d="M12 11l-3 4h6z" /></svg> },
   ];
 
   return (
-    <div className="min-h-full bg-[#0c0c0e] text-white flex flex-col">
+    <div className="min-h-full bg-[#0c0c0e] text-white flex flex-col relative overflow-hidden">
+      {/* Background Animation */}
+      <div className="absolute inset-0 pointer-events-none z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-white/[0.03] blur-[120px] rounded-full animate-pulse" style={{ animationDuration: '8s' }} />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-white/[0.03] blur-[120px] rounded-full animate-pulse" style={{ animationDuration: '10s', animationDelay: '2s' }} />
+      </div>
+      
       {/* Header */}
-      <div className="border-b border-white/[0.06] px-8 pt-8 pb-0">
-        <div className="max-w-7xl mx-auto">
+      <div className="relative z-10 border-b border-white/[0.06] px-8 pt-8 pb-0">
+        <div className="max-w-[1600px] mx-auto">
           <h1 className="text-2xl font-bold text-white mb-1">Connectors</h1>
           <p className="text-[14px] text-white/40 mb-6">Connect your data sources, trigger Databricks ingestion pipelines, and browse your Unity Catalog.</p>
 
@@ -580,12 +586,12 @@ export default function ConnectorsPage() {
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                 className={["px-4 py-2.5 rounded-t-lg text-[13px] font-medium border-b-2 transition-all flex items-center gap-2",
                   activeTab === tab.id
-                    ? "text-white border-indigo-500 bg-indigo-500/5"
+                    ? "text-white border-white/20 bg-white/10/5"
                     : "text-white/40 border-transparent hover:text-white/70 hover:border-white/20"
                 ].join(" ")}>
                 <span>{tab.icon}</span>{tab.label}
                 {tab.id === "pipelines" && runs.length > 0 && (
-                  <span className="ml-1 px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 text-[10px] font-bold">{runs.length}</span>
+                  <span className="ml-1 px-1.5 py-0.5 rounded-full bg-white/10/20 text-white/80 text-[10px] font-bold">{runs.length}</span>
                 )}
               </button>
             ))}
@@ -594,7 +600,7 @@ export default function ConnectorsPage() {
       </div>
 
       {/* Tab content */}
-      <div className="flex-1 max-w-7xl mx-auto w-full px-8 py-8">
+      <div className="relative z-10 flex-1 max-w-[1600px] mx-auto w-full px-8 py-8">
 
         {/* ── NEW CONNECTION TAB ── */}
         {activeTab === "new" && (
@@ -616,7 +622,7 @@ export default function ConnectorsPage() {
                   <span>Run ID: {currentRun.databricks_run_id ?? "Assigning…"}</span>
                   {currentRun.databricks_run_url && (
                     <a href={currentRun.databricks_run_url} target="_blank" rel="noopener noreferrer"
-                      className="text-indigo-400 hover:text-indigo-300 underline">View in Databricks →</a>
+                      className="text-white/80 hover:text-white/60 underline">View in Databricks →</a>
                   )}
                 </div>
                 {currentRun.error_message && <p className="mt-2 text-xs text-red-400">{currentRun.error_message}</p>}
@@ -717,7 +723,7 @@ export default function ConnectorsPage() {
           <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-white">Your Connections</h2>
-              <button onClick={() => setActiveTab("new")} className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 rounded-lg text-[13px] font-semibold text-white transition-colors">
+              <button onClick={() => setActiveTab("new")} className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-[13px] font-semibold text-white transition-colors">
                 + New Connection
               </button>
             </div>
@@ -766,7 +772,7 @@ export default function ConnectorsPage() {
             </div>
             {loadingData ? (
               <div className="flex items-center justify-center py-16 gap-3">
-                <div className="w-5 h-5 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-white/20/30 border-t-white rounded-full animate-spin" />
                 <span className="text-white/40 text-sm">Loading pipelines…</span>
               </div>
             ) : runs.length === 0 ? (
@@ -775,7 +781,7 @@ export default function ConnectorsPage() {
                 <p className="text-white/40 text-sm">No pipelines yet.</p>
                 <p className="text-white/25 text-xs mt-1">Create a connection in the &quot;New Connection&quot; tab to trigger your first Databricks ingestion pipeline.</p>
                 <button onClick={() => setActiveTab("new")}
-                  className="mt-6 px-6 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-500 transition-colors">
+                  className="mt-6 px-6 py-2.5 rounded-lg bg-white/20 text-white text-sm font-semibold hover:bg-white/10 transition-colors">
                   Create Connection →
                 </button>
               </div>
@@ -800,7 +806,7 @@ export default function ConnectorsPage() {
                         <td className="px-5 py-3">
                           {run.databricks_run_url ? (
                             <a href={run.databricks_run_url} target="_blank" rel="noopener noreferrer"
-                              className="text-indigo-400 hover:text-indigo-300 underline">
+                              className="text-white/80 hover:text-white/60 underline">
                               {run.databricks_run_id ? `#${run.databricks_run_id}` : "View →"}
                             </a>
                           ) : <span className="text-white/30">{run.databricks_run_id ? `#${run.databricks_run_id}` : "—"}</span>}
@@ -847,7 +853,7 @@ export default function ConnectorsPage() {
             </p>
             {loadingData ? (
               <div className="flex items-center justify-center py-16 gap-3">
-                <div className="w-5 h-5 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-white/20/30 border-t-white rounded-full animate-spin" />
                 <span className="text-white/40 text-sm">Loading connections…</span>
               </div>
             ) : (

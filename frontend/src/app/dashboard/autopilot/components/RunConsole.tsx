@@ -148,7 +148,7 @@ export default function RunConsole({ onQueuedForApproval }: RunConsoleProps) {
         <div className="flex justify-between items-center border-b border-border pb-4">
           <h3 className="font-semibold text-fg-muted">AI Execution Console</h3>
           {running ? (
-            <span className="flex items-center gap-1.5 text-xs text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20 animate-pulse">
+            <span className="flex items-center gap-1.5 text-xs text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full border border-white/10 animate-pulse">
               <span className="w-1.5 h-1.5 bg-blue-400 rounded-full" /> Running
             </span>
           ) : status === "completed" ? (
