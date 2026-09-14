@@ -171,3 +171,92 @@ def get_databricks_schemas(
     except Exception as e:
         logger.error("[databricks_ingest] get_schemas failed: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/runs/{ingestion_run_id}/tables")
+def get_ingestion_tables(
+    ingestion_run_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """
+    Get the list of tables ingested by a specific ingestion run.
+    Returns metadata from the schema catalog that was populated after ingestion.
+    """
+    try:
+        from app.services.schema_catalog_service import SchemaCatalogService
+        from app.models.connection import DBConnection
+        
+        # Get the ingestion run
+        run = db.query(IngestionRun).filter(IngestionRun.id == ingestion_run_id).first()
+        if not run:
+            raise HTTPException(status_code=404, detail=f"Ingestion run {ingestion_run_id} not found")
+        
+        # Get target catalog/schema from the run params
+        params = run.trigger_params or {}
+        target_catalog = params.get("dataone.target.catalog", "main")
+        target_schema = params.get("dataone.target.schema", "dataone_ingested")
+        source_db = params.get("dataone.source.database", "")
+        
+        # Find the Databricks connection for this catalog
+        databricks_conn = (
+            db.query(DBConnection)
+            .filter(
+                DBConnection.type == "databricks",
+                DBConnection.is_deleted == False
+            )
+            .first()
+        )
+        
+        if not databricks_conn:
+            return {
+                "run_id": ingestion_run_id,
+                "status": run.status,
+                "target_catalog": target_catalog,
+                "target_schema": target_schema,
+                "tables": [],
+                "message": "No Databricks connection found. Tables may not have been cataloged yet."
+            }
+        
+        # Get all tables for this connection
+        tables = SchemaCatalogService.get_catalog(db, databricks_conn.id)
+        
+        # Filter tables that match the target catalog.schema and source prefix
+        prefix = f"{target_catalog}.{target_schema}."
+        source_prefix = f"{source_db}_" if source_db else ""
+        
+        ingested_tables = [
+            {
+                "id": t.id,
+                "table_name": t.table_name,
+                "short_name": t.table_name.replace(prefix, ""),
+                "column_count": len(t.columns),
+                "last_scanned_at": t.last_scanned_at.isoformat() if t.last_scanned_at else None,
+                "columns": [
+                    {
+                        "id": col.id,
+                        "column_name": col.column_name,
+                        "data_type": col.data_type,
+                        "nullable": col.nullable,
+                        "is_primary_key": col.is_primary_key,
+                    }
+                    for col in sorted(t.columns, key=lambda c: c.ordinal_position)
+                ]
+            }
+            for t in tables
+            if t.table_name.startswith(prefix) and (not source_prefix or source_prefix in t.table_name)
+        ]
+        
+        return {
+            "run_id": ingestion_run_id,
+            "status": run.status,
+            "target_catalog": target_catalog,
+            "target_schema": target_schema,
+            "source_type": run.source_type,
+            "tables": ingested_tables,
+            "total": len(ingested_tables),
+        }
+        
+    except Exception as e:
+        logger.error("[databricks_ingest] get_ingestion_tables failed: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))

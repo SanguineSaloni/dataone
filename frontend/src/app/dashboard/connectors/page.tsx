@@ -44,6 +44,20 @@ interface IngestionRun {
   source_connection_id?: number;
 }
 
+interface IngestedTable {
+  id: number;
+  table_name: string;
+  short_name: string;
+  column_count: number;
+  columns: Array<{
+    id: number;
+    column_name: string;
+    data_type: string;
+    nullable: boolean;
+    is_primary_key: boolean;
+  }>;
+}
+
 interface Connection {
   id: number;
   name: string;
@@ -80,16 +94,42 @@ function DBFormPanel({ title, subtitle, form, onChange, types, showPassword, onT
 }) {
   const [catalogs, setCatalogs] = useState<any[]>([]);
   const [schemas, setSchemas] = useState<any[]>([]);
+  const [loadingCatalogs, setLoadingCatalogs] = useState(false);
+  const [loadingSchemas, setLoadingSchemas] = useState(false);
 
   useEffect(() => {
     if (form.dbType === "databricks") {
-      api.get("/api/v1/databricks/ingest/catalogs").then((res: any) => setCatalogs(res.catalogs || [])).catch(() => {});
+      setLoadingCatalogs(true);
+      api.get("/api/v1/databricks/ingest/catalogs")
+        .then((res: any) => {
+          setCatalogs(res.catalogs || []);
+          setLoadingCatalogs(false);
+        })
+        .catch((err) => {
+          console.error("Failed to load catalogs:", err);
+          setLoadingCatalogs(false);
+        });
+    } else {
+      setCatalogs([]);
+      setSchemas([]);
     }
   }, [form.dbType]);
 
   useEffect(() => {
     if (form.dbType === "databricks" && form.catalog) {
-      api.get(`/api/v1/databricks/ingest/catalogs/${form.catalog}/schemas`).then((res: any) => setSchemas(res.schemas || [])).catch(() => {});
+      setLoadingSchemas(true);
+      setSchemas([]); // Reset schemas when catalog changes
+      api.get(`/api/v1/databricks/ingest/catalogs/${form.catalog}/schemas`)
+        .then((res: any) => {
+          setSchemas(res.schemas || []);
+          setLoadingSchemas(false);
+        })
+        .catch((err) => {
+          console.error("Failed to load schemas:", err);
+          setLoadingSchemas(false);
+        });
+    } else {
+      setSchemas([]);
     }
   }, [form.dbType, form.catalog]);
 
@@ -140,29 +180,53 @@ function DBFormPanel({ title, subtitle, form, onChange, types, showPassword, onT
             <div className="flex items-center">
               <label className="text-[13px] text-white/60 w-[160px] flex-shrink-0">Catalog Name</label>
               <div className="relative flex-1 min-w-0">
-                <select value={form.catalog || ""} onChange={set("catalog")}
-                  className="w-full px-3 py-2 rounded-lg bg-[#1a1a1a] border border-white/10 text-white text-[13px] appearance-none focus:outline-none focus:border-white/30 transition-colors">
-                  <option value="" disabled>Select Catalog...</option>
+                <select 
+                  value={form.catalog || ""} 
+                  onChange={set("catalog")}
+                  disabled={loadingCatalogs || catalogs.length === 0}
+                  className="w-full px-3 py-2 rounded-lg bg-[#1a1a1a] border border-white/10 text-white text-[13px] appearance-none focus:outline-none focus:border-white/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                  <option value="" disabled>
+                    {loadingCatalogs ? "Loading catalogs..." : catalogs.length === 0 ? "No catalogs available" : "Select Catalog..."}
+                  </option>
                   {catalogs.map(c => <option key={c.name} value={c.name} className="bg-[#1a1a1a]">{c.name}</option>)}
                 </select>
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/30">
-                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M6 9l6 6 6-6" /></svg>
+                  {loadingCatalogs ? (
+                    <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M6 9l6 6 6-6" /></svg>
+                  )}
                 </div>
               </div>
             </div>
             <div className="flex items-center">
               <label className="text-[13px] text-white/60 w-[160px] flex-shrink-0">Schema Name</label>
               <div className="relative flex-1 min-w-0">
-                <select value={form.schema || ""} onChange={set("schema")}
-                  className="w-full px-3 py-2 rounded-lg bg-[#1a1a1a] border border-white/10 text-white text-[13px] appearance-none focus:outline-none focus:border-white/30 transition-colors">
-                  <option value="" disabled>Select Schema...</option>
+                <select 
+                  value={form.schema || ""} 
+                  onChange={set("schema")}
+                  disabled={!form.catalog || loadingSchemas || schemas.length === 0}
+                  className="w-full px-3 py-2 rounded-lg bg-[#1a1a1a] border border-white/10 text-white text-[13px] appearance-none focus:outline-none focus:border-white/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                  <option value="" disabled>
+                    {!form.catalog ? "Select catalog first..." : loadingSchemas ? "Loading schemas..." : schemas.length === 0 ? "No schemas available" : "Select Schema..."}
+                  </option>
                   {schemas.map(s => <option key={s.name} value={s.name} className="bg-[#1a1a1a]">{s.name}</option>)}
                 </select>
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/30">
-                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M6 9l6 6 6-6" /></svg>
+                  {loadingSchemas ? (
+                    <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M6 9l6 6 6-6" /></svg>
+                  )}
                 </div>
               </div>
             </div>
+            {catalogs.length === 0 && !loadingCatalogs && (
+              <div className="text-[12px] text-amber-400/80 bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 mt-2">
+                <p className="font-semibold mb-1">⚠️ Authentication Required</p>
+                <p>Please authenticate with Databricks to access your Unity Catalog. Catalogs and schemas are fetched from your authenticated workspace.</p>
+              </div>
+            )}
           </>
         ) : (
           <>
@@ -445,6 +509,8 @@ export default function ConnectorsPage() {
   const [showTgtPw, setShowTgtPw] = useState(false);
   const [runStatus, setRunStatus] = useState<RunStatus>("idle");
   const [currentRun, setCurrentRun] = useState<IngestionRun | null>(null);
+  const [ingestedTables, setIngestedTables] = useState<IngestedTable[]>([]);
+  const [showIngestedTables, setShowIngestedTables] = useState(false);
   const [error, setError] = useState("");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -488,6 +554,19 @@ export default function ConnectorsPage() {
         if (["succeeded", "failed", "cancelled"].includes(updated.status)) {
           stopPolling();
           setRunStatus(updated.status === "succeeded" ? "succeeded" : "failed");
+          
+          // If succeeded, fetch the ingested tables
+          if (updated.status === "succeeded") {
+            try {
+              const tablesResponse = await api.get<{ tables: IngestedTable[]; total: number }>(
+                `/api/v1/databricks/ingest/runs/${runId}/tables`
+              );
+              setIngestedTables(tablesResponse.tables || []);
+              setShowIngestedTables(true);
+            } catch (tablesErr) {
+              console.error("Failed to fetch ingested tables:", tablesErr);
+            }
+          }
         }
       } catch { stopPolling(); }
     }, 5000);
@@ -629,6 +708,40 @@ export default function ConnectorsPage() {
                 {currentRun.status === "running" && (
                   <div className="mt-3 h-1.5 bg-white/5 rounded-full overflow-hidden">
                     <div className="h-full bg-white rounded-full animate-pulse" style={{ width: "60%" }} />
+                  </div>
+                )}
+                
+                {/* Show ingested tables after success */}
+                {currentRun.status === "succeeded" && showIngestedTables && ingestedTables.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-white/10">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-semibold text-white/90">
+                        ✓ Ingested {ingestedTables.length} table{ingestedTables.length !== 1 ? 's' : ''}
+                      </h4>
+                      <button
+                        onClick={() => router.push(`/dashboard/schema-mapper?run=${currentRun.id}`)}
+                        className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-semibold rounded-lg transition-colors border border-white/10">
+                        Open in Schema Mapper →
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {ingestedTables.slice(0, 6).map(table => (
+                        <div key={table.id} className="bg-[#0a0a0a] border border-white/5 rounded-lg p-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <svg className="w-3 h-3 text-emerald-400/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                              <rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M2 15h20"/>
+                            </svg>
+                            <span className="text-xs font-medium text-white/80 truncate">{table.short_name}</span>
+                          </div>
+                          <p className="text-[10px] text-white/40">{table.column_count} columns</p>
+                        </div>
+                      ))}
+                    </div>
+                    {ingestedTables.length > 6 && (
+                      <p className="text-xs text-white/40 mt-2 text-center">
+                        +{ingestedTables.length - 6} more tables
+                      </p>
+                    )}
                   </div>
                 )}
               </div>

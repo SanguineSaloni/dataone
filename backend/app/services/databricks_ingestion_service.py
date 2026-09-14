@@ -578,6 +578,18 @@ class DatabricksIngestionService:
                 run_record.completed_at = datetime.utcnow()
                 if result_state != "SUCCESS" and state:
                     run_record.error_message = state.state_message
+                
+                # If succeeded, trigger metadata capture from target tables
+                if new_status == "succeeded":
+                    try:
+                        DatabricksIngestionService._capture_ingestion_metadata(
+                            run_record, db, user_token
+                        )
+                    except Exception as meta_err:
+                        logger.warning(
+                            "[databricks_ingestion] stage=metadata_capture_failed (non-fatal): %s",
+                            meta_err
+                        )
 
             db.commit()
             logger.info(
@@ -589,6 +601,144 @@ class DatabricksIngestionService:
             logger.warning("[databricks_ingestion] stage=status_sync_failed (non-fatal): %s", e)
 
         return _run_to_dict(run_record)
+
+    @staticmethod
+    def _capture_ingestion_metadata(
+        run_record: IngestionRun,
+        db: Session,
+        user_token: Optional[str] = None,
+    ):
+        """
+        After successful ingestion, discover and cache metadata from Databricks
+        target tables into DataOne's schema catalog.
+        """
+        logger.info(
+            "[databricks_ingestion] stage=capture_metadata run_id=%s",
+            run_record.id
+        )
+        
+        try:
+            from app.services.databricks_unity_catalog_service import UnityCatalogService
+            from app.services.schema_catalog_service import SchemaCatalogService
+            
+            # Get target catalog/schema from trigger params
+            params = run_record.trigger_params or {}
+            target_catalog = params.get("dataone.target.catalog", "main")
+            target_schema = params.get("dataone.target.schema", "dataone_ingested")
+            
+            # Get source database name to identify tables
+            source_db = params.get("dataone.source.database", "")
+            
+            logger.info(
+                "[databricks_ingestion] stage=discover_tables catalog=%s schema=%s",
+                target_catalog, target_schema
+            )
+            
+            # Initialize Unity Catalog service
+            uc_service = UnityCatalogService(
+                server_hostname=settings.DATABRICKS_HOST or "",
+                http_path="",  # Not needed for Unity Catalog queries
+                access_token=user_token or settings.DATABRICKS_ACCESS_TOKEN or "",
+            )
+            
+            # Get all tables in the target schema
+            tables = uc_service.get_tables(target_catalog, target_schema)
+            
+            # Filter tables that match source database prefix (e.g., source_db_tablename)
+            prefix = f"{source_db}_" if source_db else ""
+            ingested_tables = [
+                t for t in tables 
+                if prefix and t["name"].startswith(prefix)
+            ] if prefix else tables
+            
+            logger.info(
+                "[databricks_ingestion] stage=found_tables count=%d",
+                len(ingested_tables)
+            )
+            
+            # Create or get a Databricks connection for this catalog/schema
+            # This allows us to associate the metadata with a connection
+            databricks_conn = (
+                db.query(DBConnection)
+                .filter(
+                    DBConnection.type == "databricks",
+                    DBConnection.is_deleted == False
+                )
+                .first()
+            )
+            
+            if not databricks_conn:
+                # Create a default Databricks connection
+                databricks_conn = DBConnection(
+                    name=f"Databricks_{target_catalog}",
+                    type="databricks",
+                    environment="prod",
+                    config={
+                        "catalog": target_catalog,
+                        "schema": target_schema,
+                        "server_hostname": settings.DATABRICKS_HOST or "",
+                    },
+                    health_status="healthy",
+                )
+                db.add(databricks_conn)
+                db.flush()
+            
+            # Store metadata for each table
+            for table in ingested_tables:
+                try:
+                    table_name = f"{target_catalog}.{target_schema}.{table['name']}"
+                    
+                    # Get table metadata including columns
+                    metadata = uc_service.get_table_metadata(
+                        target_catalog, target_schema, table['name']
+                    )
+                    
+                    # Convert to format expected by schema catalog
+                    columns = [
+                        {
+                            "name": col["name"],
+                            "type": col["type"],
+                            "nullable": col.get("nullable", True),
+                            "is_primary_key": False,  # Unity Catalog doesn't expose PKs
+                            "ordinal_position": idx,
+                        }
+                        for idx, col in enumerate(metadata.get("columns", []))
+                    ]
+                    
+                    # Store in catalog
+                    SchemaCatalogService.store_table_metadata(
+                        db=db,
+                        connection_id=databricks_conn.id,
+                        table_name=table_name,
+                        columns=columns,
+                        source_type="databricks_ingestion",
+                    )
+                    
+                    logger.info(
+                        "[databricks_ingestion] stage=metadata_stored table=%s cols=%d",
+                        table_name, len(columns)
+                    )
+                    
+                except Exception as table_err:
+                    logger.warning(
+                        "[databricks_ingestion] stage=table_metadata_failed table=%s: %s",
+                        table.get("name"), table_err
+                    )
+            
+            # Update run record with tables discovered
+            run_record.rows_ingested = len(ingested_tables)
+            db.commit()
+            
+            logger.info(
+                "[databricks_ingestion] stage=capture_metadata_complete tables=%d",
+                len(ingested_tables)
+            )
+            
+        except Exception as e:
+            logger.error(
+                "[databricks_ingestion] stage=capture_metadata_failed: %s", e
+            )
+            raise
 
     @staticmethod
     def list_pipelines(db: Session) -> list:

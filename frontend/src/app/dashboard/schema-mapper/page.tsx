@@ -38,6 +38,7 @@ export default function SchemaMapperWorkbenchPage() {
   
   const searchParams = useSearchParams();
   const connId = searchParams.get("conn");
+  const runId = searchParams.get("run");
   
   const [tables, setTables] = useState<CatalogTable[]>([]);
   const [loading, setLoading] = useState(false);
@@ -45,7 +46,33 @@ export default function SchemaMapperWorkbenchPage() {
   const [selectedTable, setSelectedTable] = useState<CatalogTable | null>(null);
 
   useEffect(() => {
-    if (connId) {
+    if (runId) {
+      // Load tables from ingestion run
+      setLoading(true);
+      api.get<{ tables: Array<{ id: number; table_name: string; short_name: string; columns: any[] }> }>(
+        `/api/v1/databricks/ingest/runs/${runId}/tables`
+      )
+        .then(res => {
+          const formattedTables: CatalogTable[] = (res.tables || []).map(t => ({
+            id: t.id,
+            table_name: t.table_name,
+            columns: t.columns.map(c => ({
+              id: c.id,
+              column_name: c.column_name,
+              data_type: c.data_type,
+              nullable: c.nullable,
+              is_primary_key: c.is_primary_key,
+            }))
+          }));
+          setTables(formattedTables);
+          if (formattedTables.length > 0) {
+            setExpandedTables({ [formattedTables[0].table_name]: true });
+            setSelectedTable(formattedTables[0]);
+          }
+        })
+        .finally(() => setLoading(false));
+    } else if (connId) {
+      // Load tables from connection
       setLoading(true);
       api.get<{ tables: CatalogTable[] }>(`/api/v1/catalog/${connId}/tables`)
         .then(res => {
@@ -57,7 +84,7 @@ export default function SchemaMapperWorkbenchPage() {
         })
         .finally(() => setLoading(false));
     }
-  }, [connId]);
+  }, [connId, runId]);
 
   const toggleTable = (t: CatalogTable) => {
     setExpandedTables(prev => ({ ...prev, [t.table_name]: !prev[t.table_name] }));
