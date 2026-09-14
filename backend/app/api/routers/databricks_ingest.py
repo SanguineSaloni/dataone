@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.api.routers.auth import get_current_user
 from app.core.database import get_db
+from app.core.config import settings
 from app.models.user import User
 from app.models.ingestion_run import IngestionRun
 from app.services.databricks_ingestion_service import DatabricksIngestionService
