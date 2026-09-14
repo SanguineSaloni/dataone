@@ -86,9 +86,8 @@ os.environ["FRONTEND_OUT_DIR"] = frontend_out
 os.environ["NEXT_PUBLIC_API_URL"]          = ""      # relative URLs = same origin
 os.environ["NEXT_PUBLIC_DATABRICKS_MODE"]  = "true"  # show Databricks button
 
-if os.path.isfile(os.path.join(frontend_out, "index.html")):
-    print("✅ Frontend already built — skipping build step")
-elif os.path.isdir(frontend_dir):
+# We force a rebuild on deployment to ensure UI updates are caught
+if os.path.isdir(frontend_dir):
     print("🏗️  Building Next.js frontend (this runs once per fresh deployment)...")
     try:
         subprocess.run(

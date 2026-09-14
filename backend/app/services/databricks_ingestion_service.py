@@ -377,7 +377,8 @@ class DatabricksIngestionService:
                 name=job_name,
                 environments=[
                     JobEnvironment(
-                        environment_key="default"
+                        environment_key="default",
+                        spec=Environment(client="1", environment_version="1")
                     )
                 ],
                 tasks=[
@@ -402,7 +403,7 @@ class DatabricksIngestionService:
                     pass
                 ws.workspace.import_(
                     path=script_path,
-                    format=ImportFormat.SOURCE,
+                    format=ImportFormat.AUTO,
                     content=base64.b64encode(script_bytes).decode("utf-8"),
                     overwrite=True,
                 )
