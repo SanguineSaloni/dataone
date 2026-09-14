@@ -143,11 +143,27 @@ def get_databricks_catalogs(
     try:
         from app.services.databricks_ingestion_service import _get_workspace_client
         token = user.databricks_access_token
+        
+        # Log for debugging
+        logger.info(
+            f"[get_catalogs] user={user.email} has_token={bool(token)} "
+            f"token_length={len(token) if token else 0}"
+        )
+        
+        if not token:
+            logger.warning(f"[get_catalogs] User {user.email} has no databricks_access_token")
+            raise HTTPException(
+                status_code=401,
+                detail="No Databricks authentication token found. Please sign in with Databricks."
+            )
+        
         wc = _get_workspace_client(token)
         catalogs = []
         for cat in wc.catalogs.list():
             catalogs.append({"name": cat.name})
         return {"catalogs": catalogs}
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("[databricks_ingest] get_catalogs failed: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
