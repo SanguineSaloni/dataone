@@ -40,22 +40,10 @@ from pyspark.sql import SparkSession
 
 spark = SparkSession.builder.appName("DataOne_MySQL_Ingestion").getOrCreate()
 
-# Safely fetch widgets without a wrapper function to prevent PySpark pickling dbutils
+# Safely fetch widgets
 try:
-    source_host = dbutils.widgets.get("dataone.source.host")
-except:
-    source_host = None
-    
-source_port = "3306"
-try:
-    source_port = dbutils.widgets.get("dataone.source.port") or "3306"
-except:
-    pass
-    
-try:
+    source_catalog = dbutils.widgets.get("dataone.source.catalog")
     source_db = dbutils.widgets.get("dataone.source.database")
-    source_user = dbutils.widgets.get("dataone.source.username")
-    source_password = dbutils.widgets.get("dataone.source.password")
 except:
     pass
 
@@ -71,21 +59,20 @@ try:
 except:
     pass
 
-jdbc_url = f"jdbc:mysql://{source_host}:{source_port}/{source_db}"
-connection_properties = {"user": source_user, "password": source_password, "driver": "com.mysql.cj.jdbc.Driver"}
-
-# Get list of tables safely using PySpark subquery to avoid option conflicts
-tables_query = f"(SELECT table_name FROM information_schema.tables WHERE table_schema='{source_db}') t"
-tables_df = spark.read.jdbc(jdbc_url, tables_query, properties=connection_properties)
+# Read list of tables from Lakehouse Federation information_schema
+tables_df = spark.sql(f"SELECT table_name FROM {source_catalog}.information_schema.tables WHERE table_schema='{source_db}'")
 tables = [row[0] for row in tables_df.collect()]
 
 for table in tables:
-    df = spark.read.jdbc(jdbc_url, table, properties=connection_properties)
+    # Read directly using Native PySpark DataFrame API from Federated Catalog
+    df = spark.table(f"{source_catalog}.{source_db}.{table}")
+    
     # Data quality: drop exact duplicates, fill nulls for string cols
     df = df.dropDuplicates()
     string_cols = [f.name for f in df.schema.fields if str(f.dataType) == "StringType()"]
     for col in string_cols:
         df = df.fillna({col: ""})
+        
     target_table = f"{target_catalog}.{target_schema}.{source_db}_{table}"
     
     spark.sql(f"CREATE SCHEMA IF NOT EXISTS {target_catalog}.{target_schema}")
@@ -104,20 +91,8 @@ from pyspark.sql import SparkSession
 spark = SparkSession.builder.appName("DataOne_PostgreSQL_Ingestion").getOrCreate()
 
 try:
-    source_host = dbutils.widgets.get("dataone.source.host")
-except:
-    source_host = None
-    
-source_port = "5432"
-try:
-    source_port = dbutils.widgets.get("dataone.source.port") or "5432"
-except:
-    pass
-    
-try:
+    source_catalog = dbutils.widgets.get("dataone.source.catalog")
     source_db = dbutils.widgets.get("dataone.source.database")
-    source_user = dbutils.widgets.get("dataone.source.username")
-    source_password = dbutils.widgets.get("dataone.source.password")
 except:
     pass
 
@@ -133,15 +108,12 @@ try:
 except:
     pass
 
-jdbc_url = f"jdbc:postgresql://{source_host}:{source_port}/{source_db}"
-props = {"user": source_user, "password": source_password, "driver": "org.postgresql.Driver"}
-
-tables_query = "(SELECT table_name FROM information_schema.tables WHERE table_schema='public') t"
-tables_df = spark.read.jdbc(jdbc_url, tables_query, properties=props)
+# Read list of tables from Lakehouse Federation information_schema
+tables_df = spark.sql(f"SELECT table_name FROM {source_catalog}.information_schema.tables WHERE table_schema='public'")
 tables = [row[0] for row in tables_df.collect()]
 
 for table in tables:
-    df = spark.read.jdbc(jdbc_url, f"public.{table}", properties=props)
+    df = spark.table(f"{source_catalog}.public.{table}")
     df = df.dropDuplicates()
     string_cols = [f.name for f in df.schema.fields if str(f.dataType) == "StringType()"]
     for col in string_cols:
@@ -284,26 +256,19 @@ from pyspark.sql import SparkSession
 
 spark = SparkSession.builder.appName("DataOne_SQLServer_Ingestion").getOrCreate()
 
-source_host = spark.conf.get("dataone.source.host")
-source_port = spark.conf.get("dataone.source.port", "1433")
+source_catalog = spark.conf.get("dataone.source.catalog")
 source_db = spark.conf.get("dataone.source.database")
-source_user = spark.conf.get("dataone.source.username")
-source_password = spark.conf.get("dataone.source.password")
 target_catalog = spark.conf.get("dataone.target.catalog", "workspace")
 target_schema = spark.conf.get("dataone.target.schema", "dataone_ingested")
 
-jdbc_url = f"jdbc:sqlserver://{source_host}:{source_port};databaseName={source_db};encrypt=true;trustServerCertificate=true"
-props = {"user": source_user, "password": source_password, "driver": "com.microsoft.sqlserver.jdbc.SQLServerDriver"}
-
-tables_df = spark.read.jdbc(jdbc_url,
-    f"(SELECT table_name FROM information_schema.tables WHERE table_catalog='{source_db}' AND table_type='BASE TABLE') t",
-    properties=props)
+tables_df = spark.sql(f"SELECT table_name FROM {source_catalog}.information_schema.tables WHERE table_catalog='{source_db}' AND table_type='BASE TABLE'")
 
 for row in tables_df.collect():
     table = row.table_name
-    df = spark.read.jdbc(jdbc_url, f"dbo.{table}", properties=props)
+    df = spark.table(f"{source_catalog}.dbo.{table}")
     df = df.dropDuplicates()
     target_table = f"{target_catalog}.{target_schema}.{source_db}_{table}"
+    spark.sql(f"CREATE SCHEMA IF NOT EXISTS {target_catalog}.{target_schema}")
     df.write.format("delta").mode("overwrite").option("mergeSchema", "true").saveAsTable(target_table)
     print(f"[DataOne] Ingested {table} -> {target_table}")
 
@@ -391,6 +356,7 @@ def _build_job_params(source_conn: DBConnection, target_conn: Optional[DBConnect
     src_type = source_conn.type.lower()
 
     if src_type in ("mysql", "postgres", "sqlserver", "oracle"):
+        params["dataone.source.catalog"] = cfg.get("catalog", f"{src_type}_catalog")
         params["dataone.source.host"] = cfg.get("host", "")
         params["dataone.source.port"] = str(cfg.get("port", ""))
         params["dataone.source.database"] = cfg.get("database", cfg.get("dbname", ""))
@@ -535,20 +501,8 @@ class DatabricksIngestionService:
             )
             from databricks.sdk.service.workspace import ImportFormat
             from databricks.sdk.service.workspace import Language
-            from databricks.sdk.service.compute import Library, MavenLibrary
             
             script_path = f"/Shared/DataOne/Notebooks/{source_type}_ingestion.py"
-
-            # Determine required Maven libraries for PySpark JDBC
-            libraries = []
-            if source_type == "mysql":
-                libraries.append(Library(maven=MavenLibrary(coordinates="mysql:mysql-connector-java:8.0.33")))
-            elif source_type == "postgres":
-                libraries.append(Library(maven=MavenLibrary(coordinates="org.postgresql:postgresql:42.6.0")))
-            elif source_type == "sqlserver":
-                libraries.append(Library(maven=MavenLibrary(coordinates="com.microsoft.sqlserver:mssql-jdbc:12.4.1.jre8")))
-            elif source_type == "oracle":
-                libraries.append(Library(maven=MavenLibrary(coordinates="com.oracle.database.jdbc:ojdbc8:23.2.0.0")))
 
             job_settings = JobSettings(
                 name=job_name,
@@ -559,7 +513,6 @@ class DatabricksIngestionService:
                         notebook_task=NotebookTask(
                             notebook_path=script_path,
                         ),
-                        libraries=libraries,
                         timeout_seconds=7200,
                     )
                 ],
