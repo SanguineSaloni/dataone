@@ -539,6 +539,17 @@ class DatabricksIngestionService:
             
             script_path = f"/Shared/DataOne/Notebooks/{source_type}_ingestion.py"
 
+            # Determine required Maven libraries for PySpark JDBC
+            libraries = []
+            if source_type == "mysql":
+                libraries.append(Library(maven=MavenLibrary(coordinates="mysql:mysql-connector-java:8.0.33")))
+            elif source_type == "postgres":
+                libraries.append(Library(maven=MavenLibrary(coordinates="org.postgresql:postgresql:42.6.0")))
+            elif source_type == "sqlserver":
+                libraries.append(Library(maven=MavenLibrary(coordinates="com.microsoft.sqlserver:mssql-jdbc:12.4.1.jre8")))
+            elif source_type == "oracle":
+                libraries.append(Library(maven=MavenLibrary(coordinates="com.oracle.database.jdbc:ojdbc8:23.2.0.0")))
+
             job_settings = JobSettings(
                 name=job_name,
                 max_concurrent_runs=3,
@@ -548,6 +559,7 @@ class DatabricksIngestionService:
                         notebook_task=NotebookTask(
                             notebook_path=script_path,
                         ),
+                        libraries=libraries,
                         timeout_seconds=7200,
                     )
                 ],
