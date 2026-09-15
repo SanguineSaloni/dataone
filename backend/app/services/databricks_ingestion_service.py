@@ -35,55 +35,62 @@ INGESTION_SCRIPTS: Dict[str, str] = {
     "mysql": '''
 # Databricks notebook source
 # COMMAND ----------
-%pip install pymysql pandas
-dbutils.library.restartPython()
-
-# COMMAND ----------
 import sys
-import pymysql
-import pandas as pd
 from pyspark.sql import SparkSession
 
 spark = SparkSession.builder.appName("DataOne_MySQL_Ingestion").getOrCreate()
 
-source_host = dbutils.widgets.get("dataone.source.host")
-source_port = dbutils.widgets.get("dataone.source.port")
-if not source_port: source_port = "3306"
-source_db = dbutils.widgets.get("dataone.source.database")
-source_user = dbutils.widgets.get("dataone.source.username")
-source_password = dbutils.widgets.get("dataone.source.password")
-target_catalog = dbutils.widgets.get("dataone.target.catalog")
-if not target_catalog: target_catalog = "workspace"
-target_schema = dbutils.widgets.get("dataone.target.schema")
-if not target_schema: target_schema = "dataone_ingested"
-
-print(f"Connecting to MySQL at {source_host}:{source_port}...")
-conn = pymysql.connect(host=source_host, port=int(source_port), user=source_user, password=source_password, database=source_db)
-
+# Safely fetch widgets without a wrapper function to prevent PySpark pickling dbutils
 try:
-    tables_df = pd.read_sql(f"SELECT table_name FROM information_schema.tables WHERE table_schema='{source_db}'", conn)
-    tables = tables_df.iloc[:, 0].tolist()
+    source_host = dbutils.widgets.get("dataone.source.host")
+except:
+    source_host = None
+    
+source_port = "3306"
+try:
+    source_port = dbutils.widgets.get("dataone.source.port") or "3306"
+except:
+    pass
+    
+try:
+    source_db = dbutils.widgets.get("dataone.source.database")
+    source_user = dbutils.widgets.get("dataone.source.username")
+    source_password = dbutils.widgets.get("dataone.source.password")
+except:
+    pass
 
-    for table in tables:
-        print(f"Extracting {table}...")
-        df_pd = pd.read_sql(f"SELECT * FROM {table}", conn)
-        
-        if df_pd.empty:
-            print(f"Table {table} is empty. Skipping.")
-            continue
-            
-        df = spark.createDataFrame(df_pd)
-        df = df.dropDuplicates()
-        
-        target_table = f"{target_catalog}.{target_schema}.{source_db}_{table}"
-        
-        # Ensure schema exists
-        spark.sql(f"CREATE SCHEMA IF NOT EXISTS {target_catalog}.{target_schema}")
-        
-        df.write.format("delta").mode("overwrite").option("mergeSchema", "true").saveAsTable(target_table)
-        print(f"[DataOne] Ingested {df.count()} rows into {target_table}")
-finally:
-    conn.close()
+target_catalog = "workspace"
+try:
+    target_catalog = dbutils.widgets.get("dataone.target.catalog") or "workspace"
+except:
+    pass
+    
+target_schema = "dataone_ingested"
+try:
+    target_schema = dbutils.widgets.get("dataone.target.schema") or "dataone_ingested"
+except:
+    pass
+
+jdbc_url = f"jdbc:mysql://{source_host}:{source_port}/{source_db}"
+connection_properties = {"user": source_user, "password": source_password, "driver": "com.mysql.cj.jdbc.Driver"}
+
+# Get list of tables safely using PySpark subquery to avoid option conflicts
+tables_query = f"(SELECT table_name FROM information_schema.tables WHERE table_schema='{source_db}') t"
+tables_df = spark.read.jdbc(jdbc_url, tables_query, properties=connection_properties)
+tables = [row[0] for row in tables_df.collect()]
+
+for table in tables:
+    df = spark.read.jdbc(jdbc_url, table, properties=connection_properties)
+    # Data quality: drop exact duplicates, fill nulls for string cols
+    df = df.dropDuplicates()
+    string_cols = [f.name for f in df.schema.fields if str(f.dataType) == "StringType()"]
+    for col in string_cols:
+        df = df.fillna({col: ""})
+    target_table = f"{target_catalog}.{target_schema}.{source_db}_{table}"
+    
+    spark.sql(f"CREATE SCHEMA IF NOT EXISTS {target_catalog}.{target_schema}")
+    df.write.format("delta").mode("overwrite").option("mergeSchema", "true").saveAsTable(target_table)
+    print(f"[DataOne] Ingested {df.count()} rows into {target_table}")
 
 print("[DataOne] MySQL ingestion complete")
 ''',
@@ -91,53 +98,59 @@ print("[DataOne] MySQL ingestion complete")
     "postgres": '''
 # Databricks notebook source
 # COMMAND ----------
-%pip install psycopg2-binary pandas
-dbutils.library.restartPython()
-
-# COMMAND ----------
 import sys
-import psycopg2
-import pandas as pd
 from pyspark.sql import SparkSession
 
 spark = SparkSession.builder.appName("DataOne_PostgreSQL_Ingestion").getOrCreate()
 
-source_host = dbutils.widgets.get("dataone.source.host")
-source_port = dbutils.widgets.get("dataone.source.port")
-if not source_port: source_port = "5432"
-source_db = dbutils.widgets.get("dataone.source.database")
-source_user = dbutils.widgets.get("dataone.source.username")
-source_password = dbutils.widgets.get("dataone.source.password")
-target_catalog = dbutils.widgets.get("dataone.target.catalog")
-if not target_catalog: target_catalog = "workspace"
-target_schema = dbutils.widgets.get("dataone.target.schema")
-if not target_schema: target_schema = "dataone_ingested"
-
-print(f"Connecting to Postgres at {source_host}:{source_port}...")
-conn = psycopg2.connect(host=source_host, port=int(source_port), user=source_user, password=source_password, dbname=source_db)
-
 try:
-    tables_df = pd.read_sql("SELECT table_name FROM information_schema.tables WHERE table_schema='public'", conn)
-    tables = tables_df.iloc[:, 0].tolist()
+    source_host = dbutils.widgets.get("dataone.source.host")
+except:
+    source_host = None
+    
+source_port = "5432"
+try:
+    source_port = dbutils.widgets.get("dataone.source.port") or "5432"
+except:
+    pass
+    
+try:
+    source_db = dbutils.widgets.get("dataone.source.database")
+    source_user = dbutils.widgets.get("dataone.source.username")
+    source_password = dbutils.widgets.get("dataone.source.password")
+except:
+    pass
 
-    for table in tables:
-        print(f"Extracting {table}...")
-        df_pd = pd.read_sql(f"SELECT * FROM public.{table}", conn)
+target_catalog = "workspace"
+try:
+    target_catalog = dbutils.widgets.get("dataone.target.catalog") or "workspace"
+except:
+    pass
+    
+target_schema = "dataone_ingested"
+try:
+    target_schema = dbutils.widgets.get("dataone.target.schema") or "dataone_ingested"
+except:
+    pass
+
+jdbc_url = f"jdbc:postgresql://{source_host}:{source_port}/{source_db}"
+props = {"user": source_user, "password": source_password, "driver": "org.postgresql.Driver"}
+
+tables_query = "(SELECT table_name FROM information_schema.tables WHERE table_schema='public') t"
+tables_df = spark.read.jdbc(jdbc_url, tables_query, properties=props)
+tables = [row[0] for row in tables_df.collect()]
+
+for table in tables:
+    df = spark.read.jdbc(jdbc_url, f"public.{table}", properties=props)
+    df = df.dropDuplicates()
+    string_cols = [f.name for f in df.schema.fields if str(f.dataType) == "StringType()"]
+    for col in string_cols:
+        df = df.fillna({col: ""})
         
-        if df_pd.empty:
-            print(f"Table {table} is empty. Skipping.")
-            continue
-            
-        df = spark.createDataFrame(df_pd)
-        df = df.dropDuplicates()
-        
-        target_table = f"{target_catalog}.{target_schema}.{source_db}_{table}"
-        
-        spark.sql(f"CREATE SCHEMA IF NOT EXISTS {target_catalog}.{target_schema}")
-        df.write.format("delta").mode("overwrite").option("mergeSchema", "true").saveAsTable(target_table)
-        print(f"[DataOne] Ingested {df.count()} rows into {target_table}")
-finally:
-    conn.close()
+    target_table = f"{target_catalog}.{target_schema}.{source_db}_{table}"
+    spark.sql(f"CREATE SCHEMA IF NOT EXISTS {target_catalog}.{target_schema}")
+    df.write.format("delta").mode("overwrite").option("mergeSchema", "true").saveAsTable(target_table)
+    print(f"[DataOne] Ingested {df.count()} rows into {target_table}")
 
 print("[DataOne] PostgreSQL ingestion complete")
 ''',
