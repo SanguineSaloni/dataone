@@ -40,10 +40,15 @@ from pyspark.sql import SparkSession
 
 spark = SparkSession.builder.appName("DataOne_MySQL_Ingestion").getOrCreate()
 
-# Safely fetch widgets
+source_catalog = "mysql_catalog"
 try:
-    source_catalog = dbutils.widgets.get("dataone.source.catalog")
-    source_db = dbutils.widgets.get("dataone.source.database")
+    source_catalog = dbutils.widgets.get("dataone.source.catalog") or source_catalog
+except:
+    pass
+
+source_db = "default_db"
+try:
+    source_db = dbutils.widgets.get("dataone.source.database") or source_db
 except:
     pass
 
@@ -90,9 +95,15 @@ from pyspark.sql import SparkSession
 
 spark = SparkSession.builder.appName("DataOne_PostgreSQL_Ingestion").getOrCreate()
 
+source_catalog = "postgres_catalog"
 try:
-    source_catalog = dbutils.widgets.get("dataone.source.catalog")
-    source_db = dbutils.widgets.get("dataone.source.database")
+    source_catalog = dbutils.widgets.get("dataone.source.catalog") or source_catalog
+except:
+    pass
+
+source_db = "default_db"
+try:
+    source_db = dbutils.widgets.get("dataone.source.database") or source_db
 except:
     pass
 
@@ -256,8 +267,17 @@ from pyspark.sql import SparkSession
 
 spark = SparkSession.builder.appName("DataOne_SQLServer_Ingestion").getOrCreate()
 
-source_catalog = spark.conf.get("dataone.source.catalog")
-source_db = spark.conf.get("dataone.source.database")
+source_catalog = "sqlserver_catalog"
+try:
+    source_catalog = spark.conf.get("dataone.source.catalog") or source_catalog
+except:
+    pass
+
+source_db = "default_db"
+try:
+    source_db = spark.conf.get("dataone.source.database") or source_db
+except:
+    pass
 target_catalog = spark.conf.get("dataone.target.catalog", "workspace")
 target_schema = spark.conf.get("dataone.target.schema", "dataone_ingested")
 
