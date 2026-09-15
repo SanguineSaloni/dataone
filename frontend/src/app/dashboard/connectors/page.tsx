@@ -253,6 +253,13 @@ function DBFormPanel({ title, subtitle, form, onChange, types, showPassword, onT
                 </button>
               </div>
             </div>
+            {(form.dbType === "mysql" || form.dbType === "postgres" || form.dbType === "sqlserver") && (
+              <div className="flex items-center">
+                <label className="text-[13px] text-white/60 w-[160px] flex-shrink-0">Databricks Catalog (Optional)</label>
+                <input type="text" value={form.catalog || ""} onChange={set("catalog")} placeholder="e.g. saloni_rds_catalog"
+                  className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-[#1a1a1a] border border-white/10 text-white text-[13px] placeholder:text-white/20 focus:outline-none focus:border-white/30 transition-colors" />
+              </div>
+            )}
             <div className="flex items-center mt-2">
               <label className="text-[13px] text-white/60 w-[160px] flex-shrink-0">SSL Connection</label>
               <button type="button" onClick={() => onChange({ ...form, ssl: !form.ssl })}
@@ -582,7 +589,7 @@ export default function ConnectorsPage() {
         name: cleanName(`${source.dbType}_${source.host || source.database || "source"}`),
         type: source.dbType,
         environment: "prod",
-        config: { host: source.host, port: source.port, dbname: source.database, user: source.username, password: source.password, ssl_mode: source.ssl },
+        config: { host: source.host, port: source.port, dbname: source.database, user: source.username, password: source.password, ssl_mode: source.ssl, catalog: source.catalog },
       };
       const srcConn = await api.post<{ id: number }>("/api/v1/connectors/", srcPayload);
 
