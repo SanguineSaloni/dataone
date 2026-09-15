@@ -453,6 +453,32 @@ class DatabricksIngestionService:
                     "[databricks_ingestion] stage=reuse_existing_job job_id=%s",
                     catalog_entry.databricks_job_id,
                 )
+                
+                # Ensure the Databricks notebook is updated with the latest codebase script
+                script = INGESTION_SCRIPTS.get(source_type, INGESTION_SCRIPTS.get("mysql", ""))
+                script_path = f"/Shared/DataOne/Notebooks/{source_type}_ingestion.py"
+                
+                try:
+                    ws = _get_workspace_client(user_token)
+                    from databricks.sdk.service.workspace import ImportFormat, Language
+                    import base64
+                    script_bytes = script.encode("utf-8")
+                    try:
+                        ws.workspace.mkdirs("/Shared/DataOne")
+                        ws.workspace.mkdirs("/Shared/DataOne/Notebooks")
+                    except Exception:
+                        pass
+                    ws.workspace.import_(
+                        path=script_path,
+                        format=ImportFormat.SOURCE,
+                        language=Language.PYTHON,
+                        content=base64.b64encode(script_bytes).decode("utf-8"),
+                        overwrite=True,
+                    )
+                    logger.info("[databricks_ingestion] stage=script_updated_on_reuse path=%s", script_path)
+                except Exception as upload_err:
+                    logger.warning("[databricks_ingestion] stage=script_update_failed_on_reuse: %s", upload_err)
+
                 catalog_entry.last_used_at = datetime.utcnow()
                 db.commit()
                 return {
