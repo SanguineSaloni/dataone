@@ -503,7 +503,7 @@ class DatabricksIngestionService:
                     changes=[
                         cat_svc.PermissionsChange(
                             principal="account users",
-                            add=[cat_svc.Privilege.USE_CATALOG, cat_svc.Privilege.USE_SCHEMA, cat_svc.Privilege.SELECT, cat_svc.Privilege.BROWSE]
+                            add=[cat_svc.Privilege.USE_CATALOG, cat_svc.Privilege.USE_SCHEMA, cat_svc.Privilege.SELECT]
                         )
                     ]
                 )
