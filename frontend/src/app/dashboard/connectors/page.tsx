@@ -600,7 +600,19 @@ export default function ConnectorsPage() {
     }
   };
 
+
+  const handleDeleteConnection = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this connection?")) return;
+    try {
+      await api.delete(`/api/v1/connectors/${id}`);
+      setConnections(prev => prev.filter(c => c.id !== id));
+    } catch (err) {
+      alert("Failed to delete connection: " + (err instanceof Error ? err.message : String(err)));
+    }
+  };
+
   const handleDrop = (e: React.DragEvent) => {
+
     e.preventDefault(); setIsDragging(false);
     const file = e.dataTransfer.files[0];
     if (file && file.name.endsWith(".csv")) setCsvFile(file);
@@ -771,7 +783,7 @@ export default function ConnectorsPage() {
                 <div className="mb-6">
                   <p className="text-[13px] text-white/40 mb-1">Option 2</p>
                   <h2 className="text-[20px] font-bold text-white leading-tight">Database Connection</h2>
-                  <p className="text-[13px] text-white/40 mt-1">Configure your source and target database credentials to trigger a Databricks ingestion pipeline.</p>
+                  <p className="text-[13px] text-white/40 mt-1">Configure your source database credentials to map it to Databricks.</p>
                 </div>
                 <div className="flex flex-col md:flex-row gap-8">
                   <DBFormPanel title="Source Database" subtitle="Enter the source database details."
@@ -827,7 +839,10 @@ export default function ConnectorsPage() {
                           <p className="text-xs text-white/40 uppercase">{conn.type}</p>
                         </div>
                       </div>
-                      <StatusBadge status={conn.health_status} />
+                      <div className="flex flex-col items-end gap-2">
+                        <StatusBadge status={conn.health_status} />
+                        <button onClick={() => handleDeleteConnection(conn.id)} className="text-xs text-red-400 hover:text-red-300 bg-red-400/10 px-2 py-1 rounded">Delete</button>
+                      </div>
                     </div>
                     
                     <div className="mt-2 text-[12px] text-white/60 bg-[#161618] p-3 rounded-lg font-mono">

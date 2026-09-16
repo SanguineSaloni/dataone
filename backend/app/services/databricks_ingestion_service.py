@@ -476,7 +476,11 @@ class DatabricksIngestionService:
                     comment=f"Created by DataOne for source connection {source_conn.id}"
                 )
             except Exception as e:
-                logger.warning("Failed to create connection (might already exist): %s", e)
+                if "already exists" in str(e).lower() or "already_exists" in str(e).lower():
+                    logger.warning("Connection already exists: %s", e)
+                else:
+                    logger.error("Failed to create connection: %s", e)
+                    raise
                 
             logger.info("Creating Databricks foreign catalog: %s", catalog_name)
             try:
@@ -486,7 +490,11 @@ class DatabricksIngestionService:
                     comment=f"Foreign catalog for DataOne source connection {source_conn.id}"
                 )
             except Exception as e:
-                logger.warning("Failed to create foreign catalog (might already exist): %s", e)
+                if "already exists" in str(e).lower() or "already_exists" in str(e).lower():
+                    logger.warning("Catalog already exists: %s", e)
+                else:
+                    logger.error("Failed to create foreign catalog: %s", e)
+                    raise
                 
             return {
                 "status": "success",
