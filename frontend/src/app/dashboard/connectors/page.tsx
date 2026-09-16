@@ -29,7 +29,7 @@ interface DBForm {
   catalog?: string; schema?: string;
 }
 const defaultSource: DBForm = { dbType: "mysql", host: "", port: "3306", database: "", username: "", password: "", ssl: false };
-const defaultTarget: DBForm = { dbType: "databricks", host: "", port: "", database: "", username: "", password: "", ssl: true, catalog: "main", schema: "dataone_ingested" };
+const defaultTarget: DBForm = { dbType: "databricks", host: "", port: "", database: "", username: "", password: "", ssl: true, catalog: "workspace", schema: "default" };
 
 type RunStatus = "idle" | "connecting" | "triggering" | "running" | "succeeded" | "failed";
 
@@ -616,8 +616,8 @@ export default function ConnectorsPage() {
         target_connection_id: tgtConnId,
       };
       if (target.dbType === "databricks") {
-        triggerPayload.target_catalog = target.catalog || "main";
-        triggerPayload.target_schema = target.schema || "dataone_ingested";
+        triggerPayload.target_catalog = target.catalog || "workspace";
+        triggerPayload.target_schema = target.schema || "default";
       }
 
       const ingestionRun = await api.post<IngestionRun>("/api/v1/databricks/ingest/trigger", triggerPayload);

@@ -61,8 +61,8 @@ def trigger_ingestion(
         result = DatabricksIngestionService.trigger_ingestion(
             source_connection_id=req.source_connection_id,
             target_connection_id=req.target_connection_id,
-            target_catalog=req.target_catalog or "main",
-            target_schema=req.target_schema or "dataone_ingested",
+            target_catalog=req.target_catalog or "workspace",
+            target_schema=req.target_schema or "default",
             db=db,
             actor=user.email,
             user_token=None # Use M2M to avoid scope issues,

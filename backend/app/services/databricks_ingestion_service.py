@@ -35,54 +35,55 @@ INGESTION_SCRIPTS: Dict[str, str] = {
     "mysql": '''
 # Databricks notebook source
 # COMMAND ----------
+%pip install pymysql pandas
+dbutils.library.restartPython()
+
+# COMMAND ----------
 import sys
+import pymysql
+import pandas as pd
 from pyspark.sql import SparkSession
 
 spark = SparkSession.builder.appName("DataOne_MySQL_Ingestion").getOrCreate()
 
-source_catalog = "mysql_catalog"
-try:
-    source_catalog = dbutils.widgets.get("dataone.source.catalog") or source_catalog
-except:
-    pass
+source_host = dbutils.widgets.get("dataone.source.host")
+source_port = dbutils.widgets.get("dataone.source.port")
+if not source_port: source_port = "3306"
+source_db = dbutils.widgets.get("dataone.source.database")
+source_user = dbutils.widgets.get("dataone.source.username")
+source_password = dbutils.widgets.get("dataone.source.password")
+target_catalog = dbutils.widgets.get("dataone.target.catalog")
+if not target_catalog: target_catalog = "workspace"
+target_schema = dbutils.widgets.get("dataone.target.schema")
+if not target_schema: target_schema = "default"
 
-source_db = "default_db"
-try:
-    source_db = dbutils.widgets.get("dataone.source.database") or source_db
-except:
-    pass
+print(f"Connecting to MySQL at {source_host}:{source_port}...")
+conn = pymysql.connect(host=source_host, port=int(source_port), user=source_user, password=source_password, database=source_db)
 
-target_catalog = "workspace"
 try:
-    target_catalog = dbutils.widgets.get("dataone.target.catalog") or "workspace"
-except:
-    pass
-    
-target_schema = "dataone_ingested"
-try:
-    target_schema = dbutils.widgets.get("dataone.target.schema") or "dataone_ingested"
-except:
-    pass
+    tables_df = pd.read_sql(f"SELECT table_name FROM information_schema.tables WHERE table_schema='{source_db}'", conn)
+    tables = tables_df.iloc[:, 0].tolist()
 
-# Read list of tables from Lakehouse Federation information_schema
-tables_df = spark.sql(f"SELECT table_name FROM {source_catalog}.information_schema.tables WHERE table_schema='{source_db}'")
-tables = [row[0] for row in tables_df.collect()]
-
-for table in tables:
-    # Read directly using Native PySpark DataFrame API from Federated Catalog
-    df = spark.table(f"{source_catalog}.{source_db}.{table}")
-    
-    # Data quality: drop exact duplicates, fill nulls for string cols
-    df = df.dropDuplicates()
-    string_cols = [f.name for f in df.schema.fields if str(f.dataType) == "StringType()"]
-    for col in string_cols:
-        df = df.fillna({col: ""})
+    for table in tables:
+        print(f"Extracting {table}...")
+        df_pd = pd.read_sql(f"SELECT * FROM {table}", conn)
         
-    target_table = f"{target_catalog}.{target_schema}.{source_db}_{table}"
-    
-    spark.sql(f"CREATE SCHEMA IF NOT EXISTS {target_catalog}.{target_schema}")
-    df.write.format("delta").mode("overwrite").option("mergeSchema", "true").saveAsTable(target_table)
-    print(f"[DataOne] Ingested {df.count()} rows into {target_table}")
+        if df_pd.empty:
+            print(f"Table {table} is empty. Skipping.")
+            continue
+            
+        df = spark.createDataFrame(df_pd)
+        df = df.dropDuplicates()
+        
+        target_table = f"{target_catalog}.{target_schema}.{source_db}_{table}"
+        
+        # Ensure schema exists
+        spark.sql(f"CREATE SCHEMA IF NOT EXISTS {target_catalog}.{target_schema}")
+        
+        df.write.format("delta").mode("overwrite").option("mergeSchema", "true").saveAsTable(target_table)
+        print(f"[DataOne] Ingested {df.count()} rows into {target_table}")
+finally:
+    conn.close()
 
 print("[DataOne] MySQL ingestion complete")
 ''',
@@ -90,50 +91,53 @@ print("[DataOne] MySQL ingestion complete")
     "postgres": '''
 # Databricks notebook source
 # COMMAND ----------
+%pip install psycopg2-binary pandas
+dbutils.library.restartPython()
+
+# COMMAND ----------
 import sys
+import psycopg2
+import pandas as pd
 from pyspark.sql import SparkSession
 
 spark = SparkSession.builder.appName("DataOne_PostgreSQL_Ingestion").getOrCreate()
 
-source_catalog = "postgres_catalog"
-try:
-    source_catalog = dbutils.widgets.get("dataone.source.catalog") or source_catalog
-except:
-    pass
+source_host = dbutils.widgets.get("dataone.source.host")
+source_port = dbutils.widgets.get("dataone.source.port")
+if not source_port: source_port = "5432"
+source_db = dbutils.widgets.get("dataone.source.database")
+source_user = dbutils.widgets.get("dataone.source.username")
+source_password = dbutils.widgets.get("dataone.source.password")
+target_catalog = dbutils.widgets.get("dataone.target.catalog")
+if not target_catalog: target_catalog = "workspace"
+target_schema = dbutils.widgets.get("dataone.target.schema")
+if not target_schema: target_schema = "default"
 
-source_db = "default_db"
-try:
-    source_db = dbutils.widgets.get("dataone.source.database") or source_db
-except:
-    pass
+print(f"Connecting to Postgres at {source_host}:{source_port}...")
+conn = psycopg2.connect(host=source_host, port=int(source_port), user=source_user, password=source_password, dbname=source_db)
 
-target_catalog = "workspace"
 try:
-    target_catalog = dbutils.widgets.get("dataone.target.catalog") or "workspace"
-except:
-    pass
-    
-target_schema = "dataone_ingested"
-try:
-    target_schema = dbutils.widgets.get("dataone.target.schema") or "dataone_ingested"
-except:
-    pass
+    tables_df = pd.read_sql("SELECT table_name FROM information_schema.tables WHERE table_schema='public'", conn)
+    tables = tables_df.iloc[:, 0].tolist()
 
-# Read list of tables from Lakehouse Federation information_schema
-tables_df = spark.sql(f"SELECT table_name FROM {source_catalog}.information_schema.tables WHERE table_schema='public'")
-tables = [row[0] for row in tables_df.collect()]
-
-for table in tables:
-    df = spark.table(f"{source_catalog}.public.{table}")
-    df = df.dropDuplicates()
-    string_cols = [f.name for f in df.schema.fields if str(f.dataType) == "StringType()"]
-    for col in string_cols:
-        df = df.fillna({col: ""})
+    for table in tables:
+        print(f"Extracting {table}...")
+        df_pd = pd.read_sql(f"SELECT * FROM public.{table}", conn)
         
-    target_table = f"{target_catalog}.{target_schema}.{source_db}_{table}"
-    spark.sql(f"CREATE SCHEMA IF NOT EXISTS {target_catalog}.{target_schema}")
-    df.write.format("delta").mode("overwrite").option("mergeSchema", "true").saveAsTable(target_table)
-    print(f"[DataOne] Ingested {df.count()} rows into {target_table}")
+        if df_pd.empty:
+            print(f"Table {table} is empty. Skipping.")
+            continue
+            
+        df = spark.createDataFrame(df_pd)
+        df = df.dropDuplicates()
+        
+        target_table = f"{target_catalog}.{target_schema}.{source_db}_{table}"
+        
+        spark.sql(f"CREATE SCHEMA IF NOT EXISTS {target_catalog}.{target_schema}")
+        df.write.format("delta").mode("overwrite").option("mergeSchema", "true").saveAsTable(target_table)
+        print(f"[DataOne] Ingested {df.count()} rows into {target_table}")
+finally:
+    conn.close()
 
 print("[DataOne] PostgreSQL ingestion complete")
 ''',
@@ -161,7 +165,7 @@ source_password = dbutils.widgets.get("dataone.source.password")
 target_catalog = dbutils.widgets.get("dataone.target.catalog")
 if not target_catalog: target_catalog = "workspace"
 target_schema = dbutils.widgets.get("dataone.target.schema")
-if not target_schema: target_schema = "dataone_ingested"
+if not target_schema: target_schema = "default"
 
 print(f"Connecting to MongoDB at {source_host}:{source_port}...")
 mongo_uri = f"mongodb://{source_user}:{source_password}@{source_host}:{source_port}/?authSource={source_db}"
@@ -213,7 +217,7 @@ spark = SparkSession.builder.appName("DataOne_CSV_Ingestion").getOrCreate()
 
 csv_path = spark.conf.get("dataone.source.path")  # dbfs:// or s3:// or /Volumes/...
 target_catalog = spark.conf.get("dataone.target.catalog", "workspace")
-target_schema = spark.conf.get("dataone.target.schema", "dataone_ingested")
+target_schema = spark.conf.get("dataone.target.schema", "default")
 target_table_name = spark.conf.get("dataone.target.table", "csv_import")
 
 df = spark.read.option("header", "true").option("inferSchema", "true").csv(csv_path)
@@ -238,7 +242,7 @@ sfDatabase = spark.conf.get("dataone.source.database")
 sfSchema = spark.conf.get("dataone.source.schema", "PUBLIC")
 sfWarehouse = spark.conf.get("dataone.source.warehouse", "COMPUTE_WH")
 target_catalog = spark.conf.get("dataone.target.catalog", "workspace")
-target_schema_name = spark.conf.get("dataone.target.schema", "dataone_ingested")
+target_schema_name = spark.conf.get("dataone.target.schema", "default")
 
 snowflake_opts = {
     "sfUrl": sfUrl, "sfUser": sfUser, "sfPassword": sfPassword,
@@ -279,7 +283,7 @@ try:
 except:
     pass
 target_catalog = spark.conf.get("dataone.target.catalog", "workspace")
-target_schema = spark.conf.get("dataone.target.schema", "dataone_ingested")
+target_schema = spark.conf.get("dataone.target.schema", "default")
 
 tables_df = spark.sql(f"SELECT table_name FROM {source_catalog}.information_schema.tables WHERE table_catalog='{source_db}' AND table_type='BASE TABLE'")
 
@@ -402,7 +406,7 @@ def _build_job_params(source_conn: DBConnection, target_conn: Optional[DBConnect
     if target_conn:
         tcfg = target_conn.config or {}
         params["dataone.target.catalog"] = tcfg.get("catalog", "workspace")
-        params["dataone.target.schema"] = tcfg.get("schema", "dataone_ingested")
+        params["dataone.target.schema"] = tcfg.get("schema", "default")
 
     return params
 
@@ -630,7 +634,7 @@ class DatabricksIngestionService:
         
         # Override target catalog/schema if explicitly provided (even if target_conn is None)
         params["dataone.target.catalog"] = target_catalog or "workspace"
-        params["dataone.target.schema"] = target_schema or "dataone_ingested"
+        params["dataone.target.schema"] = target_schema or "default"
 
         # Create IngestionRun record
         run_record = IngestionRun(
@@ -781,7 +785,7 @@ class DatabricksIngestionService:
             # Get target catalog/schema from trigger params
             params = run_record.trigger_params or {}
             target_catalog = params.get("dataone.target.catalog", "workspace")
-            target_schema = params.get("dataone.target.schema", "dataone_ingested")
+            target_schema = params.get("dataone.target.schema", "default")
             
             # Get source database name to identify tables
             source_db = params.get("dataone.source.database", "")
