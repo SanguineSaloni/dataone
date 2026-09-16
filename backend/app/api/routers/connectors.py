@@ -150,13 +150,9 @@ def create_connection(conn: ConnectionCreate, db: Session = Depends(get_db),
     if conn.type.lower() != "databricks":
         try:
             from app.services.databricks_ingestion_service import DatabricksIngestionService
-            logger.info(f"Automatically triggering Databricks pipeline for new connector {created.id}")
-            DatabricksIngestionService.trigger_ingestion(
-                source_connection_id=created.id,
-                target_connection_id=None,
-                target_catalog="main",
-                target_schema="dataone_ingested",
-                db=db,
+            logger.info(f"Automatically setting up Databricks Lakehouse Federation for new connector {created.id}")
+            DatabricksIngestionService.setup_lakehouse_federation(
+                source_conn=created,
                 actor=_actor(user)
             )
         except Exception as e:

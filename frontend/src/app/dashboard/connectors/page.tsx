@@ -16,12 +16,6 @@ const SOURCE_TYPES = [
   { value: "s3", label: "Amazon S3", port: "" },
 ];
 
-const TARGET_TYPES = [
-  { value: "databricks", label: "Databricks Delta Lake" },
-  { value: "postgres", label: "PostgreSQL" },
-  { value: "mysql", label: "MySQL" },
-  { value: "s3", label: "Amazon S3" },
-];
 
 interface DBForm {
   dbType: string; host: string; port: string;
@@ -29,7 +23,6 @@ interface DBForm {
   catalog?: string; schema?: string;
 }
 const defaultSource: DBForm = { dbType: "mysql", host: "", port: "3306", database: "", username: "", password: "", ssl: false };
-const defaultTarget: DBForm = { dbType: "databricks", host: "", port: "", database: "", username: "", password: "", ssl: true, catalog: "workspace", schema: "default" };
 
 type RunStatus = "idle" | "connecting" | "triggering" | "running" | "succeeded" | "failed";
 
@@ -511,7 +504,6 @@ export default function ConnectorsPage() {
 
   // Form state
   const [source, setSource] = useState<DBForm>(defaultSource);
-  const [target, setTarget] = useState<DBForm>(defaultTarget);
   const [showSrcPw, setShowSrcPw] = useState(false);
   const [showTgtPw, setShowTgtPw] = useState(false);
   const [runStatus, setRunStatus] = useState<RunStatus>("idle");
@@ -593,39 +585,10 @@ export default function ConnectorsPage() {
       };
       const srcConn = await api.post<{ id: number }>("/api/v1/connectors/", srcPayload);
 
-      let tgtConnId: number | null = null;
-      if (target.dbType !== "databricks") {
-        const tgtPayload = {
-          name: cleanName(`${target.dbType}_target_${target.database || "db"}`),
-          type: target.dbType,
-          environment: "prod",
-          config: {
-            host: target.host, port: target.port,
-            dbname: target.database,
-            user: target.username, password: target.password, ssl_mode: target.ssl,
-          },
-        };
-        const tgtConn = await api.post<{ id: number }>("/api/v1/connectors/", tgtPayload);
-        tgtConnId = tgtConn.id;
-      }
-
-      setRunStatus("triggering");
-
-      const triggerPayload: any = {
-        source_connection_id: srcConn.id,
-        target_connection_id: tgtConnId,
-      };
-      if (target.dbType === "databricks") {
-        triggerPayload.target_catalog = target.catalog || "workspace";
-        triggerPayload.target_schema = target.schema || "default";
-      }
-
-      const ingestionRun = await api.post<IngestionRun>("/api/v1/databricks/ingest/trigger", triggerPayload);
-
-      setCurrentRun(ingestionRun);
-      setRuns(prev => [ingestionRun, ...prev]);
-      setRunStatus("running");
-      startPolling(ingestionRun.id);
+            // The backend automatically triggers Lakehouse Federation setup
+      // when the source connection is created!
+      setRunStatus("succeeded");
+      // startPolling no longer needed
       setActiveTab("pipelines");
 
       // Refresh connections list
@@ -814,9 +777,7 @@ export default function ConnectorsPage() {
                   <DBFormPanel title="Source Database" subtitle="Enter the source database details."
                     form={source} onChange={setSource} types={SOURCE_TYPES}
                     showPassword={showSrcPw} onTogglePassword={() => setShowSrcPw(v => !v)} />
-                  <DBFormPanel title="Target (Databricks)" subtitle="Where data lands in Delta Lake."
-                    form={target} onChange={setTarget} types={TARGET_TYPES}
-                    showPassword={showTgtPw} onTogglePassword={() => setShowTgtPw(v => !v)} />
+                  
                 </div>
               </div>
             </div>
@@ -831,7 +792,7 @@ export default function ConnectorsPage() {
                     {runStatus === "connecting" ? "Connecting…" : runStatus === "triggering" ? "Triggering pipeline…" : "Pipeline running…"}
                   </>
                 ) : (
-                  <><svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> Establish Connection &amp; Trigger Ingestion</>
+                  <><svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> Establish Connection</>
                 )}
               </button>
             </div>
