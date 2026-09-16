@@ -499,7 +499,8 @@ class DatabricksIngestionService:
             try:
                 from databricks.sdk.service import catalog as cat_svc
                 ws.grants.update(
-                    catalog=catalog_name,
+                    securable_type=cat_svc.SecurableType.CATALOG,
+                    full_name=catalog_name,
                     changes=[
                         cat_svc.PermissionsChange(
                             principal="account users",
