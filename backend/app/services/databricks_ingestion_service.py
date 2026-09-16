@@ -495,6 +495,21 @@ class DatabricksIngestionService:
                 else:
                     logger.error("Failed to create foreign catalog: %s", e)
                     raise
+            
+            try:
+                from databricks.sdk.service import catalog as cat_svc
+                ws.grants.update(
+                    catalog=catalog_name,
+                    changes=[
+                        cat_svc.PermissionsChange(
+                            principal="account users",
+                            add=[cat_svc.Privilege.USE_CATALOG, cat_svc.Privilege.USE_SCHEMA, cat_svc.Privilege.SELECT, cat_svc.Privilege.BROWSE]
+                        )
+                    ]
+                )
+                logger.info("Granted permissions to account users for %s", catalog_name)
+            except Exception as e:
+                logger.warning("Failed to grant permissions on catalog: %s", e)
                 
             return {
                 "status": "success",
