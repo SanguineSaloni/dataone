@@ -437,8 +437,8 @@ class DatabricksIngestionService:
         
         import re as regex
         clean_host = regex.sub(r'[^A-Za-z0-9_]', '_', host.split('.')[0])
-        connection_name = f"dataone_{source_conn.id}_{src_type}_{clean_host}".lower()
-        catalog_name = f"dataone_{source_conn.id}_{src_type}_catalog".lower()
+        connection_name = f"dataone_{src_type}_{clean_host}_conn".lower()
+        catalog_name = f"dataone_{src_type}_{clean_host}_catalog".lower()
         
         try:
             ws = _get_workspace_client(user_token)
