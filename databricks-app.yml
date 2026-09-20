@@ -32,7 +32,7 @@ resources:
 
 env:
   - name: DATABASE_URL
-    value: "postgresql://postgres:postgres@postgres:5432/dataone"
+    value: "postgresql://postgres:<YOUR_PASSWORD>@database-1.c50uus42awel.ap-south-1.rds.amazonaws.com:5432/postgres?sslmode=verify-full&sslrootcert=./global-bundle.pem"
   - name: REDIS_URL  
     value: "redis://redis:6379/0"
   - name: DATABRICKS_NATIVE_MODE
