@@ -4,6 +4,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     PROJECT_NAME: str = "DataOne"
     DATABASE_URL: str = "postgresql://postgres:postgres@postgres:5432/dataone"
+    APP_DATABASE_URL: str | None = None
     
     # URLs for OAuth callbacks
     BACKEND_URL: str = "http://localhost:8011"
