@@ -83,7 +83,6 @@ class SchemaService:
         """
         Extracts full schema structure (tables and columns) from the connection.
         """
-        from app.connectors import get_connector
         connector = get_connector(connection)
         try:
             if connection.type.lower() == "databricks":
