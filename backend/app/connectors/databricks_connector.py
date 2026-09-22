@@ -57,7 +57,7 @@ class DatabricksConnector(BaseConnector):
             'server_hostname': server_hostname,
             'http_path': http_path,
             'access_token': access_token,
-            'catalog': catalog or 'main',  # Default UC catalog
+            'catalog': catalog or 'dataone_3_mysql_catalog',  # User-requested default UC catalog
             'schema': schema or 'default'
         }
         self.conn: Optional[Connection] = None
@@ -67,6 +67,7 @@ class DatabricksConnector(BaseConnector):
     def connect(self) -> Connection:
         """Establish connection to Databricks SQL Warehouse."""
         if not self.conn:
+            import os
             try:
                 connect_kwargs = {
                     "server_hostname": self.config['server_hostname'],
@@ -76,8 +77,17 @@ class DatabricksConnector(BaseConnector):
                     "_socket_timeout": 10
                 }
                 
-                # Only pass access_token if it's explicitly provided. 
-                if self.config.get('access_token'):
+                # Check if we are running in Databricks Apps (OAuth M2M env injected)
+                is_databricks_apps = bool(
+                    os.environ.get("DATABRICKS_CLIENT_ID")
+                    or os.environ.get("DATABRICKS_CLIENT_SECRET")
+                )
+                
+                if is_databricks_apps:
+                    logger.info("[SQL] Databricks Apps environment detected — letting SQL connector use OAuth M2M from env")
+                    # Do NOT pass access_token, letting databricks.sql default credential chain take over
+                elif self.config.get('access_token'):
+                    # Local / external deployment, use explicitly provided PAT
                     connect_kwargs["access_token"] = self.config['access_token']
                     
                 self.conn = sql.connect(**connect_kwargs)
