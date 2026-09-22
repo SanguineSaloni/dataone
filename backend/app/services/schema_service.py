@@ -94,7 +94,7 @@ class SchemaService:
                     catalog_name = 'dataone_3_mysql_catalog'
                     
                 schemas = connector.get_schemas(catalog_name)
-                SKIP_SCHEMAS = {"information_schema", "app_database", "mysql", "performance_schema", "sys", "__databricks_internal", "system"}
+                SKIP_SCHEMAS = {"information_schema", "mysql", "performance_schema", "sys", "__databricks_internal", "system"}
                 
                 for sch in schemas:
                     sch_name = sch["name"]
