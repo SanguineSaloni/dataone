@@ -53,11 +53,15 @@ class DatabricksConnector(BaseConnector):
             catalog: Unity Catalog name (optional, defaults to current)
             schema: Schema name (optional, defaults to 'default')
         """
+        catalog = catalog or 'dataone_3_mysql_catalog'
+        if catalog == 'main':
+            catalog = 'dataone_3_mysql_catalog'
+            
         self.config = {
             'server_hostname': server_hostname,
             'http_path': http_path,
             'access_token': access_token,
-            'catalog': catalog or 'dataone_3_mysql_catalog',  # User-requested default UC catalog
+            'catalog': catalog,
             'schema': schema or 'default'
         }
         self.conn: Optional[Connection] = None
