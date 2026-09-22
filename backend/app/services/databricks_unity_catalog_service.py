@@ -92,15 +92,32 @@ class UnityCatalogService:
         return self.sql_conn
     
     def _get_workspace_client(self) -> WorkspaceClient:
-        """Get or create Workspace SDK client for UC APIs using appropriate token."""
+        """Get or create Workspace SDK client for UC APIs.
+
+        On Databricks Apps, OAuth M2M credentials are injected via env vars
+        (DATABRICKS_CLIENT_ID, DATABRICKS_CLIENT_SECRET, DATABRICKS_HOST).
+        Passing an explicit PAT token alongside those causes the SDK to raise
+        'more than one authorization method configured'.
+        We detect this and let the SDK self-configure from the environment.
+        """
         if not self.workspace_client:
-            config = Config(
-                host=f"https://{self.config.get('server_hostname')}",
-                token=self.access_token  # Use OAuth token in native mode
+            import os
+            is_databricks_apps = bool(
+                os.environ.get("DATABRICKS_CLIENT_ID")
+                or os.environ.get("DATABRICKS_CLIENT_SECRET")
             )
-            self.workspace_client = WorkspaceClient(config=config)
+            if is_databricks_apps:
+                logger.info("[UC] Databricks Apps environment detected — using OAuth M2M from env")
+                self.workspace_client = WorkspaceClient()
+            else:
+                config = Config(
+                    host=f"https://{self.config.get('server_hostname')}",
+                    token=self.access_token
+                )
+                self.workspace_client = WorkspaceClient(config=config)
         return self.workspace_client
-    
+
+
     def update_access_token(self, new_token: str):
         """
         Update the access token (e.g., after refresh).

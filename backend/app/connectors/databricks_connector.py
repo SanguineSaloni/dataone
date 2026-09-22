@@ -156,16 +156,43 @@ class DatabricksConnector(BaseConnector):
     # ------------------------------------------------------------------
 
     def _get_workspace_client(self):
-        """Lazily create a Databricks SDK WorkspaceClient for Command Execution."""
+        """Lazily create a Databricks SDK WorkspaceClient for Command Execution.
+
+        When running as a Databricks App the runtime already injects OAuth M2M
+        credentials via environment variables (DATABRICKS_HOST,
+        DATABRICKS_CLIENT_ID, DATABRICKS_CLIENT_SECRET). Passing an explicit
+        PAT token on top of those causes the SDK to raise
+        'more than one authorization method configured'.
+
+        Strategy:
+        - If OAuth env vars are present → let the SDK auto-configure from env
+          (do NOT pass token).
+        - Otherwise → configure explicitly with the PAT from the connection.
+        """
         if self._wc is None:
+            import os
             from databricks.sdk import WorkspaceClient
             from databricks.sdk.core import Config
-            config = Config(
-                host=f"https://{self.config['server_hostname']}",
-                token=self.config['access_token']
+
+            is_databricks_apps = bool(
+                os.environ.get("DATABRICKS_CLIENT_ID")
+                or os.environ.get("DATABRICKS_CLIENT_SECRET")
             )
-            self._wc = WorkspaceClient(config=config)
+
+            if is_databricks_apps:
+                # Let SDK pick up OAuth M2M from environment automatically.
+                # DATABRICKS_HOST is already set in the env.
+                logger.info("[Spark] Databricks Apps environment detected — using OAuth M2M from env")
+                self._wc = WorkspaceClient()
+            else:
+                # Local / external deployment — use PAT from connector config.
+                config = Config(
+                    host=f"https://{self.config['server_hostname']}",
+                    token=self.config['access_token']
+                )
+                self._wc = WorkspaceClient(config=config)
         return self._wc
+
 
     def _run_spark_python(self, python_code: str) -> Any:
         """
