@@ -311,7 +311,7 @@ class DatabricksConnector(BaseConnector):
         No Job pipeline is created.
         """
         catalog = self.config['catalog']
-        schema = self.config['schema']
+        schema = self.config.get('schema')
 
         try:
             code = f"""
@@ -320,24 +320,24 @@ from pyspark.sql import SparkSession
 spark = SparkSession.builder.getOrCreate()
 try:
     tables = []
-    try:
-        df = spark.sql(f"SHOW TABLES IN `{catalog}`.`{schema}`")
-        tables = [row.tableName for row in df.collect() if not row.isTemporary]
-    except Exception as e:
-        if "SCHEMA_NOT_FOUND" in str(e) or "NOT_FOUND" in str(e):
-            dbs = spark.catalog.listDatabases("{catalog}")
-            for db in dbs:
-                if db.name.lower() in ("information_schema", "app_database", "mysql", "performance_schema", "sys"): continue
-                try:
-                    df = spark.sql(f"SHOW TABLES IN `{catalog}`.`{{db.name}}`")
-                    for row in df.collect():
-                        if not row.isTemporary:
-                            tables.append(f"{{db.name}}.{{row.tableName}}")
-                except Exception as e:
-                    # Ignore schemas that cannot be listed (e.g. permission or federation issues)
-                    pass
-        else:
-            raise e
+    db_df = spark.sql(f"SHOW SCHEMAS IN `{catalog}`")
+    for row in db_df.collect():
+        db_name = row.databaseName
+        if db_name.lower() in ("information_schema", "app_database", "mysql", "performance_schema", "sys"): continue
+        try:
+            df = spark.sql(f"SHOW TABLES IN `{catalog}`.`{{db_name}}`")
+            table_count = 0
+            for row in df.collect():
+                if not row.isTemporary:
+                    tables.append(f"{{db_name}}.{{row.tableName}}")
+                    table_count += 1
+            
+            # If the schema is completely empty, add a dummy entry so the user can still see the schema in the UI
+            if table_count == 0:
+                tables.append(f"{{db_name}}.(empty_schema)")
+        except Exception as e:
+            # Ignore schemas that cannot be listed (e.g. permission or federation issues)
+            pass
     print(json.dumps(tables))
 except Exception as e:
     print(json.dumps({{"_error": str(e)}}))
@@ -359,19 +359,20 @@ except Exception as e:
                 cursor.execute(f"SHOW SCHEMAS IN `{catalog}`")
                 schemas = [row.databaseName for row in cursor.fetchall()]
                 tables = []
-                if schema in schemas:
-                    cursor.execute(f"SHOW TABLES IN `{catalog}`.`{schema}`")
-                    tables = [row.tableName for row in cursor.fetchall() if not row.isTemporary]
-                else:
-                    for sch in schemas:
-                        if sch.lower() in ("information_schema", "app_database", "mysql", "performance_schema", "sys"): continue
-                        try:
-                            cursor.execute(f"SHOW TABLES IN `{catalog}`.`{sch}`")
-                            for row in cursor.fetchall():
-                                if not row.isTemporary:
-                                    tables.append(f"{sch}.{row.tableName}")
-                        except Exception as inner:
-                            logger.warning("[SQL fallback] Failed to show tables in %s.%s: %s", catalog, sch, inner)
+                for sch in schemas:
+                    if sch.lower() in ("information_schema", "app_database", "mysql", "performance_schema", "sys"): continue
+                    try:
+                        cursor.execute(f"SHOW TABLES IN `{catalog}`.`{sch}`")
+                        table_count = 0
+                        for row in cursor.fetchall():
+                            if not row.isTemporary:
+                                tables.append(f"{sch}.{row.tableName}")
+                                table_count += 1
+                        
+                        if table_count == 0:
+                            tables.append(f"{sch}.(empty_schema)")
+                    except Exception as inner:
+                        logger.warning("[SQL fallback] Failed to show tables in %s.%s: %s", catalog, sch, inner)
                 logger.info("[SQL fallback] Found %d tables in %s", len(tables), catalog)
                 return tables
             finally:
@@ -386,6 +387,9 @@ except Exception as e:
         """
         catalog = self.config['catalog']
         schema = self.config['schema']
+
+        if table_name.endswith("(empty_schema)"):
+            return []
 
         try:
             code = f"""
