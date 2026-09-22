@@ -321,16 +321,21 @@ spark = SparkSession.builder.getOrCreate()
 try:
     tables = []
     try:
-        spark_tables = spark.catalog.listTables(f"{catalog}.{schema}")
-        tables = [t.name for t in spark_tables if not t.isTemporary]
+        df = spark.sql(f"SHOW TABLES IN `{catalog}`.`{schema}`")
+        tables = [row.tableName for row in df.collect() if not row.isTemporary]
     except Exception as e:
         if "SCHEMA_NOT_FOUND" in str(e) or "NOT_FOUND" in str(e):
             dbs = spark.catalog.listDatabases("{catalog}")
             for db in dbs:
                 if db.name.lower() in ("information_schema", "app_database", "mysql", "performance_schema", "sys"): continue
-                for t in spark.catalog.listTables(f"{catalog}.{{db.name}}"):
-                    if not t.isTemporary:
-                        tables.append(f"{{db.name}}.{{t.name}}")
+                try:
+                    df = spark.sql(f"SHOW TABLES IN `{catalog}`.`{{db.name}}`")
+                    for row in df.collect():
+                        if not row.isTemporary:
+                            tables.append(f"{{db.name}}.{{row.tableName}}")
+                except Exception as e:
+                    # Ignore schemas that cannot be listed (e.g. permission or federation issues)
+                    pass
         else:
             raise e
     print(json.dumps(tables))
@@ -360,10 +365,13 @@ except Exception as e:
                 else:
                     for sch in schemas:
                         if sch.lower() in ("information_schema", "app_database", "mysql", "performance_schema", "sys"): continue
-                        cursor.execute(f"SHOW TABLES IN `{catalog}`.`{sch}`")
-                        for row in cursor.fetchall():
-                            if not row.isTemporary:
-                                tables.append(f"{sch}.{row.tableName}")
+                        try:
+                            cursor.execute(f"SHOW TABLES IN `{catalog}`.`{sch}`")
+                            for row in cursor.fetchall():
+                                if not row.isTemporary:
+                                    tables.append(f"{sch}.{row.tableName}")
+                        except Exception as inner:
+                            logger.warning("[SQL fallback] Failed to show tables in %s.%s: %s", catalog, sch, inner)
                 logger.info("[SQL fallback] Found %d tables in %s", len(tables), catalog)
                 return tables
             finally:
