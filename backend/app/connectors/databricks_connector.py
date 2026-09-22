@@ -78,14 +78,23 @@ class DatabricksConnector(BaseConnector):
                 }
                 
                 # Check if we are running in Databricks Apps (OAuth M2M env injected)
-                is_databricks_apps = bool(
-                    os.environ.get("DATABRICKS_CLIENT_ID")
-                    or os.environ.get("DATABRICKS_CLIENT_SECRET")
-                )
+                client_id = os.environ.get("DATABRICKS_CLIENT_ID")
+                client_secret = os.environ.get("DATABRICKS_CLIENT_SECRET")
+                is_databricks_apps = bool(client_id and client_secret)
                 
                 if is_databricks_apps:
-                    logger.info("[SQL] Databricks Apps environment detected — letting SQL connector use OAuth M2M from env")
-                    # Do NOT pass access_token, letting databricks.sql default credential chain take over
+                    logger.info("[SQL] Databricks Apps environment detected — fetching M2M OAuth token directly for SQL connection")
+                    import requests
+                    host = self.config['server_hostname']
+                    token_url = f"https://{host}/oidc/v1/token"
+                    data = {"grant_type": "client_credentials", "scope": "all-apis"}
+                    auth = (client_id, client_secret)
+                    
+                    r = requests.post(token_url, data=data, auth=auth, timeout=10)
+                    r.raise_for_status()
+                    m2m_token = r.json().get("access_token")
+                    
+                    connect_kwargs["access_token"] = m2m_token
                 elif self.config.get('access_token'):
                     # Local / external deployment, use explicitly provided PAT
                     connect_kwargs["access_token"] = self.config['access_token']
