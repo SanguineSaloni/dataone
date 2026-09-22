@@ -32,23 +32,53 @@ const SOURCE_FIELDS = [
 
 // Remove hardcoded MAPPINGS, SOURCE_FIELDS, TARGET_FIELDS
 
+interface SparkColumn {
+  name: string;
+  type: string;
+  nullable?: boolean;
+  primary_key?: boolean;
+}
+
 export default function SchemaMapperWorkbenchPage() {
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [bottomTab, setBottomTab] = useState<BottomTab>("preview");
-  
+
   const searchParams = useSearchParams();
   const connId = searchParams.get("conn");
   const runId = searchParams.get("run");
-  
+
   const [tables, setTables] = useState<CatalogTable[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMsg, setLoadingMsg] = useState("Loading schema...");
   const [expandedTables, setExpandedTables] = useState<Record<string, boolean>>({});
   const [selectedTable, setSelectedTable] = useState<CatalogTable | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  // incrementing counter so we can deduplicate concurrent auto-loads
+  const [sparkConnId, setSparkConnId] = useState<number | null>(null);
 
+  // Step 1: pick the source connector
+  useEffect(() => {
+    if (runId || connId) return; // URL params take precedence
+    // Auto-discover the first Databricks connector to use as source
+    api.get<Array<{ id: number; name: string; type: string }>>("/api/v1/connectors/")
+      .then(res => {
+        const list = Array.isArray(res) ? res : (res as any).connectors ?? [];
+        const db = list.find((c: any) => c.type?.toLowerCase() === "databricks");
+        if (db) {
+          setSparkConnId(db.id);
+        } else {
+          setError("No Databricks connector found. Add one in the Connectors page first.");
+        }
+      })
+      .catch(() => setError("Failed to load connectors."));
+  }, [connId, runId]);
+
+  // Step 2: fetch schema (via Spark SQL on the SQL Warehouse) for the chosen connector
   useEffect(() => {
     if (runId) {
       // Load tables from ingestion run
       setLoading(true);
+      setLoadingMsg("Loading ingestion run tables...");
       api.get<{ tables: Array<{ id: number; table_name: string; short_name: string; columns: any[] }> }>(
         `/api/v1/databricks/ingest/runs/${runId}/tables`
       )
@@ -71,20 +101,44 @@ export default function SchemaMapperWorkbenchPage() {
           }
         })
         .finally(() => setLoading(false));
-    } else if (connId) {
-      // Load tables from connection
-      setLoading(true);
-      api.get<{ tables: CatalogTable[] }>(`/api/v1/catalog/${connId}/tables`)
-        .then(res => {
-          setTables(res.tables || []);
-          if (res.tables && res.tables.length > 0) {
-            setExpandedTables({ [res.tables[0].table_name]: true });
-            setSelectedTable(res.tables[0]);
-          }
-        })
-        .finally(() => setLoading(false));
+      return;
     }
-  }, [connId, runId]);
+
+    const targetConnId = connId ? Number(connId) : sparkConnId;
+    if (!targetConnId) return;
+
+    setLoading(true);
+    setError(null);
+    setLoadingMsg("Fetching Unity Catalog metadata via Spark SQL...");
+
+    // /api/v1/connectors/{id}/schema runs Spark SQL via DatabricksConnector
+    // (spark.catalog.listTables + listColumns on the SQL Warehouse)
+    api.get<{ schema: Record<string, SparkColumn[]> }>(`/api/v1/connectors/${targetConnId}/schema`)
+      .then(res => {
+        const schema = res.schema ?? {};
+        let uid = 1;
+        const formatted: CatalogTable[] = Object.entries(schema).map(([tableName, cols]) => ({
+          id: uid++,
+          table_name: tableName,
+          columns: (cols || []).map(c => ({
+            id: uid++,
+            column_name: c.name,
+            data_type: c.type ?? "",
+            nullable: c.nullable ?? true,
+            is_primary_key: c.primary_key ?? false,
+          }))
+        }));
+        setTables(formatted);
+        if (formatted.length > 0) {
+          setExpandedTables({ [formatted[0].table_name]: true });
+          setSelectedTable(formatted[0]);
+        } else {
+          setError("No tables found in the Unity Catalog schema.");
+        }
+      })
+      .catch(err => setError(`Schema fetch failed: ${err?.message ?? err}`))
+      .finally(() => setLoading(false));
+  }, [connId, runId, sparkConnId]);
 
   const toggleTable = (t: CatalogTable) => {
     setExpandedTables(prev => ({ ...prev, [t.table_name]: !prev[t.table_name] }));
@@ -153,7 +207,15 @@ export default function SchemaMapperWorkbenchPage() {
           </div>
           <div className="p-3 overflow-y-auto flex-1 font-mono text-[12px]">
             {loading ? (
-              <div className="text-white/40 p-4 text-center">Loading schema...</div>
+              <div className="text-white/40 p-4 text-center">
+                <svg className="animate-spin w-5 h-5 mx-auto mb-2 text-white/30" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                {loadingMsg}
+              </div>
+            ) : error ? (
+              <div className="text-red-400/70 p-4 text-center text-[11px]">{error}</div>
             ) : tables.length === 0 ? (
               <div className="text-white/40 p-4 text-center">No tables found.</div>
             ) : (
