@@ -117,88 +117,175 @@ class UnityCatalogService:
         
         logger.info("Access token updated, connections will reconnect")
     
+    def _execute_spark_python(self, python_code: str) -> Any:
+        """
+        Executes a Spark Python snippet on an existing interactive cluster
+        using the Command Execution API and returns the parsed JSON.
+        """
+        import json
+        import time
+        from databricks.sdk.service import compute
+        
+        wc = self._get_workspace_client()
+        
+        # Find a running cluster
+        clusters = wc.clusters.list()
+        running_clusters = [c for c in clusters if c.state == compute.State.RUNNING and c.cluster_source != compute.ClusterSource.JOB]
+        if not running_clusters:
+            running_clusters = [c for c in clusters if c.state == compute.State.RUNNING]
+            
+        if not running_clusters:
+            raise Exception("No running Databricks clusters available for Spark execution.")
+            
+        cluster_id = running_clusters[0].cluster_id
+        
+        # Create execution context
+        context = wc.command_execution.create(
+            cluster_id=cluster_id,
+            language=compute.Language.PYTHON
+        )
+        context_id = context.id
+        
+        try:
+            # Execute command
+            cmd = wc.command_execution.execute(
+                cluster_id=cluster_id,
+                context_id=context_id,
+                language=compute.Language.PYTHON,
+                command=python_code
+            )
+            
+            # Wait for it to finish
+            command_id = cmd.id
+            status = cmd.status
+            
+            while status == compute.CommandStatus.RUNNING or status == compute.CommandStatus.QUEUED:
+                time.sleep(2)
+                cmd_status = wc.command_execution.command_status(
+                    cluster_id=cluster_id,
+                    context_id=context_id,
+                    command_id=command_id
+                )
+                status = cmd_status.status
+                if status not in (compute.CommandStatus.RUNNING, compute.CommandStatus.QUEUED):
+                    cmd = cmd_status
+                    break
+                    
+            if status == compute.CommandStatus.FINISHED:
+                output_str = cmd.results.data
+                if cmd.results.result_type == compute.ResultType.ERROR:
+                    raise Exception(f"Spark Python error: {cmd.results.summary}")
+                    
+                try:
+                    # Find the last valid JSON line
+                    lines = output_str.strip().split('\n')
+                    for line in reversed(lines):
+                        try:
+                            res = json.loads(line)
+                            if isinstance(res, dict) and "_error" in res:
+                                raise Exception(res["_error"])
+                            return res
+                        except ValueError:
+                            continue
+                    return json.loads(output_str)
+                except Exception as parse_e:
+                    logger.error(f"Failed to parse Spark Python output: {output_str}")
+                    raise Exception(f"Invalid JSON returned from Spark: {parse_e}")
+            else:
+                raise Exception(f"Spark execution failed: {cmd.results.summary}")
+        finally:
+            try:
+                wc.command_execution.destroy(cluster_id=cluster_id, context_id=context_id)
+            except:
+                pass
+
     def get_catalogs(self) -> List[Dict[str, Any]]:
         """
-        Get all Unity Catalogs the user has access to.
-        
-        DELEGATE: Replaces app-owned catalog listing.
+        Get all Unity Catalogs the user has access to via Spark Python code.
         """
         try:
-            wc = self._get_workspace_client()
-            catalogs = wc.catalogs.list()
-            
-            return [
-                {
-                    "name": catalog.name,
-                    "comment": catalog.comment,
-                    "owner": catalog.owner,
-                    "created_at": str(catalog.created_at) if catalog.created_at else None,
-                    "updated_at": str(catalog.updated_at) if catalog.updated_at else None,
-                    "metastore_id": catalog.metastore_id,
-                    "full_name": catalog.full_name,
-                    "type": "unity_catalog"
-                }
-                for catalog in catalogs
-            ]
+            code = """
+import json
+from pyspark.sql import SparkSession
+spark = SparkSession.builder.getOrCreate()
+try:
+    catalogs = spark.catalog.listCatalogs()
+    results = [
+        {
+            "name": c.name,
+            "comment": c.description,
+            "type": "unity_catalog"
+        }
+        for c in catalogs
+    ]
+    print(json.dumps(results))
+except Exception as e:
+    print(json.dumps({"_error": str(e)}))
+"""
+            return self._execute_spark_python(code)
         except Exception as e:
-            logger.error("Failed to list Unity Catalogs: %s", e)
+            logger.error("Failed to list Unity Catalogs via Spark: %s", e)
             return []
     
     def get_schemas(self, catalog_name: str) -> List[Dict[str, Any]]:
         """
-        Get all schemas in a Unity Catalog.
-        
-        DELEGATE: Replaces app-owned schema listing.
+        Get all schemas in a Unity Catalog via Spark Python code.
         """
         try:
-            wc = self._get_workspace_client()
-            schemas = wc.schemas.list(catalog_name=catalog_name)
-            
-            return [
-                {
-                    "name": schema.name,
-                    "catalog": catalog_name,
-                    "comment": schema.comment,
-                    "owner": schema.owner,
-                    "full_name": schema.full_name,
-                    "created_at": str(schema.created_at) if schema.created_at else None,
-                    "updated_at": str(schema.updated_at) if schema.updated_at else None
-                }
-                for schema in schemas
-            ]
+            code = f"""
+import json
+from pyspark.sql import SparkSession
+spark = SparkSession.builder.getOrCreate()
+try:
+    schemas = spark.catalog.listDatabases("{catalog_name}")
+    results = [
+        {{
+            "name": s.name,
+            "catalog": "{catalog_name}",
+            "comment": s.description,
+            "full_name": f"{catalog_name}.{{s.name}}"
+        }}
+        for s in schemas
+    ]
+    print(json.dumps(results))
+except Exception as e:
+    print(json.dumps({{"_error": str(e)}}))
+"""
+            return self._execute_spark_python(code)
         except Exception as e:
-            logger.error("Failed to list schemas in catalog %s: %s", catalog_name, e)
+            logger.error("Failed to list schemas in catalog %s via Spark: %s", catalog_name, e)
             return []
     
     def get_tables(self, catalog_name: str, schema_name: str) -> List[Dict[str, Any]]:
         """
-        Get all tables in a Unity Catalog schema.
-        
-        DELEGATE: Replaces app-owned table listing.
+        Get all tables in a Unity Catalog schema via Spark Python code.
         """
         try:
-            wc = self._get_workspace_client()
-            tables = wc.tables.list(catalog_name=catalog_name, schema_name=schema_name)
-            
-            return [
-                {
-                    "name": table.name,
-                    "catalog": catalog_name,
-                    "schema": schema_name,
-                    "full_name": table.full_name,
-                    "table_type": table.table_type,
-                    "data_source_format": table.data_source_format,
-                    "comment": table.comment,
-                    "owner": table.owner,
-                    "created_at": str(table.created_at) if table.created_at else None,
-                    "updated_at": str(table.updated_at) if table.updated_at else None,
-                    "storage_location": table.storage_location
-                }
-                for table in tables
-            ]
+            code = f"""
+import json
+from pyspark.sql import SparkSession
+spark = SparkSession.builder.getOrCreate()
+try:
+    tables = spark.catalog.listTables(f"{catalog_name}.{schema_name}")
+    results = [
+        {{
+            "name": t.name,
+            "catalog": "{catalog_name}",
+            "schema": "{schema_name}",
+            "full_name": f"{catalog_name}.{schema_name}.{{t.name}}",
+            "table_type": t.tableType,
+            "comment": t.description
+        }}
+        for t in tables
+    ]
+    print(json.dumps(results))
+except Exception as e:
+    print(json.dumps({{"_error": str(e)}}))
+"""
+            return self._execute_spark_python(code)
         except Exception as e:
             logger.error(
-                "Failed to list tables in %s.%s: %s",
+                "Failed to list tables in %s.%s via Spark: %s",
                 catalog_name, schema_name, e
             )
             return []
@@ -210,47 +297,44 @@ class UnityCatalogService:
         table_name: str
     ) -> Optional[Dict[str, Any]]:
         """
-        Get detailed table metadata from Unity Catalog.
-        
-        DELEGATE: Replaces app-owned metadata storage.
+        Get detailed table metadata from Unity Catalog via Spark Python code.
         """
         try:
-            wc = self._get_workspace_client()
-            full_name = f"{catalog_name}.{schema_name}.{table_name}"
-            table = wc.tables.get(full_name)
-            
-            return {
-                "full_name": table.full_name,
-                "name": table.name,
-                "catalog": catalog_name,
-                "schema": schema_name,
-                "table_type": table.table_type,
-                "data_source_format": table.data_source_format,
-                "columns": [
-                    {
-                        "name": col.name,
-                        "type": col.type_name,
-                        "type_text": col.type_text,
-                        "type_json": col.type_json,
-                        "position": col.position,
-                        "comment": col.comment,
-                        "nullable": col.nullable,
-                        "partition_index": col.partition_index
-                    }
-                    for col in (table.columns or [])
-                ],
-                "owner": table.owner,
-                "comment": table.comment,
-                "properties": table.properties or {},
-                "storage_location": table.storage_location,
-                "view_definition": table.view_definition,
-                "created_at": str(table.created_at) if table.created_at else None,
-                "updated_at": str(table.updated_at) if table.updated_at else None,
-                "table_id": table.table_id,
-                "metastore_id": table.metastore_id
-            }
+            code = f"""
+import json
+from pyspark.sql import SparkSession
+spark = SparkSession.builder.getOrCreate()
+try:
+    full_name = f"{catalog_name}.{schema_name}.{table_name}"
+    columns = spark.catalog.listColumns(full_name)
+    
+    col_results = []
+    for i, c in enumerate(columns):
+        col_results.append({{
+            "name": c.name,
+            "type_name": c.dataType,
+            "type_text": c.dataType,
+            "position": i,
+            "comment": c.description,
+            "nullable": c.nullable,
+            "partition_index": -1
+        }})
+        
+    result = {{
+        "full_name": full_name,
+        "name": "{table_name}",
+        "catalog": "{catalog_name}",
+        "schema": "{schema_name}",
+        "columns": col_results,
+        "properties": {{}}
+    }}
+    print(json.dumps(result))
+except Exception as e:
+    print(json.dumps({{"_error": str(e)}}))
+"""
+            return self._execute_spark_python(code)
         except Exception as e:
-            logger.error("Failed to get table metadata for %s: %s", full_name, e)
+            logger.error("Failed to get table metadata for %s.%s.%s via Spark: %s", catalog_name, schema_name, table_name, e)
             return None
     
     def get_table_lineage(
