@@ -319,9 +319,21 @@ import json
 from pyspark.sql import SparkSession
 spark = SparkSession.builder.getOrCreate()
 try:
-    tables = spark.catalog.listTables(f"{catalog}.{schema}")
-    names = [t.name for t in tables if not t.isTemporary]
-    print(json.dumps(names))
+    tables = []
+    try:
+        spark_tables = spark.catalog.listTables(f"{catalog}.{schema}")
+        tables = [t.name for t in spark_tables if not t.isTemporary]
+    except Exception as e:
+        if "SCHEMA_NOT_FOUND" in str(e) or "NOT_FOUND" in str(e):
+            dbs = spark.catalog.listDatabases("{catalog}")
+            for db in dbs:
+                if db.name.lower() == "information_schema": continue
+                for t in spark.catalog.listTables(f"{catalog}.{{db.name}}"):
+                    if not t.isTemporary:
+                        tables.append(f"{{db.name}}.{{t.name}}")
+        else:
+            raise e
+    print(json.dumps(tables))
 except Exception as e:
     print(json.dumps({{"_error": str(e)}}))
 """
@@ -339,9 +351,20 @@ except Exception as e:
             conn = self.connect()
             cursor = conn.cursor()
             try:
-                cursor.execute(f"SHOW TABLES IN `{catalog}`.`{schema}`")
-                tables = [row.tableName for row in cursor.fetchall() if not row.isTemporary]
-                logger.info("[SQL fallback] Found %d tables in %s.%s", len(tables), catalog, schema)
+                cursor.execute(f"SHOW SCHEMAS IN `{catalog}`")
+                schemas = [row.databaseName for row in cursor.fetchall()]
+                tables = []
+                if schema in schemas:
+                    cursor.execute(f"SHOW TABLES IN `{catalog}`.`{schema}`")
+                    tables = [row.tableName for row in cursor.fetchall() if not row.isTemporary]
+                else:
+                    for sch in schemas:
+                        if sch.lower() == 'information_schema': continue
+                        cursor.execute(f"SHOW TABLES IN `{catalog}`.`{sch}`")
+                        for row in cursor.fetchall():
+                            if not row.isTemporary:
+                                tables.append(f"{sch}.{row.tableName}")
+                logger.info("[SQL fallback] Found %d tables in %s", len(tables), catalog)
                 return tables
             finally:
                 cursor.close()
@@ -362,7 +385,15 @@ import json
 from pyspark.sql import SparkSession
 spark = SparkSession.builder.getOrCreate()
 try:
-    full_name = f"{catalog}.{schema}.{table_name}"
+    table_name = "{table_name}"
+    if "." in table_name:
+        sch, tbl = table_name.split(".", 1)
+        full_name = f"{catalog}.{{sch}}.{{tbl}}"
+        used_schema = sch
+    else:
+        full_name = f"{catalog}.{schema}.{{table_name}}"
+        used_schema = "{schema}"
+        
     cols = spark.catalog.listColumns(full_name)
     results = []
     for i, c in enumerate(cols):
@@ -375,7 +406,7 @@ try:
             "ordinal_position": i + 1,
             "default": None,
             "comment": c.description,
-            "databricks": {{"catalog": "{catalog}", "schema": "{schema}"}}
+            "databricks": {{"catalog": "{catalog}", "schema": used_schema}}
         }})
     print(json.dumps(results))
 except Exception as e:
@@ -398,6 +429,11 @@ except Exception as e:
             conn = self.connect()
             cursor = conn.cursor()
             try:
+                if "." in table_name:
+                    q_sch, q_tbl = table_name.split(".", 1)
+                else:
+                    q_sch, q_tbl = schema, table_name
+                    
                 query = """
                     SELECT column_name, data_type, is_nullable,
                            ordinal_position, column_default, comment
@@ -407,7 +443,7 @@ except Exception as e:
                       AND table_name = ?
                     ORDER BY ordinal_position
                 """
-                cursor.execute(query, (catalog, schema, table_name))
+                cursor.execute(query, (catalog, q_sch, q_tbl))
                 columns = []
                 for row in cursor.fetchall():
                     col_name, data_type, is_nullable, pos, default, comment = row
@@ -420,13 +456,14 @@ except Exception as e:
                         "ordinal_position": pos,
                         "default": default,
                         "comment": comment,
-                        "databricks": {"catalog": catalog, "schema": schema}
+                        "databricks": {"catalog": catalog, "schema": q_sch}
                     })
 
                 if not columns:
                     # Last-resort: DESCRIBE TABLE
                     try:
-                        cursor.execute(f"DESCRIBE TABLE `{catalog}`.`{schema}`.`{table_name}`")
+                        cursor.execute(f"DESCRIBE TABLE `{catalog}`.`{q_sch}`.`{q_tbl}`")
+                        columns = []
                         pos = 1
                         for row in cursor.fetchall():
                             col_name = row.col_name
