@@ -327,7 +327,7 @@ try:
         if "SCHEMA_NOT_FOUND" in str(e) or "NOT_FOUND" in str(e):
             dbs = spark.catalog.listDatabases("{catalog}")
             for db in dbs:
-                if db.name.lower() == "information_schema": continue
+                if db.name.lower() in ("information_schema", "app_database", "mysql", "performance_schema", "sys"): continue
                 for t in spark.catalog.listTables(f"{catalog}.{{db.name}}"):
                     if not t.isTemporary:
                         tables.append(f"{{db.name}}.{{t.name}}")
@@ -359,7 +359,7 @@ except Exception as e:
                     tables = [row.tableName for row in cursor.fetchall() if not row.isTemporary]
                 else:
                     for sch in schemas:
-                        if sch.lower() == 'information_schema': continue
+                        if sch.lower() in ("information_schema", "app_database", "mysql", "performance_schema", "sys"): continue
                         cursor.execute(f"SHOW TABLES IN `{catalog}`.`{sch}`")
                         for row in cursor.fetchall():
                             if not row.isTemporary:
