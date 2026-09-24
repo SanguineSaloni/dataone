@@ -217,16 +217,30 @@ class DatabricksConnector(BaseConnector):
         return self._wc
 
 
-    def _run_spark_python(self, python_code: str) -> Any:
+    def _get_spark_session(self) -> Any:
         """
-        Execute a Spark Python snippet on the first available interactive
-        cluster via the Databricks Command Execution API.
-        Returns the parsed JSON value printed by the snippet.
+        Initialize a Databricks Connect V2 session.
+        Attempts to use an interactive cluster, and falls back to Serverless Compute if none is found.
         """
-        import time as _time
+        from databricks.connect import DatabricksSession
         from databricks.sdk.service import compute
+        from databricks.sdk.core import Config
+        import os
 
         wc = self._get_workspace_client()
+
+        is_databricks_apps = bool(
+            os.environ.get("DATABRICKS_CLIENT_ID")
+            or os.environ.get("DATABRICKS_CLIENT_SECRET")
+        )
+
+        builder = DatabricksSession.builder
+        if not is_databricks_apps:
+            config = Config(
+                host=f"https://{self.config['server_hostname']}",
+                token=self.config['access_token']
+            )
+            builder = builder.sdkConfig(config)
 
         # Pick a running interactive cluster (not a Job cluster)
         clusters = list(wc.clusters.list())
@@ -237,144 +251,44 @@ class DatabricksConnector(BaseConnector):
         ]
         if not running:
             running = [c for c in clusters if c.state == compute.State.RUNNING]
-        if not running:
-            raise RuntimeError(
-                "No running Databricks cluster found. "
-                "Please start an interactive cluster before fetching schema."
-            )
 
-        cluster_id = running[0].cluster_id
-        logger.info("[Spark] Using cluster %s for schema fetch", cluster_id)
-
-        # Create an execution context
-        ctx = wc.command_execution.create(
-            cluster_id=cluster_id,
-            language=compute.Language.PYTHON
-        )
-        ctx_id = ctx.id
-
-        try:
-            cmd = wc.command_execution.execute(
-                cluster_id=cluster_id,
-                context_id=ctx_id,
-                language=compute.Language.PYTHON,
-                command=python_code
-            )
-            cmd_id = cmd.id
-            status = cmd.status
-
-            # Poll until finished
-            while status in (compute.CommandStatus.RUNNING, compute.CommandStatus.QUEUED):
-                _time.sleep(2)
-                s = wc.command_execution.command_status(
-                    cluster_id=cluster_id,
-                    context_id=ctx_id,
-                    command_id=cmd_id
-                )
-                status = s.status
-                if status not in (compute.CommandStatus.RUNNING, compute.CommandStatus.QUEUED):
-                    cmd = s
-                    break
-
-            if status != compute.CommandStatus.FINISHED:
-                summary = getattr(getattr(cmd, 'results', None), 'summary', str(cmd))
-                raise RuntimeError(f"Spark command failed: {summary}")
-
-            result_type = getattr(cmd.results, 'result_type', None)
-            if result_type == compute.ResultType.ERROR:
-                raise RuntimeError(f"Spark error: {cmd.results.summary}")
-
-            output_str = cmd.results.data or ""
-            # Find the last valid JSON line
-            for line in reversed(output_str.strip().split('\n')):
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    parsed = json.loads(line)
-                    if isinstance(parsed, dict) and "_error" in parsed:
-                        raise RuntimeError(parsed["_error"])
-                    return parsed
-                except json.JSONDecodeError:
-                    continue
-            raise RuntimeError(f"No valid JSON found in Spark output: {output_str!r}")
-        finally:
-            try:
-                wc.command_execution.destroy(cluster_id=cluster_id, context_id=ctx_id)
-            except Exception:
-                pass
+        if running:
+            cluster_id = running[0].cluster_id
+            logger.info("[Spark] Using interactive cluster %s for schema fetch via Databricks Connect", cluster_id)
+            return builder.clusterId(cluster_id).getOrCreate()
+        else:
+            logger.info("[Spark] No running Databricks cluster found. Defaulting to Serverless Compute via Databricks Connect.")
+            # Use serverless compute
+            return builder.serverless().getOrCreate()
 
     def get_tables(self) -> List[str]:
         """
         Fetch list of all table names in the current catalog/schema
-        using Spark Python (spark.catalog.listTables) via Command Execution API.
-        No Job pipeline is created.
+        using Databricks Connect V2 natively.
         """
         catalog = self.config['catalog']
         schema = self.config['schema']
 
         try:
-            code = f"""
-import json
-from pyspark.sql import SparkSession
-spark = SparkSession.builder.getOrCreate()
-try:
-    tables = []
-    try:
-        df = spark.sql(f"SHOW TABLES IN `{catalog}`.`{schema}`")
-        tables = [row.tableName for row in df.collect() if not row.isTemporary]
-    except Exception as e:
-        if "SCHEMA_NOT_FOUND" in str(e) or "NOT_FOUND" in str(e):
-            dbs = spark.catalog.listDatabases("{catalog}")
-            for db in dbs:
-                if db.name.lower() in ("information_schema", "app_database", "mysql", "performance_schema", "sys"): continue
-                for t in spark.catalog.listTables(f"{catalog}.{{db.name}}"):
-                    if not t.isTemporary:
-                        tables.append(f"{{db.name}}.{{t.name}}")
-        else:
-            raise e
-    print(json.dumps(tables))
-except Exception as e:
-    print(json.dumps({{"_error": str(e)}}))
-"""
-            result = self._run_spark_python(code)
-            if not isinstance(result, list):
-                raise RuntimeError(f"Unexpected Spark output: {result}")
-            logger.info("[Spark] Found %d tables in %s.%s", len(result), catalog, schema)
-            return result
+            spark = self._get_spark_session()
+            tables = []
+            
+            logger.info("[Spark] Executing SHOW TABLES IN `%s`.`%s`", catalog, schema)
+            df = spark.sql(f"SHOW TABLES IN `{catalog}`.`{schema}`")
+            
+            for row in df.collect():
+                if not row.isTemporary:
+                    tables.append(row.tableName)
+                    
+            logger.info("[Spark] Found %d tables in %s.%s", len(tables), catalog, schema)
+            return tables
         except Exception as e:
-            logger.warning(
-                "[Spark] get_tables failed for %s.%s (%s); falling back to SQL",
-                catalog, schema, e
-            )
-            # Fallback: use SQL warehouse
-            conn = self.connect()
-            cursor = conn.cursor()
-            try:
-                cursor.execute(f"SHOW SCHEMAS IN `{catalog}`")
-                schemas = [row.databaseName for row in cursor.fetchall()]
-                tables = []
-                if schema in schemas:
-                    cursor.execute(f"SHOW TABLES IN `{catalog}`.`{schema}`")
-                    tables = [row.tableName for row in cursor.fetchall() if not row.isTemporary]
-                else:
-                    for sch in schemas:
-                        if sch.lower() in ("information_schema", "app_database", "mysql", "performance_schema", "sys"): continue
-                        cursor.execute(f"SHOW TABLES IN `{catalog}`.`{sch}`")
-                        for row in cursor.fetchall():
-                            if not row.isTemporary:
-                                tables.append(f"{sch}.{row.tableName}")
-                logger.info("[SQL fallback] Found %d tables in %s", len(tables), catalog)
-                return tables
-            finally:
-                cursor.close()
+            logger.error("[Spark] get_tables failed for %s.%s: %s", catalog, schema, e)
+            raise e
     
     def get_table_schema(self, table_name: str) -> List[Dict[str, Any]]:
         """
-        Fetch columns of a table using Spark Python (spark.catalog.listColumns)
-        via the Databricks Command Execution API.
-        Falls back to SQL warehouse if Spark execution is unavailable.
-        No Job pipeline is created.
+        Fetch columns of a table using Databricks Connect V2 (spark.catalog.listColumns).
         """
         catalog = self.config['catalog']
         schema = self.config['schema']
@@ -383,115 +297,43 @@ except Exception as e:
             return []
 
         try:
-            code = f"""
-import json
-from pyspark.sql import SparkSession
-spark = SparkSession.builder.getOrCreate()
-try:
-    table_name = "{table_name}"
-    if "." in table_name:
-        sch, tbl = table_name.split(".", 1)
-        full_name = f"{catalog}.{{sch}}.{{tbl}}"
-        used_schema = sch
-    else:
-        full_name = f"{catalog}.{schema}.{{table_name}}"
-        used_schema = "{schema}"
-        
-    cols = spark.catalog.listColumns(full_name)
-    results = []
-    for i, c in enumerate(cols):
-        results.append({{
-            "name": c.name,
-            "type": c.dataType,
-            "nullable": c.nullable,
-            "primary_key": False,
-            "foreign_keys": [],
-            "ordinal_position": i + 1,
-            "default": None,
-            "comment": c.description,
-            "databricks": {{"catalog": "{catalog}", "schema": used_schema}}
-        }})
-    print(json.dumps(results))
-except Exception as e:
-    print(json.dumps({{"_error": str(e)}}))
-"""
-            result = self._run_spark_python(code)
-            if not isinstance(result, list):
-                raise RuntimeError(f"Unexpected Spark output: {result}")
+            spark = self._get_spark_session()
+            
+            if "." in table_name:
+                sch, tbl = table_name.split(".", 1)
+                full_name = f"{catalog}.{sch}.{tbl}"
+                used_schema = sch
+            else:
+                full_name = f"{catalog}.{schema}.{table_name}"
+                used_schema = schema
+                
+            logger.info("[Spark] Fetching columns for %s", full_name)
+            cols = spark.catalog.listColumns(full_name)
+            results = []
+            for i, c in enumerate(cols):
+                results.append({
+                    "name": c.name,
+                    "type": c.dataType,
+                    "nullable": c.nullable,
+                    "primary_key": False,
+                    "foreign_keys": [],
+                    "ordinal_position": i + 1,
+                    "default": None,
+                    "comment": c.description,
+                    "databricks": {"catalog": catalog, "schema": used_schema}
+                })
+
             logger.info(
-                "[Spark] Fetched %d columns for %s.%s.%s",
-                len(result), catalog, schema, table_name
+                "[Spark] Fetched %d columns for %s",
+                len(results), full_name
             )
-            return result
+            return results
         except Exception as e:
-            logger.warning(
-                "[Spark] get_table_schema failed for %s.%s.%s (%s); falling back to SQL",
+            logger.error(
+                "[Spark] get_table_schema failed for %s.%s.%s: %s",
                 catalog, schema, table_name, e
             )
-            # Fallback: SQL warehouse via system.information_schema + DESCRIBE
-            conn = self.connect()
-            cursor = conn.cursor()
-            try:
-                if "." in table_name:
-                    q_sch, q_tbl = table_name.split(".", 1)
-                else:
-                    q_sch, q_tbl = schema, table_name
-                    
-                query = """
-                    SELECT column_name, data_type, is_nullable,
-                           ordinal_position, column_default, comment
-                    FROM system.information_schema.columns
-                    WHERE table_catalog = ?
-                      AND table_schema = ?
-                      AND table_name = ?
-                    ORDER BY ordinal_position
-                """
-                cursor.execute(query, (catalog, q_sch, q_tbl))
-                columns = []
-                for row in cursor.fetchall():
-                    col_name, data_type, is_nullable, pos, default, comment = row
-                    columns.append({
-                        "name": col_name,
-                        "type": data_type,
-                        "nullable": is_nullable == "YES",
-                        "primary_key": False,
-                        "foreign_keys": [],
-                        "ordinal_position": pos,
-                        "default": default,
-                        "comment": comment,
-                        "databricks": {"catalog": catalog, "schema": q_sch}
-                    })
-
-                if not columns:
-                    # Last-resort: DESCRIBE TABLE
-                    try:
-                        cursor.execute(f"DESCRIBE TABLE `{catalog}`.`{q_sch}`.`{q_tbl}`")
-                        columns = []
-                        pos = 1
-                        for row in cursor.fetchall():
-                            col_name = row.col_name
-                            if not col_name or col_name.startswith("#"):
-                                break
-                            columns.append({
-                                "name": col_name,
-                                "type": row.data_type,
-                                "nullable": True,
-                                "primary_key": False,
-                                "foreign_keys": [],
-                                "ordinal_position": pos,
-                                "default": None,
-                                "comment": row.comment,
-                                "databricks": {"catalog": catalog, "schema": schema}
-                            })
-                            pos += 1
-                    except Exception as desc_e:
-                        logger.debug(
-                            "DESCRIBE TABLE fallback failed for %s.%s.%s: %s",
-                            catalog, schema, table_name, desc_e
-                        )
-                return columns
-            finally:
-                cursor.close()
+            raise e
     
     def close(self):
         """Close connection safely."""
