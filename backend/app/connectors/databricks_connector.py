@@ -270,7 +270,7 @@ class DatabricksConnector(BaseConnector):
         schema = self.config['schema']
 
         # Skip system/internal schemas that can cause quota exceeded errors in free tiers
-        if schema.lower() in ("information_schema", "app_database", "mysql", "performance_schema", "sys", "__databricks_internal", "system"):
+        if schema.lower() in ("information_schema", "mysql", "performance_schema", "sys", "__databricks_internal", "system"):
             logger.info("[Spark] Skipping system schema %s.%s", catalog, schema)
             return []
 
