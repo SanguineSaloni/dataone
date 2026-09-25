@@ -321,9 +321,18 @@ def test_connection(id: int, db: Session = Depends(get_db),
 def get_schema(id: int, db: Session = Depends(get_db),
                user: User = Depends(get_current_user)):
     """Extract full structural schema metadata from the connector."""
+    from app.models.schema_snapshot import SchemaSnapshot
     db_conn = ConnectionService.get_connection(db, id, owner_email=_owner_scope(user))
     try:
-        schema_data = SchemaService.get_full_schema(db_conn)
+        # Check if we have a cached schema snapshot first to avoid a very slow live scan
+        snapshot = db.query(SchemaSnapshot).filter(SchemaSnapshot.connection_id == id).order_by(SchemaSnapshot.captured_at.desc()).first()
+        
+        if snapshot:
+            schema_data = snapshot.schema_json
+        else:
+            # Fallback to live scan only if absolutely no snapshot exists
+            schema_data = SchemaService.get_full_schema(db_conn)
+            
         return {"id": id, "name": db_conn.name, "schema": schema_data}
     except Exception as e:
         logger.error("Schema extraction failed for connector %d: %s", id, e)
