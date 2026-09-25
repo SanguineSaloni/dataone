@@ -332,6 +332,17 @@ def get_schema(id: int, db: Session = Depends(get_db),
         else:
             # Fallback to live scan only if absolutely no snapshot exists
             schema_data = SchemaService.get_full_schema(db_conn)
+            # Save the result as a snapshot so future clicks are instant
+            import json, hashlib
+            normalized = json.dumps(schema_data, sort_keys=True, default=str)
+            new_snapshot = SchemaSnapshot(
+                connection_id=id,
+                connection_name=db_conn.name,
+                schema_hash=hashlib.sha256(normalized.encode()).hexdigest(),
+                schema_json=schema_data,
+            )
+            db.add(new_snapshot)
+            db.commit()
             
         return {"id": id, "name": db_conn.name, "schema": schema_data}
     except Exception as e:
