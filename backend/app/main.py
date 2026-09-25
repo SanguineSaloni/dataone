@@ -269,6 +269,58 @@ async def lifespan(app: FastAPI):
     finally:
         db.close()
 
+    # 6. Pre-warm SchemaSnapshots for all existing Databricks connections in the background.
+    #    This ensures that the Schema Mapper is always instant after startup — no matter
+    #    whether DATABRICKS_AUTO_DISCOVER is set or not.
+    import threading
+
+    def _prewarm_snapshots():
+        import hashlib
+        import json as _json
+        from app.core.database import SessionLocal as _SL
+        from app.models.connection import DBConnection as _DBC
+        from app.models.schema_snapshot import SchemaSnapshot as _SS
+        from app.services.schema_service import SchemaService as _SchemaService
+
+        bg_db = _SL()
+        try:
+            databricks_conns = (
+                bg_db.query(_DBC)
+                .filter(_DBC.type == "databricks", _DBC.is_deleted == False)  # noqa: E712
+                .all()
+            )
+            for conn in databricks_conns:
+                # Skip if a snapshot already exists for this connection
+                existing = (
+                    bg_db.query(_SS)
+                    .filter(_SS.connection_id == conn.id)
+                    .first()
+                )
+                if existing:
+                    logger.info("[prewarm] Snapshot already exists for connector %d (%s) — skipping", conn.id, conn.name)
+                    continue
+                try:
+                    logger.info("[prewarm] Building SchemaSnapshot for connector %d (%s)…", conn.id, conn.name)
+                    schema_data = _SchemaService.get_full_schema(conn)
+                    normalized = _json.dumps(schema_data, sort_keys=True, default=str)
+                    snap = _SS(
+                        connection_id=conn.id,
+                        connection_name=conn.name,
+                        schema_hash=hashlib.sha256(normalized.encode()).hexdigest(),
+                        schema_json=schema_data,
+                    )
+                    bg_db.add(snap)
+                    bg_db.commit()
+                    logger.info("[prewarm] ✅ SchemaSnapshot saved for connector %d (%s)", conn.id, conn.name)
+                except Exception as exc:
+                    logger.warning("[prewarm] Could not pre-warm connector %d (%s): %s", conn.id, conn.name, exc)
+                    bg_db.rollback()
+        finally:
+            bg_db.close()
+
+    threading.Thread(target=_prewarm_snapshots, daemon=True, name="schema-prewarm").start()
+    logger.info("[startup] Schema pre-warm thread started in background")
+
     if engine.dialect.name == "postgresql":
         startup_lock_connection.execute(
             text("SELECT pg_advisory_unlock(:key)"), {"key": startup_lock_key},
