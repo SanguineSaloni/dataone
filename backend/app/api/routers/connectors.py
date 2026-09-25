@@ -325,12 +325,44 @@ def get_schema(id: int, db: Session = Depends(get_db),
     db_conn = ConnectionService.get_connection(db, id, owner_email=_owner_scope(user))
     try:
         # Check if we have a cached schema snapshot first to avoid a very slow live scan
-        snapshot = db.query(SchemaSnapshot).filter(SchemaSnapshot.connection_id == id).order_by(SchemaSnapshot.captured_at.desc()).first()
-        
+        snapshot = (
+            db.query(SchemaSnapshot)
+            .filter(SchemaSnapshot.connection_id == id)
+            .order_by(SchemaSnapshot.captured_at.desc())
+            .first()
+        )
+
+        # If no snapshot for THIS connector, try to reuse snapshot from any other
+        # Databricks connector in the workspace — they all point to the same Unity Catalog.
+        if not snapshot and db_conn.type.lower() == "databricks":
+            from app.models.connection import DBConnection as _DBC
+            other_db_conn_ids = (
+                db.query(_DBC.id)
+                .filter(
+                    _DBC.type == "databricks",
+                    _DBC.is_deleted == False,  # noqa: E712
+                    _DBC.id != id,
+                )
+                .all()
+            )
+            other_ids = [r[0] for r in other_db_conn_ids]
+            if other_ids:
+                snapshot = (
+                    db.query(SchemaSnapshot)
+                    .filter(SchemaSnapshot.connection_id.in_(other_ids))
+                    .order_by(SchemaSnapshot.captured_at.desc())
+                    .first()
+                )
+                if snapshot:
+                    logger.info(
+                        "Schema cache: reusing snapshot from connector %d for connector %d",
+                        snapshot.connection_id, id
+                    )
+
         if snapshot:
             schema_data = snapshot.schema_json
         else:
-            # Fallback to live scan only if absolutely no snapshot exists
+            # Fallback to live scan only if absolutely no snapshot exists anywhere
             schema_data = SchemaService.get_full_schema(db_conn)
             # Save the result as a snapshot so future clicks are instant
             import json, hashlib
