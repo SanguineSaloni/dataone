@@ -302,13 +302,19 @@ class DatabricksAutoDiscoveryService:
             SKIP_SCHEMAS = {"information_schema", "__databricks_internal", "system"}
 
             schema_service = SchemaCatalogService()
+            schema_data = {}
 
             for catalog_info in catalogs:  # All catalogs — no limit
                 catalog_name = catalog_info["name"]
                 logger.info(f"Processing catalog: {catalog_name}")
+                if catalog_name.lower() in ("system",):
+                    continue
 
                 # Get schemas in this catalog
-                schemas = connector.get_schemas(catalog_name)
+                try:
+                    schemas = connector.get_schemas(catalog_name)
+                except Exception:
+                    continue
 
                 for schema_info in schemas:  # All schemas — no limit
                     schema_name = schema_info["name"]
@@ -330,14 +336,25 @@ class DatabricksAutoDiscoveryService:
                     try:
                         # Get tables in this schema
                         tables = schema_connector.get_tables()
+                        if len(tables) == 0:
+                            schema_data[f"{catalog_name}.{schema_name}.(empty_schema)"] = []
 
                         for table_name in tables:  # All tables — no limit
                             try:
                                 # Get table schema
                                 columns = schema_connector.get_table_schema(table_name)
+                                
+                                # Populate JSON map for snapshot
+                                if table_name.count(".") == 1:
+                                    full_table_name = f"{catalog_name}.{table_name}"
+                                elif table_name.count(".") == 0:
+                                    full_table_name = f"{catalog_name}.{schema_name}.{table_name}"
+                                else:
+                                    full_table_name = table_name
+
+                                schema_data[full_table_name] = columns
 
                                 # Store in DataOne catalog
-                                full_table_name = f"{catalog_name}.{schema_name}.{table_name}"
                                 schema_service.store_table_metadata(
                                     db=db,
                                     connection_id=connection.id,
@@ -354,6 +371,20 @@ class DatabricksAutoDiscoveryService:
                         schema_connector.close()
 
             connector.close()
+            
+            # Save the SchemaSnapshot
+            import json, hashlib
+            from app.models.schema_snapshot import SchemaSnapshot
+            normalized = json.dumps(schema_data, sort_keys=True, default=str)
+            snapshot = SchemaSnapshot(
+                connection_id=connection.id,
+                connection_name=connection.name,
+                schema_hash=hashlib.sha256(normalized.encode()).hexdigest(),
+                schema_json=schema_data,
+            )
+            db.add(snapshot)
+            db.commit()
+
             logger.info("✅ Unity Catalog auto-discovery completed successfully")
             return True
 
