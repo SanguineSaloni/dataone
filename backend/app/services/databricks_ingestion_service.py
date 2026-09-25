@@ -437,8 +437,8 @@ class DatabricksIngestionService:
         
         import re as regex
         clean_host = regex.sub(r'[^A-Za-z0-9_]', '_', host.split('.')[0])
-        connection_name = f"dataone_{src_type}_{clean_host}_conn".lower()
-        catalog_name = f"dataone_{src_type}_{clean_host}_catalog".lower()
+        connection_name = f"dataone_{src_type}_{clean_host}_conn_{source_conn.id}".lower()
+        catalog_name = cfg.get("catalog") or f"dataone_{src_type}_{clean_host}_catalog".lower()
         
         try:
             ws = _get_workspace_client(user_token)
@@ -484,9 +484,14 @@ class DatabricksIngestionService:
                 
             logger.info("Creating Databricks foreign catalog: %s", catalog_name)
             try:
+                catalog_options = {}
+                if src_type in ("postgres", "sqlserver"):
+                    catalog_options["database"] = cfg.get("database", cfg.get("dbname", ""))
+                    
                 ws.catalogs.create(
                     name=catalog_name,
                     connection_name=connection_name,
+                    options=catalog_options,
                     comment=f"Foreign catalog for DataOne source connection {source_conn.id}"
                 )
             except Exception as e:
