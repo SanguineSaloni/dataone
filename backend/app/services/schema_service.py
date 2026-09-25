@@ -89,38 +89,48 @@ class SchemaService:
                 # For Databricks Unity Catalog, the connection represents a foreign catalog that contains
                 # multiple schemas (databases) from the source server. We must fetch all of them.
                 schema_data = {}
-                catalog_name = connector.config.get("catalog", "main")
-                if catalog_name == 'main':
-                    catalog_name = 'dataone_3_mysql_catalog'
-                    
-                schemas = connector.get_schemas(catalog_name)
+                catalogs = connector.get_catalogs()
                 SKIP_SCHEMAS = {"information_schema", "mysql", "performance_schema", "sys", "__databricks_internal", "system"}
                 
-                for sch in schemas:
-                    sch_name = sch["name"]
-                    if sch_name.lower() in SKIP_SCHEMAS:
+                for cat in catalogs:
+                    cat_name = cat["name"]
+                    if cat_name.lower() in ("system",):  # Optionally skip system catalog
                         continue
                         
-                    # Create a temporary connector for this schema to fetch its tables
-                    sch_connector = get_connector(connection)
-                    sch_connector.config["schema"] = sch_name
-                    sch_connector.config["catalog"] = catalog_name
-                    
                     try:
-                        tables = sch_connector.get_tables()
-                        # If a schema has no tables, we add a dummy table to show the schema in the UI
-                        if len(tables) == 0:
-                            schema_data[f"{sch_name}.(empty_schema)"] = []
-                        else:
-                            for tbl in tables:
-                                # Ensure we don't double prepend if get_tables() already prepended
-                                if "." in tbl:
-                                    full_tbl = tbl
-                                else:
-                                    full_tbl = f"{sch_name}.{tbl}"
-                                schema_data[full_tbl] = sch_connector.get_table_schema(tbl)
-                    finally:
-                        sch_connector.close()
+                        schemas = connector.get_schemas(cat_name)
+                    except Exception:
+                        continue
+                        
+                    for sch in schemas:
+                        sch_name = sch["name"]
+                        if sch_name.lower() in SKIP_SCHEMAS:
+                            continue
+                            
+                        # Create a temporary connector for this schema to fetch its tables
+                        sch_connector = get_connector(connection)
+                        sch_connector.config["schema"] = sch_name
+                        sch_connector.config["catalog"] = cat_name
+                        
+                        try:
+                            tables = sch_connector.get_tables()
+                            # If a schema has no tables, we add a dummy table to show the schema in the UI
+                            if len(tables) == 0:
+                                schema_data[f"{cat_name}.{sch_name}.(empty_schema)"] = []
+                            else:
+                                for tbl in tables:
+                                    # Ensure we prepend correctly to have catalog.schema.table
+                                    if tbl.count(".") == 1:
+                                        full_tbl = f"{cat_name}.{tbl}"
+                                    elif tbl.count(".") == 0:
+                                        full_tbl = f"{cat_name}.{sch_name}.{tbl}"
+                                    else:
+                                        full_tbl = tbl
+                                    schema_data[full_tbl] = sch_connector.get_table_schema(tbl)
+                        except Exception:
+                            pass
+                        finally:
+                            sch_connector.close()
                 return schema_data
             else:
                 tables = connector.get_tables()
