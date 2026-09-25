@@ -503,7 +503,9 @@ export default function ConnectorsPage() {
   const [activeTab, setActiveTab] = useState<Tab>("new");
 
   // Form state
+  const [connectionStep, setConnectionStep] = useState<"source" | "target">("source");
   const [source, setSource] = useState<DBForm>(defaultSource);
+  const [target, setTarget] = useState<DBForm>({ dbType: "postgres", host: "", port: "5432", database: "", username: "", password: "", ssl: false, catalog: "target_catalog" });
   const [showSrcPw, setShowSrcPw] = useState(false);
   const [showTgtPw, setShowTgtPw] = useState(false);
   const [runStatus, setRunStatus] = useState<RunStatus>("idle");
@@ -585,8 +587,16 @@ export default function ConnectorsPage() {
       };
       const srcConn = await api.post<{ id: number }>("/api/v1/connectors/", srcPayload);
 
-            // The backend automatically triggers Lakehouse Federation setup
-      // when the source connection is created!
+      const tgtPayload = {
+        name: cleanName(`${target.dbType}_${target.host || target.database || "target"}_target`),
+        type: target.dbType,
+        environment: "prod",
+        config: { host: target.host, port: target.port, dbname: target.database, user: target.username, password: target.password, ssl_mode: target.ssl, catalog: target.catalog || "target_catalog" },
+      };
+      const tgtConn = await api.post<{ id: number }>("/api/v1/connectors/", tgtPayload);
+
+      // The backend automatically triggers Lakehouse Federation setup
+      // when the connections are created!
       setRunStatus("succeeded");
       // startPolling no longer needed
       setActiveTab("pipelines");
@@ -782,31 +792,51 @@ export default function ConnectorsPage() {
               <div className="flex-1 bg-[#121214] border border-white/[0.06] rounded-[20px] p-8 shadow-2xl">
                 <div className="mb-6">
                   <p className="text-[13px] text-white/40 mb-1">Option 2</p>
-                  <h2 className="text-[20px] font-bold text-white leading-tight">Database Connection</h2>
-                  <p className="text-[13px] text-white/40 mt-1">Configure your source database credentials to map it to Databricks.</p>
+                  <h2 className="text-[20px] font-bold text-white leading-tight">{connectionStep === 'source' ? 'Source' : 'Target'} Database Connection</h2>
+                  <p className="text-[13px] text-white/40 mt-1">Configure your {connectionStep} database credentials to map it to Databricks.</p>
                 </div>
-                <div className="flex flex-col md:flex-row gap-8">
-                  <DBFormPanel title="Source Database" subtitle="Enter the source database details."
-                    form={source} onChange={setSource} types={SOURCE_TYPES}
-                    showPassword={showSrcPw} onTogglePassword={() => setShowSrcPw(v => !v)} />
-                  
+                <div className="flex flex-col gap-8">
+                  {connectionStep === "source" ? (
+                    <DBFormPanel title="Source Database" subtitle="Enter the source database details."
+                      form={source} onChange={setSource} types={SOURCE_TYPES}
+                      showPassword={showSrcPw} onTogglePassword={() => setShowSrcPw(v => !v)} />
+                  ) : (
+                    <DBFormPanel title="Target Database" subtitle="Enter the target database details."
+                      form={target} onChange={setTarget} types={SOURCE_TYPES}
+                      showPassword={showTgtPw} onTogglePassword={() => setShowTgtPw(v => !v)} />
+                  )}
                 </div>
               </div>
             </div>
 
             {/* CTA */}
             <div className="flex justify-center w-full pt-2">
-              <button id="establish-connection-btn" onClick={handleEstablishConnection} disabled={isSubmitting}
-                className="flex items-center gap-3 px-10 py-4 rounded-xl bg-white text-black text-[15px] font-bold hover:bg-gray-200 disabled:opacity-50 transition-all shadow-xl shadow-white/10">
-                {isSubmitting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    {runStatus === "connecting" ? "Connecting…" : runStatus === "triggering" ? "Triggering pipeline…" : "Pipeline running…"}
-                  </>
-                ) : (
-                  <><svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> Establish Connection</>
-                )}
-              </button>
+              {connectionStep === "source" ? (
+                <button id="next-target-btn" onClick={() => setConnectionStep("target")}
+                  className="flex items-center gap-3 px-10 py-4 rounded-xl bg-white text-black text-[15px] font-bold hover:bg-gray-200 transition-all shadow-xl shadow-white/10">
+                  Next: Target Credentials
+                </button>
+              ) : (
+                <div className="flex gap-4">
+                  <button onClick={() => setConnectionStep("source")}
+                    className="flex items-center gap-3 px-8 py-4 rounded-xl bg-white/10 text-white text-[15px] font-bold hover:bg-white/20 transition-all">
+                    Back
+                  </button>
+                  <button id="establish-connection-btn" onClick={handleEstablishConnection} disabled={isSubmitting}
+                    className="flex items-center gap-3 px-10 py-4 rounded-xl bg-white text-black text-[15px] font-bold hover:bg-gray-200 disabled:opacity-50 transition-all shadow-xl shadow-white/10">
+                    {isSubmitting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        {runStatus === "connecting" ? "Connecting…" : runStatus === "triggering" ? "Triggering pipeline…" : "Pipeline running…"}
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> Establish Connections
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
