@@ -460,9 +460,6 @@ class DatabricksIngestionService:
                 "password": password
             }
             
-            if src_type == "postgres" or src_type == "sqlserver":
-                options["database"] = cfg.get("database", cfg.get("dbname", ""))
-                
             if src_type == "snowflake":
                 options["warehouse"] = cfg.get("warehouse", "")
                 options["database"] = cfg.get("database", "")
