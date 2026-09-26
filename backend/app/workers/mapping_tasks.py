@@ -142,7 +142,7 @@ def suggest_mappings_task(self, mapping_id: int) -> Dict[str, Any]:
                                 src_type = c.get("type")
                                 break
                                 
-                        best_by_col[tgt_name] = {
+                        best_by_col[(tgt_table, tgt_name)] = {
                             "source_table": src_table,
                             "source_column": match["source_column"],
                             "source_type": src_type,
