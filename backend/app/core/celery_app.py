@@ -3,6 +3,7 @@
 from celery import Celery
 from celery.schedules import crontab
 from app.core.config import settings
+import os
 
 celery_app = Celery(
     "dataone",
@@ -33,6 +34,8 @@ celery_app.conf.update(
     accept_content=["json"],
     result_serializer="json",
     broker_connection_retry_on_startup=True,
+    task_always_eager=os.getenv("DISABLE_CELERY") == "true",
+    task_eager_propagates=True,
     beat_schedule={
         "check-schema-drift": {
             "task": "app.tasks.ai_tasks.check_schema_drift_task",
