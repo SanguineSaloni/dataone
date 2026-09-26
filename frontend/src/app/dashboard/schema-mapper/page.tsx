@@ -470,13 +470,27 @@ function MatchRow({ s, rank }: { s: any; rank: number }) {
           <TypePill type={s.source_type} />
         </div>
         {/* confidence */}
-        <div className="flex-shrink-0 w-10 text-center">
+        <div className="flex-shrink-0 w-10 text-center z-10">
           <p className="text-[18px] font-bold leading-none tabular-nums" style={{ color: pct >= 80 ? "rgba(255,255,255,0.85)" : pct >= 60 ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.3)" }}>
             {pct.toFixed(0)}
           </p>
           <p className="text-[8px] uppercase tracking-widest mt-0.5" style={{ color: "rgba(255,255,255,0.2)" }}>pct</p>
         </div>
-        <Icon name="arrow-r" size={12} className="flex-shrink-0 opacity-20" />
+        
+        {/* Animated Arrow */}
+        <div className="flex-shrink-0 flex items-center justify-center mx-1 w-12 relative">
+          <svg width="100%" height="20" viewBox="0 0 48 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* Background track */}
+            <path d="M0 10H42" stroke="rgba(255,255,255,0.06)" strokeWidth="1.5" strokeDasharray="3 4" />
+            {/* Animated dashed line */}
+            <path d="M0 10H42" stroke={pct >= 80 ? "rgba(255,255,255,0.6)" : pct >= 60 ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.15)"} strokeWidth="1.5" strokeDasharray="3 4">
+              <animate attributeName="stroke-dashoffset" from="7" to="0" dur="0.6s" repeatCount="indefinite" />
+            </path>
+            {/* Arrow head */}
+            <path d="M38 6L42 10L38 14" stroke={pct >= 80 ? "rgba(255,255,255,0.6)" : pct >= 60 ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.15)"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+
         {/* target */}
         <div className="flex-1 min-w-0 text-right">
           <p className="text-[9px] uppercase tracking-widest mb-1" style={{ color: "rgba(255,255,255,0.25)" }}>{s.target_table?.split(".").pop()}</p>
