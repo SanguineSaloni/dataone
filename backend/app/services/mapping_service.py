@@ -46,10 +46,7 @@ class MappingService:
                 raise HTTPException(
                     status_code=404, detail=f"{label} connection {cid} not found",
                 )
-        if source_id == target_id:
-            raise HTTPException(
-                status_code=422, detail="source and target must be different",
-            )
+
         m = Mapping(
             name=name, source_id=source_id, target_id=target_id,
             status="draft", created_by=actor,

@@ -155,8 +155,8 @@ export default function SchemaMapperWorkbenchPage() {
     <div className="flex flex-col h-full bg-[#09090b] text-white overflow-hidden font-sans">
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06] bg-[#0d0d0d] flex-shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-            <Icon name="Sparkles" className="w-4 h-4 text-emerald-400" />
+          <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
+            <Icon name="Sparkles" className="w-4 h-4 text-white" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-white tracking-tight">ReMatch Schema Engine</h1>
@@ -169,38 +169,38 @@ export default function SchemaMapperWorkbenchPage() {
         <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: "radial-gradient(circle at 2px 2px, white 1px, transparent 0)", backgroundSize: "32px 32px" }} />
 
         {mode === "selection" ? (
-          <div className="max-w-5xl mx-auto h-full flex flex-col justify-center gap-12 relative z-10 animate-in fade-in zoom-in-95 duration-500">
+          <div className="w-full max-w-7xl px-8 mx-auto h-full flex flex-col justify-center gap-12 relative z-10 animate-in fade-in zoom-in-95 duration-500">
             <div className="text-center space-y-3">
-              <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-br from-white to-white/40 bg-clip-text text-transparent">Configure AI Mapping</h2>
-              <p className="text-white/40">Select your source table and target destination schema to begin.</p>
+              <h2 className="text-3xl font-bold tracking-tight text-white">Configure AI Mapping</h2>
+              <p className="text-white/40 text-lg">Select your source table and target destination schema to begin.</p>
             </div>
 
-            <div className="flex items-stretch gap-8 items-center">
+            <div className="flex flex-col md:flex-row items-stretch gap-8 items-center">
               {/* SOURCE CARD */}
-              <div className="flex-1 bg-[#111] border border-white/10 rounded-2xl p-6 shadow-2xl relative overflow-hidden group">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-cyan-400" />
-                <h3 className="text-lg font-semibold flex items-center gap-2 mb-6">
-                  <Icon name="Database" className="w-5 h-5 text-blue-400" /> Source Selection
+              <div className="flex-1 w-full bg-[#111] border border-white/10 rounded-2xl p-8 shadow-2xl relative overflow-hidden group">
+                <div className="absolute top-0 left-0 w-full h-1 bg-white/20" />
+                <h3 className="text-xl font-semibold flex items-center gap-2 mb-8">
+                  <Icon name="Database" className="w-5 h-5 text-white/70" /> Source Selection
                 </h3>
                 
-                <div className="space-y-5">
+                <div className="space-y-6">
                   <div>
-                    <label className="text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2 block">1. Unity Catalog</label>
-                    <select value={sourceCatalog} onChange={e => {setSourceCatalog(e.target.value); setSourceSchema(""); setSourceTable("");}} className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm focus:border-blue-500/50 outline-none transition-colors appearance-none">
+                    <label className="text-xs font-bold text-white/40 uppercase tracking-wider mb-3 block">1. Unity Catalog</label>
+                    <select value={sourceCatalog} onChange={e => {setSourceCatalog(e.target.value); setSourceSchema(""); setSourceTable("");}} className="w-full bg-black border border-white/10 rounded-lg px-4 py-4 text-sm focus:border-white/50 outline-none transition-colors appearance-none text-white">
                       <option value="">Select Catalog...</option>
                       {catalogs.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2 block">2. Schema</label>
-                    <select value={sourceSchema} onChange={e => {setSourceSchema(e.target.value); setSourceTable("");}} disabled={!sourceCatalog} className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm focus:border-blue-500/50 outline-none transition-colors appearance-none disabled:opacity-50">
+                    <label className="text-xs font-bold text-white/40 uppercase tracking-wider mb-3 block">2. Schema</label>
+                    <select value={sourceSchema} onChange={e => {setSourceSchema(e.target.value); setSourceTable("");}} disabled={!sourceCatalog} className="w-full bg-black border border-white/10 rounded-lg px-4 py-4 text-sm focus:border-white/50 outline-none transition-colors appearance-none disabled:opacity-50 text-white">
                       <option value="">Select Schema...</option>
                       {sourceSchemas.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2 block">3. Table Name</label>
-                    <select value={sourceTable} onChange={e => setSourceTable(e.target.value)} disabled={!sourceSchema} className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm focus:border-blue-500/50 outline-none transition-colors appearance-none disabled:opacity-50">
+                    <label className="text-xs font-bold text-white/40 uppercase tracking-wider mb-3 block">3. Table Name</label>
+                    <select value={sourceTable} onChange={e => setSourceTable(e.target.value)} disabled={!sourceSchema} className="w-full bg-black border border-white/10 rounded-lg px-4 py-4 text-sm focus:border-white/50 outline-none transition-colors appearance-none disabled:opacity-50 text-white">
                       <option value="">Select Table...</option>
                       {sourceTables.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
@@ -209,42 +209,47 @@ export default function SchemaMapperWorkbenchPage() {
               </div>
 
               {/* ACTION BUTTON */}
-              <div className="flex flex-col items-center gap-4">
+              <div className="flex flex-col items-center justify-center shrink-0 w-48">
                 <button 
                   onClick={handleStartMapping}
                   disabled={!sourceTable || !targetSchema}
-                  className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-black shadow-[0_0_40px_rgba(52,211,153,0.3)] hover:scale-105 hover:shadow-[0_0_60px_rgba(52,211,153,0.5)] transition-all disabled:opacity-50 disabled:grayscale disabled:hover:scale-100 disabled:cursor-not-allowed group"
+                  className="w-full py-4 rounded-xl bg-white text-black font-semibold hover:bg-white/90 transition-all disabled:opacity-50 disabled:hover:bg-white disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg"
                 >
-                  <Icon name="Play" className="w-8 h-8 ml-1 fill-black group-hover:scale-110 transition-transform" />
+                  <Icon name="Sparkles" className="w-4 h-4" />
+                  Auto Map
                 </button>
-                <span className="text-xs font-semibold text-emerald-400 tracking-wider uppercase">Auto Map</span>
+                <div className="mt-4 flex items-center gap-2 text-white/30 text-xs font-medium uppercase tracking-widest">
+                  <span className="w-4 h-px bg-white/20"></span>
+                  Start
+                  <span className="w-4 h-px bg-white/20"></span>
+                </div>
               </div>
 
               {/* TARGET CARD */}
-              <div className="flex-1 bg-[#111] border border-white/10 rounded-2xl p-6 shadow-2xl relative overflow-hidden group">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-pink-400" />
-                <h3 className="text-lg font-semibold flex items-center gap-2 mb-6">
-                  <Icon name="LayoutTemplate" className="w-5 h-5 text-purple-400" /> Target Destination
+              <div className="flex-1 w-full bg-[#111] border border-white/10 rounded-2xl p-8 shadow-2xl relative overflow-hidden group">
+                <div className="absolute top-0 left-0 w-full h-1 bg-white/20" />
+                <h3 className="text-xl font-semibold flex items-center gap-2 mb-8">
+                  <Icon name="LayoutTemplate" className="w-5 h-5 text-white/70" /> Target Destination
                 </h3>
                 
-                <div className="space-y-5">
+                <div className="space-y-6">
                   <div>
-                    <label className="text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2 block">1. Unity Catalog</label>
-                    <select value={targetCatalog} onChange={e => {setTargetCatalog(e.target.value); setTargetSchema("");}} className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm focus:border-purple-500/50 outline-none transition-colors appearance-none">
+                    <label className="text-xs font-bold text-white/40 uppercase tracking-wider mb-3 block">1. Unity Catalog</label>
+                    <select value={targetCatalog} onChange={e => {setTargetCatalog(e.target.value); setTargetSchema("");}} className="w-full bg-black border border-white/10 rounded-lg px-4 py-4 text-sm focus:border-white/50 outline-none transition-colors appearance-none text-white">
                       <option value="">Select Catalog...</option>
                       {catalogs.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2 block">2. Target Schema</label>
-                    <select value={targetSchema} onChange={e => setTargetSchema(e.target.value)} disabled={!targetCatalog} className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm focus:border-purple-500/50 outline-none transition-colors appearance-none disabled:opacity-50">
+                    <label className="text-xs font-bold text-white/40 uppercase tracking-wider mb-3 block">2. Target Schema</label>
+                    <select value={targetSchema} onChange={e => setTargetSchema(e.target.value)} disabled={!targetCatalog} className="w-full bg-black border border-white/10 rounded-lg px-4 py-4 text-sm focus:border-white/50 outline-none transition-colors appearance-none disabled:opacity-50 text-white">
                       <option value="">Select Schema...</option>
                       {targetSchemas.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
-                  <div className="bg-purple-500/5 border border-purple-500/10 rounded-lg p-4 mt-8 flex items-start gap-3">
-                    <Icon name="Sparkles" className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
-                    <p className="text-xs text-purple-200/60 leading-relaxed">
+                  <div className="bg-white/5 border border-white/10 rounded-lg p-5 mt-8 flex items-start gap-4">
+                    <Icon name="Sparkles" className="w-5 h-5 text-white/70 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-white/60 leading-relaxed">
                       ReMatch Engine will automatically analyze all tables in this schema using vector search and select the best candidate table based on semantic meaning.
                     </p>
                   </div>
@@ -272,11 +277,11 @@ export default function SchemaMapperWorkbenchPage() {
 
             {/* EXPANDED CENTER */}
             <div className="flex-1 bg-[#111] border border-white/10 rounded-2xl overflow-hidden flex flex-col relative">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-cyan-500 to-purple-500" />
+              <div className="absolute top-0 left-0 w-full h-1 bg-white/20" />
               
               <div className="p-4 border-b border-white/5 flex items-center justify-between">
                 <h2 className="text-sm font-semibold flex items-center gap-2">
-                  <Icon name="Sparkles" className="w-4 h-4 text-emerald-400" /> AI Mapping Results
+                  <Icon name="Sparkles" className="w-4 h-4 text-white" /> AI Mapping Results
                 </h2>
                 <button onClick={() => setMode("selection")} className="text-xs text-white/40 hover:text-white">Start Over</button>
               </div>
@@ -285,8 +290,8 @@ export default function SchemaMapperWorkbenchPage() {
                 {loadingMapping ? (
                   <div className="h-full flex flex-col items-center justify-center gap-4 text-center">
                     <div className="relative">
-                      <div className="w-16 h-16 rounded-full border-2 border-emerald-500/20 border-t-emerald-500 animate-spin" />
-                      <Icon name="Sparkles" className="w-6 h-6 text-emerald-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+                      <div className="w-16 h-16 rounded-full border-2 border-white/10 border-t-white animate-spin" />
+                      <Icon name="Sparkles" className="w-6 h-6 text-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
                     </div>
                     <div>
                       <h3 className="text-white font-medium">ReMatch Engine Analyzing</h3>
@@ -301,7 +306,7 @@ export default function SchemaMapperWorkbenchPage() {
                 ) : (
                   <div className="max-w-3xl mx-auto space-y-4">
                     {suggestions.map((s, idx) => (
-                      <div key={idx} className="bg-black/40 border border-white/10 rounded-xl p-5 flex items-start gap-6 hover:bg-white/[0.02] transition-colors relative group">
+                      <div key={idx} className="bg-black border border-white/10 rounded-xl p-5 flex items-start gap-6 hover:bg-white/[0.04] transition-colors relative group">
                         
                         {/* Source Col */}
                         <div className="flex-1">
@@ -312,8 +317,8 @@ export default function SchemaMapperWorkbenchPage() {
 
                         {/* Match Center */}
                         <div className="flex flex-col items-center gap-2 pt-2 px-4 shrink-0">
-                          <Icon name="ArrowRight" className="w-5 h-5 text-white/20" />
-                          <div className="flex items-center gap-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider">
+                          <Icon name="ArrowRight" className="w-5 h-5 text-white/40" />
+                          <div className="flex items-center gap-1 bg-white/10 text-white border border-white/20 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider">
                             {s.confidence.toFixed(1)}% MATCH
                           </div>
                         </div>
@@ -321,15 +326,15 @@ export default function SchemaMapperWorkbenchPage() {
                         {/* Target Col */}
                         <div className="flex-1">
                           <span className="text-[10px] text-white/40 font-mono mb-1 block">TARGET TABLE: {s.target_table}</span>
-                          <div className="font-semibold text-sm text-purple-300">{s.target_column}</div>
+                          <div className="font-semibold text-sm text-white/90">{s.target_column}</div>
                           <div className="text-xs text-white/40 mt-1">{s.target_type}</div>
                         </div>
                         
                         {/* Reasoning Popover (on hover) */}
                         <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-96 bg-[#1a1b23] border border-white/10 p-4 rounded-xl shadow-2xl opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 transition-all z-20">
                           <div className="flex items-center gap-2 mb-2">
-                            <Icon name="Sparkles" className="w-3.5 h-3.5 text-emerald-400" />
-                            <span className="text-xs font-bold tracking-wider text-emerald-400">AI REASONING</span>
+                            <Icon name="Sparkles" className="w-3.5 h-3.5 text-white" />
+                            <span className="text-xs font-bold tracking-wider text-white">AI REASONING</span>
                           </div>
                           <p className="text-xs text-white/70 leading-relaxed">{s.reason}</p>
                         </div>
