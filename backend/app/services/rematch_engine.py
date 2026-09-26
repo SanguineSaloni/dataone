@@ -32,8 +32,7 @@ class ReMatchEngine:
 
     def _get_embedding(self, text: str) -> List[float]:
         """Call Databricks Model Serving to get vector embedding."""
-        from databricks.sdk import WorkspaceClient
-        from databricks.sdk.core import Config
+        import requests
         import os
         
         is_databricks_apps = bool(
@@ -42,22 +41,40 @@ class ReMatchEngine:
             or os.environ.get("DATABRICKS_HOST")
         )
         
+        token = self.access_token
+        host_url = self.workspace_url
+        
         try:
             if is_databricks_apps:
-                # Always prefer the App's M2M identity for AI over the user's DB connection token
-                wc = WorkspaceClient()
-            else:
-                if not self.workspace_url or not self.access_token:
-                    raise ValueError("Databricks workspace URL and access token are required for embedding outside of Databricks Apps.")
-                config = Config(host=self.workspace_url, token=self.access_token)
-                wc = WorkspaceClient(config=config)
+                # Fetch Databricks Apps M2M OAuth Token manually
+                host = os.environ.get("DATABRICKS_HOST")
+                client_id = os.environ.get("DATABRICKS_CLIENT_ID")
+                client_secret = os.environ.get("DATABRICKS_CLIENT_SECRET")
                 
-            path = f"/api/2.0/serving-endpoints/{self.embedding_endpoint}/invocations"
-            response = wc.api_client.do(
-                method="POST",
-                path=path,
-                body={"inputs": [text]}
-            )
+                resp = requests.post(
+                    f"https://{host.rstrip('/')}/oidc/v1/token",
+                    auth=(client_id, client_secret),
+                    data={"grant_type": "client_credentials"},
+                    timeout=10
+                )
+                if resp.status_code == 200:
+                    token = resp.json()["access_token"]
+                    host_url = f"https://{host}"
+                else:
+                    logger.error(f"Failed to fetch Databricks Apps token: {resp.text}")
+                    raise ValueError(f"OAuth token fetch failed: {resp.text}")
+            else:
+                if not token or not host_url:
+                    raise ValueError("Workspace URL and access token required outside Databricks Apps")
+
+            url = f"{host_url.rstrip('/')}/serving-endpoints/{self.embedding_endpoint}/invocations"
+            headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+            
+            resp = requests.post(url, headers=headers, json={"inputs": [text]}, timeout=10)
+            if resp.status_code != 200:
+                raise ValueError(f"Embedding API returned status {resp.status_code}: {resp.text}")
+                
+            response = resp.json()
             
             # Extract embeddings from response
             if "predictions" in response and len(response["predictions"]) > 0:

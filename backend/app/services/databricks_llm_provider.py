@@ -77,8 +77,8 @@ class DatabricksLLMProvider:
         Returns:
             Response dict with 'response' key containing generated text
         """
-        from databricks.sdk import WorkspaceClient
-        from databricks.sdk.core import Config
+        import requests
+        import os
         
         is_databricks_apps = bool(
             os.environ.get("DATABRICKS_CLIENT_ID")
@@ -86,31 +86,59 @@ class DatabricksLLMProvider:
             or os.environ.get("DATABRICKS_HOST")
         )
         
-        if is_databricks_apps:
-            # Always prefer the App's M2M identity for AI
-            wc = WorkspaceClient()
-        else:
-            config = Config(host=self.workspace_url, token=self.access_token)
-            wc = WorkspaceClient(config=config)
+        token = self.access_token
+        host_url = self.workspace_url
         
-        # Build request payload (Foundation Model API format)
-        payload = {
-            "messages": [
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
-            "temperature": temperature,
-            "max_tokens": max_tokens
-        }
         try:
-            # Use Databricks WorkspaceClient native SDK to handle auth and routing properly
-            response = wc.api_client.do(
-                method="POST",
-                path=f"/api/2.0/serving-endpoints/{self.endpoint_name or 'databricks-dbrx-instruct'}/invocations",
-                body=payload
+            if is_databricks_apps:
+                host = os.environ.get("DATABRICKS_HOST")
+                client_id = os.environ.get("DATABRICKS_CLIENT_ID")
+                client_secret = os.environ.get("DATABRICKS_CLIENT_SECRET")
+                
+                resp = requests.post(
+                    f"https://{host.rstrip('/')}/oidc/v1/token",
+                    auth=(client_id, client_secret),
+                    data={"grant_type": "client_credentials"},
+                    timeout=10
+                )
+                if resp.status_code == 200:
+                    token = resp.json()["access_token"]
+                    host_url = f"https://{host}"
+                else:
+                    logger.error(f"Failed to fetch M2M token: {resp.text}")
+                    raise ValueError("Could not fetch OAuth token for Databricks Apps")
+            else:
+                if not token or not host_url:
+                    raise ValueError("Workspace URL and token required outside Databricks Apps")
+            
+            headers = {
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json"
+            }
+            
+            endpoint = self.endpoint_name or 'databricks-dbrx-instruct'
+            api_url = f"{host_url.rstrip('/')}/serving-endpoints/{endpoint}/invocations"
+            
+            # Build request payload
+            payload = {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                "temperature": temperature,
+                "max_tokens": max_tokens
+            }
+            
+            resp = requests.post(
+                api_url,
+                headers=headers,
+                json=payload,
+                timeout=60
             )
+            resp.raise_for_status()
+            response = resp.json()
             
             # Extract response text from Databricks API format
             if "choices" in response and len(response["choices"]) > 0:
@@ -149,8 +177,7 @@ class DatabricksLLMProvider:
         Returns:
             Response dict with message content
         """
-        from databricks.sdk import WorkspaceClient
-        from databricks.sdk.core import Config
+        import requests
         import os
         
         is_databricks_apps = bool(
@@ -159,24 +186,46 @@ class DatabricksLLMProvider:
             or os.environ.get("DATABRICKS_HOST")
         )
         
-        if is_databricks_apps:
-            wc = WorkspaceClient()
-        else:
-            config = Config(host=self.workspace_url, token=self.access_token)
-            wc = WorkspaceClient(config=config)
-            
-        payload = {
-            "messages": messages,
-            "temperature": temperature,
-            "max_tokens": max_tokens
-        }
+        token = self.access_token
+        host_url = self.workspace_url
         
         try:
-            response = wc.api_client.do(
-                method="POST",
-                path=f"/api/2.0/serving-endpoints/{self.endpoint_name or 'databricks-dbrx-instruct'}/invocations",
-                body=payload
+            if is_databricks_apps:
+                host = os.environ.get("DATABRICKS_HOST")
+                client_id = os.environ.get("DATABRICKS_CLIENT_ID")
+                client_secret = os.environ.get("DATABRICKS_CLIENT_SECRET")
+                
+                resp = requests.post(
+                    f"https://{host.rstrip('/')}/oidc/v1/token",
+                    auth=(client_id, client_secret),
+                    data={"grant_type": "client_credentials"},
+                    timeout=10
+                )
+                if resp.status_code == 200:
+                    token = resp.json()["access_token"]
+                    host_url = f"https://{host}"
+                else:
+                    raise ValueError(f"Could not fetch OAuth token: {resp.text}")
+            else:
+                if not token or not host_url:
+                    raise ValueError("Workspace URL and token required outside Databricks Apps")
+            
+            headers = {
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json"
+            }
+            
+            endpoint = self.endpoint_name or 'databricks-dbrx-instruct'
+            api_url = f"{host_url.rstrip('/')}/serving-endpoints/{endpoint}/invocations"
+            
+            resp = requests.post(
+                api_url,
+                headers=headers,
+                json=payload,
+                timeout=60
             )
+            resp.raise_for_status()
+            response = resp.json()
             
             if "choices" in response and len(response["choices"]) > 0:
                 message = response["choices"][0].get("message", {})
@@ -245,8 +294,8 @@ class DatabricksGenieProvider:
         Returns:
             Dict with 'sql' and optional 'explanation'
         """
-        from databricks.sdk import WorkspaceClient
-        from databricks.sdk.core import Config
+        import requests
+        import os
         
         is_databricks_apps = bool(
             os.environ.get("DATABRICKS_CLIENT_ID")
@@ -254,31 +303,46 @@ class DatabricksGenieProvider:
             or os.environ.get("DATABRICKS_HOST")
         )
         
-        if is_databricks_apps:
-            wc = WorkspaceClient()
-        else:
-            config = Config(host=self.workspace_url, token=self.access_token)
-            wc = WorkspaceClient(config=config)
-            
-        payload = {
-            "query": natural_language_query
-        }
-        
-        if catalog:
-            payload["catalog"] = catalog
-        if schema:
-            payload["schema"] = schema
+        token = self.access_token
+        host_url = self.workspace_url
         
         try:
+            if is_databricks_apps:
+                host = os.environ.get("DATABRICKS_HOST")
+                client_id = os.environ.get("DATABRICKS_CLIENT_ID")
+                client_secret = os.environ.get("DATABRICKS_CLIENT_SECRET")
+                
+                resp = requests.post(
+                    f"https://{host.rstrip('/')}/oidc/v1/token",
+                    auth=(client_id, client_secret),
+                    data={"grant_type": "client_credentials"},
+                    timeout=10
+                )
+                if resp.status_code == 200:
+                    token = resp.json()["access_token"]
+                    host_url = f"https://{host}"
+                else:
+                    raise ValueError(f"Could not fetch OAuth token: {resp.text}")
+            
+            headers = {
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json"
+            }
+            
             path = "/api/2.0/genie/spaces/query"
             if self.space_id:
                 path = f"/api/2.0/genie/spaces/{self.space_id}/query"
                 
-            response = wc.api_client.do(
-                method="POST",
-                path=path,
-                body=payload
+            api_url = f"{host_url.rstrip('/')}{path}"
+            
+            resp = requests.post(
+                api_url,
+                headers=headers,
+                json=payload,
+                timeout=30
             )
+            resp.raise_for_status()
+            response = resp.json()
             
             result = response.get("result", {})
             
