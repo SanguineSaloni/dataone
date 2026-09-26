@@ -3,6 +3,8 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
+import ReactFlow, { Background, Controls, Handle, Position, MarkerType } from 'reactflow';
+import 'reactflow/dist/style.css';
 
 // ─── Minimal Icons (no emojis, pure SVG geometry) ──────────────────────────
 const Icon = ({ name, size = 16, className = "", style }: { name: string; size?: number; className?: string; style?: React.CSSProperties }) => {
@@ -91,6 +93,31 @@ const ScanLine = () => {
 };
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
+
+// ─── ERD Node ────────────────────────────────────────────────────────────────
+const TableNode = ({ data }: any) => {
+  const { title, columns, isSource } = data;
+  return (
+    <div className="rounded-xl overflow-hidden shadow-2xl" style={{ border: `1px solid ${isSource ? 'rgba(59,130,246,0.3)' : 'rgba(52,211,153,0.3)'}`, background: '#0a0a0f', width: 240 }}>
+      <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2" style={{ background: isSource ? 'rgba(59,130,246,0.08)' : 'rgba(52,211,153,0.08)', color: isSource ? '#60a5fa' : '#34d399' }}>
+        <Icon name={isSource ? "db" : "table"} size={12} />
+        {title}
+      </div>
+      <div className="py-1 flex flex-col gap-px" style={{ background: 'rgba(0,0,0,0.4)' }}>
+        {columns.map((col: any) => (
+          <div key={col.id} className="relative px-3 py-1.5 flex justify-between items-center hover:bg-white/[0.03] transition-colors group">
+            {!isSource && <Handle type="target" position={Position.Left} id={col.name} className="!w-1.5 !h-1.5 !bg-emerald-400 !border-none !-left-1 opacity-0 group-hover:opacity-100 transition-opacity" />}
+            <span className="text-[10px] font-mono text-white/80">{col.name}</span>
+            <span className="text-[8px] text-white/30 ml-2">{col.type}</span>
+            {isSource && <Handle type="source" position={Position.Right} id={col.name} className="!w-1.5 !h-1.5 !bg-blue-400 !border-none !-right-1 opacity-0 group-hover:opacity-100 transition-opacity" />}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+const nodeTypes = { tableNode: TableNode };
+
 export default function SchemaMapperPage() {
   const searchParams = useSearchParams();
   const connId = searchParams.get("connection_id");
@@ -100,6 +127,7 @@ export default function SchemaMapperPage() {
   const [srcCat, setSrcCat] = useState(""); const [srcSch, setSrcSch] = useState(""); const [srcTbl, setSrcTbl] = useState("");
   const [tgtCat, setTgtCat] = useState(""); const [tgtSch, setTgtSch] = useState("");
   const [mode, setMode] = useState<"cfg" | "run">("cfg");
+  const [activeTab, setActiveTab] = useState<"list" | "erd">("list");
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -166,6 +194,38 @@ export default function SchemaMapperPage() {
   };
 
   const reset = () => { setMode("cfg"); setSuggestions([]); };
+
+  const erdNodes = useMemo(() => {
+    if (!srcObj) return [];
+    const nodes = [];
+    nodes.push({
+      id: "src", type: "tableNode", position: { x: 50, y: 150 },
+      data: { title: srcObj.table_name.split(".").pop(), isSource: true, columns: srcObj.columns.map(c => ({ id: c.id, name: c.column_name, type: c.data_type })) }
+    });
+    tgtTbls.forEach((t, i) => {
+      nodes.push({
+        id: `tgt-${t.table_name}`, type: "tableNode", position: { x: 500, y: 50 + i * 250 },
+        data: { title: t.table_name.split(".").pop(), isSource: false, columns: t.columns.map(c => ({ id: c.id, name: c.column_name, type: c.data_type })) }
+      });
+    });
+    return nodes;
+  }, [srcObj, tgtTbls]);
+
+  const erdEdges = useMemo(() => {
+    if (!suggestions || suggestions.length === 0 || suggestions[0].status === "error") return [];
+    return suggestions.map((s, i) => {
+      const pct = s.confidence || 0;
+      const color = pct >= 80 ? "rgba(255,255,255,0.7)" : pct >= 60 ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.2)";
+      return {
+        id: `edge-${i}`, source: "src", sourceHandle: s.source_column,
+        target: `tgt-${s.target_table}`, targetHandle: s.target_column,
+        animated: true,
+        style: { stroke: color, strokeWidth: 1.5, strokeDasharray: "4 4" },
+        markerEnd: { type: MarkerType.ArrowClosed, color: color, width: 20, height: 20 }
+      };
+    });
+  }, [suggestions]);
+
 
   // ─── Render ──────────────────────────────────────────────────────────────
   return (
@@ -290,10 +350,12 @@ export default function SchemaMapperPage() {
               {/* Top bar */}
               <div className="px-5 py-3 flex items-center justify-between flex-shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
                 <div className="flex items-center gap-3">
-                  <Icon name="arrows" size={14} className="opacity-40" />
-                  <span className="text-sm font-semibold" style={{ color: "rgba(255,255,255,0.75)" }}>Mapping Results</span>
+                  <div className="flex bg-white/5 rounded-lg p-0.5">
+                    <button onClick={() => setActiveTab('list')} className={`px-3 py-1 text-[11px] font-semibold rounded-md transition-colors ${activeTab === 'list' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/70'}`}>List View</button>
+                    <button onClick={() => setActiveTab('erd')} className={`px-3 py-1 text-[11px] font-semibold rounded-md transition-colors ${activeTab === 'erd' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/70'}`}>ERD Diagram</button>
+                  </div>
                   {!loading && suggestions.length > 0 && suggestions[0].status !== "error" && suggestions[0].target_table !== "ERROR" && (
-                    <span className="text-[10px] px-2 py-0.5 rounded-sm font-semibold" style={{ background: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.5)" }}>
+                    <span className="text-[10px] px-2 py-0.5 rounded-sm font-semibold ml-2" style={{ background: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.5)" }}>
                       {suggestions.length} match{suggestions.length !== 1 ? "es" : ""}
                     </span>
                   )}
@@ -307,6 +369,24 @@ export default function SchemaMapperPage() {
 
               {/* Content */}
               <div className="flex-1 overflow-auto p-5">
+
+                {activeTab === 'erd' && !loading && (
+                  <div className="w-full h-full min-h-[500px] relative rounded-lg overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <ReactFlow 
+                      nodes={erdNodes} 
+                      edges={erdEdges} 
+                      nodeTypes={nodeTypes}
+                      fitView
+                      className="bg-[#0a0a0f]"
+                    >
+                      <Background color="rgba(255,255,255,0.05)" gap={20} size={1} />
+                      <Controls className="!bg-black/50 !border-white/10 !fill-white" />
+                    </ReactFlow>
+                  </div>
+                )}
+
+                {activeTab === 'list' && (
+                  <>
                 {loading ? (
                   <div className="h-full flex flex-col items-center justify-center gap-6">
                     {/* Animated scanner box */}
@@ -358,6 +438,8 @@ export default function SchemaMapperPage() {
                       <MatchRow key={i} s={s} rank={i + 1} />
                     ))}
                   </div>
+                )}
+                  </>
                 )}
               </div>
             </div>
