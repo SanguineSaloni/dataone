@@ -128,7 +128,7 @@ export default function SchemaMapperWorkbenchPage() {
       setMappingId(mapping.id);
       
       // Request AI suggestions
-      await api.post(`/api/v1/mappings/${mapping.id}/suggestions`);
+      await api.post(`/api/v1/mappings/${mapping.id}/suggestions`, {});
       
       // Poll for suggestions
       const poll = setInterval(async () => {
