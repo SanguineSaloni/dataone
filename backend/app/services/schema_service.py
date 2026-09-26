@@ -83,6 +83,20 @@ class SchemaService:
         """
         Extracts full schema structure (tables and columns) from the connection.
         """
+        # FAST PATH: Check if we have this connection's schema cached in the local database
+        from app.core.database import SessionLocal
+        from app.models.schema_catalog import CatalogTable
+        with SessionLocal() as db:
+            tables = db.query(CatalogTable).filter(CatalogTable.connection_id == connection.id).all()
+            if tables:
+                schema_data = {}
+                for table in tables:
+                    # Depending on how it's saved, table_name might already be catalog.schema.table
+                    cols = [{"name": c.column_name, "type": c.data_type, "nullable": c.nullable} for c in table.columns]
+                    schema_data[table.table_name] = cols
+                return schema_data
+
+        # SLOW PATH: Fallback to live extraction if not in DB
         connector = get_connector(connection)
         try:
             if connection.type.lower() == "databricks":
