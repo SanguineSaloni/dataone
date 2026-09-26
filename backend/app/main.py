@@ -122,6 +122,7 @@ async def lifespan(app: FastAPI):
         logger.info("[startup] acquired initialization lock")
 
     # 1. Create tables
+    from app.services.rematch_engine import SchemaEmbedding
     Base.metadata.create_all(bind=engine)
     # Additive compatibility upgrade: create_all does not add columns to an
     # existing deployment. `environment` is a label, never an isolation key.
@@ -133,7 +134,8 @@ async def lifespan(app: FastAPI):
         "databricks_user_id": "VARCHAR",
         "databricks_access_token": "TEXT",
         "databricks_refresh_token": "TEXT",
-        "databricks_token_expires_at": "TIMESTAMP",
+        "databricks_token_expires_at": "TIMESTAMP WITH TIME ZONE",
+        "llm_model": "VARCHAR",
     }
     for column_name, column_type in databricks_oauth_columns.items():
         if column_name not in user_columns:

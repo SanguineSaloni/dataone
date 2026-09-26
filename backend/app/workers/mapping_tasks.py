@@ -100,70 +100,73 @@ def suggest_mappings_task(self, mapping_id: int) -> Dict[str, Any]:
             for s in prior if s.status == "rejected"
         }
 
-        suggestions_created = 0
+        # Pass schemas through the new ReMatchEngine
+        from app.services.rematch_engine import ReMatchEngine
+        # We fetch the owner's LLM preference if available
+        # But we'll let the engine fall back to default if not provided
+        engine = ReMatchEngine(db)
+        
+        # We only pass unmapped target columns to avoid embedding/matching everything
+        filtered_target_schema = {}
         for tgt_table, tgt_cols in target_schema.items():
-            # Collect the unmapped target columns for this table.
             unmapped_cols = [
                 c for c in tgt_cols
                 if (tgt_table, c.get("name")) not in existing_targets
                 and (tgt_table, c.get("name")) not in pending_targets
             ]
-            if not unmapped_cols:
-                continue
+            if unmapped_cols:
+                filtered_target_schema[tgt_table] = unmapped_cols
 
-            # best_by_col: target_column_name -> best (source, confidence) found.
-            best_by_col: Dict[str, Dict[str, Any]] = {}
-
-            for src_table, src_cols in source_schema.items():
-                try:
-                    # One call per (src_table, tgt_table) — not per column.
-                    result = AIService.match_schemas(
-                        source_name=src_table, source_schema=src_cols,
-                        target_name=tgt_table, target_schema=unmapped_cols,
-                    )
-                except Exception as exc:
-                    logger.warning(
-                        "AIService.match_schemas failed for %s -> %s: %s",
-                        src_table, tgt_table, exc,
-                    )
-                    continue
-                for match in result.get("matches", []) or []:
-                    tgt_name = match.get("target")
-                    if tgt_name not in {c.get("name") for c in unmapped_cols}:
+        best_by_col: Dict[tuple, Dict[str, Any]] = {}
+        
+        if filtered_target_schema:
+            try:
+                rematch_mappings = engine.map_schemas(source_schema, filtered_target_schema)
+                for match in rematch_mappings:
+                    tgt_name = match["target_column"]
+                    src_table = match["source_table"]
+                    tgt_table = match["target_table"]
+                    
+                    if (src_table, match["source_column"], tgt_table, tgt_name) in rejected_pairs:
                         continue
-                    if match.get("source") not in {c.get("name") for c in src_cols}:
-                        logger.warning(
-                            "Discarding ungrounded suggestion source %r for %s",
-                            match.get("source"), src_table,
-                        )
-                        continue
-                    # Filter rejected pairs *before* best-match selection so
-                    # the next-best non-rejected source can still win the slot.
-                    if (
-                        src_table, match.get("source"),
-                        tgt_table, tgt_name,
-                    ) in rejected_pairs:
-                        continue
-                    conf = float(match.get("confidence", 0) or 0)
-                    existing_best = best_by_col.get(tgt_name)
+                        
+                    # ReMatchEngine returns 0.0-1.0, convert to 0-100 for AISuggestion
+                    conf = match["confidence_score"] * 100
+                    
+                    existing_best = best_by_col.get((tgt_table, tgt_name))
                     if existing_best is None or conf > existing_best["confidence"]:
+                        # Find source type
+                        src_type = None
+                        for c in source_schema.get(src_table, []):
+                            if c["name"] == match["source_column"]:
+                                src_type = c.get("type")
+                                break
+                                
                         best_by_col[tgt_name] = {
                             "source_table": src_table,
-                            "source_column": match["source"],
-                            "source_type": next(
-                                (c.get("type") for c in src_cols
-                                 if c.get("name") == match["source"]),
-                                None,
-                            ),
+                            "source_column": match["source_column"],
+                            "source_type": src_type,
                             "confidence": conf,
-                            "reason": match.get("reason"),
-                            "components": match.get("components"),
+                            "reason": match["reasoning"],
+                            "components": {
+                                "semantic_score": conf,
+                                "type_compatible": match["data_type_compatible"]
+                            }
                         }
+            except Exception as exc:
+                logger.error("ReMatchEngine failed: %s", exc)
+
+        for tgt_table, tgt_cols in target_schema.items():
+            unmapped_cols = [
+                c for c in tgt_cols
+                if (tgt_table, c.get("name")) not in existing_targets
+                and (tgt_table, c.get("name")) not in pending_targets
+            ]
 
             # Materialize one AISuggestion per target column with a best match
             # above the confidence threshold.
             for tgt_col in unmapped_cols:
-                best = best_by_col.get(tgt_col.get("name"))
+                best = best_by_col.get((tgt_table, tgt_col.get("name")))
                 if not best or best["confidence"] < 50:
                     continue
                 proposed, _ = propose_transformations(
