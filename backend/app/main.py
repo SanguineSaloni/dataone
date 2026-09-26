@@ -239,7 +239,7 @@ async def lifespan(app: FastAPI):
             snapshot_upgrades = {
                 "connection_name": "VARCHAR",
                 "schema_hash": "VARCHAR",
-                "updated_at": "TIMESTAMP"
+                "captured_at": "TIMESTAMP"
             }
             for col_name, col_type in snapshot_upgrades.items():
                 if col_name not in snapshot_columns:

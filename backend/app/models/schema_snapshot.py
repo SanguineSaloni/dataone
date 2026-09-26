@@ -10,4 +10,4 @@ class SchemaSnapshot(Base):
     connection_name = Column(String, nullable=True)
     schema_hash = Column(String, nullable=True)
     schema_json = Column(JSON, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    captured_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
