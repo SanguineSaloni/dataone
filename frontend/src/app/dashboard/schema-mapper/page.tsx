@@ -379,7 +379,7 @@ export default function SchemaMapperPage() {
                       fitView
                       className="bg-[#0a0a0f]"
                     >
-                      <Background color="rgba(255,255,255,0.05)" gap={20} size={1} />
+                      <Background variant="dots" color="rgba(255,255,255,0.15)" gap={20} size={2} />
                       <Controls className="!bg-black/50 !border-white/10 !fill-white" />
                     </ReactFlow>
                   </div>
