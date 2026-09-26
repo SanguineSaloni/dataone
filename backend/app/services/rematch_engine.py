@@ -32,20 +32,42 @@ class ReMatchEngine:
 
     def _get_embedding(self, text: str) -> List[float]:
         """Call Databricks Model Serving to get vector embedding."""
-        if not self.workspace_url or not self.access_token:
-            raise ValueError("Databricks workspace URL and access token are required for embedding.")
-            
-        import requests
-        url = f"{self.workspace_url.rstrip('/')}/serving-endpoints/{self.embedding_endpoint}/invocations"
-        headers = {"Authorization": f"Bearer {self.access_token}", "Content-Type": "application/json"}
+        from databricks.sdk import WorkspaceClient
+        from databricks.sdk.core import Config
+        import os
+        
+        is_databricks_apps = bool(
+            os.environ.get("DATABRICKS_CLIENT_ID")
+            or os.environ.get("DATABRICKS_CLIENT_SECRET")
+            or os.environ.get("DATABRICKS_HOST")
+        )
+        
         try:
-            resp = requests.post(url, headers=headers, json={"inputs": [text]}, timeout=10)
-            if resp.status_code == 200:
-                data = resp.json()
-                return data["predictions"][0]
+            if is_databricks_apps:
+                # Always prefer the App's M2M identity for AI over the user's DB connection token
+                wc = WorkspaceClient()
             else:
-                logger.error(f"Embedding API returned status {resp.status_code}: {resp.text}")
-                raise ValueError(f"Embedding failed with status {resp.status_code}")
+                if not self.workspace_url or not self.access_token:
+                    raise ValueError("Databricks workspace URL and access token are required for embedding outside of Databricks Apps.")
+                config = Config(host=self.workspace_url, token=self.access_token)
+                wc = WorkspaceClient(config=config)
+                
+            path = f"/api/2.0/serving-endpoints/{self.embedding_endpoint}/invocations"
+            response = wc.api_client.do(
+                method="POST",
+                path=path,
+                body={"inputs": [text]}
+            )
+            
+            # Extract embeddings from response
+            if "predictions" in response and len(response["predictions"]) > 0:
+                return response["predictions"][0]
+            elif "data" in response and len(response["data"]) > 0:
+                # OpenAI compatible endpoint format
+                return response["data"][0].get("embedding", [])
+            else:
+                logger.error(f"Unexpected embedding response format: {response}")
+                raise ValueError("Unexpected response format from embedding API")
         except Exception as e:
             logger.error(f"Embedding failed: {e}")
             raise

@@ -10,8 +10,8 @@ DELEGATE: LLM inference to Databricks (per assessment).
 KEEP: Local Ollama as fallback for non-Databricks deployments (multi-source).
 """
 import logging
-import requests
 import json
+import os
 from typing import Dict, Any, Optional, List
 from app.core.config import settings
 
@@ -77,10 +77,21 @@ class DatabricksLLMProvider:
         Returns:
             Response dict with 'response' key containing generated text
         """
-        headers = {
-            "Authorization": f"Bearer {self.access_token}",
-            "Content-Type": "application/json"
-        }
+        from databricks.sdk import WorkspaceClient
+        from databricks.sdk.core import Config
+        
+        is_databricks_apps = bool(
+            os.environ.get("DATABRICKS_CLIENT_ID")
+            or os.environ.get("DATABRICKS_CLIENT_SECRET")
+            or os.environ.get("DATABRICKS_HOST")
+        )
+        
+        if is_databricks_apps:
+            # Always prefer the App's M2M identity for AI
+            wc = WorkspaceClient()
+        else:
+            config = Config(host=self.workspace_url, token=self.access_token)
+            wc = WorkspaceClient(config=config)
         
         # Build request payload (Foundation Model API format)
         payload = {
@@ -94,37 +105,27 @@ class DatabricksLLMProvider:
             "max_tokens": max_tokens
         }
         
-        try:
-            response = requests.post(
-                self.api_url,
-                headers=headers,
-                json=payload,
-                timeout=60
+            # Use Databricks WorkspaceClient native SDK to handle auth and routing properly
+            response = wc.api_client.do(
+                method="POST",
+                path=f"/api/2.0/serving-endpoints/{self.endpoint_name or 'databricks-dbrx-instruct'}/invocations",
+                body=payload
             )
-            response.raise_for_status()
-            
-            result = response.json()
             
             # Extract response text from Databricks API format
-            # Foundation Model API returns: {"choices": [{"message": {"content": "..."}}]}
-            if "choices" in result and len(result["choices"]) > 0:
-                content = result["choices"][0].get("message", {}).get("content", "")
-            elif "predictions" in result:
-                # Model Serving format
-                content = result["predictions"][0] if result["predictions"] else ""
+            if "choices" in response and len(response["choices"]) > 0:
+                content = response["choices"][0].get("message", {}).get("content", "")
+            elif "predictions" in response:
+                content = response["predictions"][0] if response["predictions"] else ""
             else:
-                content = result.get("response", "")
+                content = response.get("response", "")
             
-            # Return in Ollama-compatible format
             return {
                 "response": content,
                 "model": model or self.model_name,
                 "done": True
             }
             
-        except requests.exceptions.RequestException as e:
-            logger.error("Databricks LLM API request failed: %s", e)
-            raise Exception(f"Databricks LLM request failed: {str(e)}")
         except Exception as e:
             logger.error("Databricks LLM generation failed: %s", e)
             raise
@@ -148,11 +149,22 @@ class DatabricksLLMProvider:
         Returns:
             Response dict with message content
         """
-        headers = {
-            "Authorization": f"Bearer {self.access_token}",
-            "Content-Type": "application/json"
-        }
+        from databricks.sdk import WorkspaceClient
+        from databricks.sdk.core import Config
+        import os
         
+        is_databricks_apps = bool(
+            os.environ.get("DATABRICKS_CLIENT_ID")
+            or os.environ.get("DATABRICKS_CLIENT_SECRET")
+            or os.environ.get("DATABRICKS_HOST")
+        )
+        
+        if is_databricks_apps:
+            wc = WorkspaceClient()
+        else:
+            config = Config(host=self.workspace_url, token=self.access_token)
+            wc = WorkspaceClient(config=config)
+            
         payload = {
             "messages": messages,
             "temperature": temperature,
@@ -160,21 +172,16 @@ class DatabricksLLMProvider:
         }
         
         try:
-            response = requests.post(
-                self.api_url,
-                headers=headers,
-                json=payload,
-                timeout=60
+            response = wc.api_client.do(
+                method="POST",
+                path=f"/api/2.0/serving-endpoints/{self.endpoint_name or 'databricks-dbrx-instruct'}/invocations",
+                body=payload
             )
-            response.raise_for_status()
             
-            result = response.json()
-            
-            # Extract response
-            if "choices" in result and len(result["choices"]) > 0:
-                message = result["choices"][0].get("message", {})
+            if "choices" in response and len(response["choices"]) > 0:
+                message = response["choices"][0].get("message", {})
             else:
-                message = {"role": "assistant", "content": result.get("response", "")}
+                message = {"role": "assistant", "content": response.get("response", "")}
             
             return {
                 "message": message,
@@ -238,11 +245,21 @@ class DatabricksGenieProvider:
         Returns:
             Dict with 'sql' and optional 'explanation'
         """
-        headers = {
-            "Authorization": f"Bearer {self.access_token}",
-            "Content-Type": "application/json"
-        }
+        from databricks.sdk import WorkspaceClient
+        from databricks.sdk.core import Config
         
+        is_databricks_apps = bool(
+            os.environ.get("DATABRICKS_CLIENT_ID")
+            or os.environ.get("DATABRICKS_CLIENT_SECRET")
+            or os.environ.get("DATABRICKS_HOST")
+        )
+        
+        if is_databricks_apps:
+            wc = WorkspaceClient()
+        else:
+            config = Config(host=self.workspace_url, token=self.access_token)
+            wc = WorkspaceClient(config=config)
+            
         payload = {
             "query": natural_language_query
         }
@@ -253,17 +270,17 @@ class DatabricksGenieProvider:
             payload["schema"] = schema
         
         try:
-            # Note: Genie API is still evolving - this is a simplified version
-            # Real implementation would use the conversation API
-            response = requests.post(
-                f"{self.api_url}/query",
-                headers=headers,
-                json=payload,
-                timeout=30
+            path = "/api/2.0/genie/spaces/query"
+            if self.space_id:
+                path = f"/api/2.0/genie/spaces/{self.space_id}/query"
+                
+            response = wc.api_client.do(
+                method="POST",
+                path=path,
+                body=payload
             )
-            response.raise_for_status()
             
-            result = response.json()
+            result = response.get("result", {})
             
             return {
                 "sql": result.get("sql", ""),
@@ -286,18 +303,25 @@ def get_databricks_llm_provider(
     
     Falls back to environment variables if not provided.
     """
+    import os
+    is_databricks_apps = bool(
+        os.environ.get("DATABRICKS_CLIENT_ID")
+        or os.environ.get("DATABRICKS_CLIENT_SECRET")
+        or os.environ.get("DATABRICKS_HOST")
+    )
+
     workspace_url = workspace_url or settings.DATABRICKS_WORKSPACE_URL
     access_token = access_token or settings.DATABRICKS_ACCESS_TOKEN
     endpoint_name = endpoint_name or settings.DATABRICKS_LLM_ENDPOINT
     
-    if not workspace_url or not access_token:
+    if not is_databricks_apps and (not workspace_url or not access_token):
         raise ValueError(
             "Databricks workspace URL and access token required. "
             "Set DATABRICKS_WORKSPACE_URL and DATABRICKS_ACCESS_TOKEN env vars."
         )
     
     return DatabricksLLMProvider(
-        workspace_url=workspace_url,
-        access_token=access_token,
+        workspace_url=workspace_url or "",
+        access_token=access_token or "",
         endpoint_name=endpoint_name
     )
