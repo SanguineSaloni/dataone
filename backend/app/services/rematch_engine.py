@@ -70,18 +70,20 @@ class ReMatchEngine:
             url = f"{host_url.rstrip('/')}/serving-endpoints/{self.embedding_endpoint}/invocations"
             headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
             
-            resp = requests.post(url, headers=headers, json={"inputs": [text]}, timeout=10)
+            # Databricks Foundation Model API uses OpenAI-compatible "input" field
+            resp = requests.post(url, headers=headers, json={"input": [text]}, timeout=10)
             if resp.status_code != 200:
                 raise ValueError(f"Embedding API returned status {resp.status_code}: {resp.text}")
                 
             response = resp.json()
             
             # Extract embeddings from response
-            if "predictions" in response and len(response["predictions"]) > 0:
-                return response["predictions"][0]
-            elif "data" in response and len(response["data"]) > 0:
-                # OpenAI compatible endpoint format
+            # OpenAI-compatible Foundation Model API returns: {"data": [{"embedding": [...]}]}
+            if "data" in response and len(response["data"]) > 0:
                 return response["data"][0].get("embedding", [])
+            elif "predictions" in response and len(response["predictions"]) > 0:
+                # Older Model Serving format
+                return response["predictions"][0]
             else:
                 logger.error(f"Unexpected embedding response format: {response}")
                 raise ValueError("Unexpected response format from embedding API")
