@@ -5,8 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 
 // ─── Minimal Icons (no emojis, pure SVG geometry) ──────────────────────────
-const Icon = ({ name, size = 16, className = "" }: { name: string; size?: number; className?: string }) => {
-  const s = { width: size, height: size, className };
+const Icon = ({ name, size = 16, className = "", style }: { name: string; size?: number; className?: string; style?: React.CSSProperties }) => {
+  const s = { width: size, height: size, className, style };
   switch (name) {
     case "arrows": return <svg {...s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"><path d="M7 16V4m0 0L3 8m4-4 4 4M17 8v12m0 0 4-4m-4 4-4-4" /></svg>;
     case "grid": return <svg {...s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>;
