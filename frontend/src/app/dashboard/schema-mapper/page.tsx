@@ -135,6 +135,15 @@ export default function SchemaMapperWorkbenchPage() {
         const res = await api.get<any>(`/api/v1/mappings/${mapping.id}/suggestions?limit=200`);
         if (res.items && res.items.length > 0) {
           clearInterval(poll);
+          
+          // Check if the backend returned an explicit error (e.g. Databricks 403 API Error)
+          const errorItem = res.items.find((item: any) => item.status === 'error' || item.target_table === 'ERROR');
+          if (errorItem) {
+            setSuggestions([errorItem]);
+            setLoadingMapping(false);
+            return;
+          }
+          
           // Filter out only the suggestions for our selected source table
           const relevant = res.items.filter((item: any) => item.source_table === fullSourceTableName);
           setSuggestions(relevant);
@@ -297,6 +306,24 @@ export default function SchemaMapperWorkbenchPage() {
                       <h3 className="text-white font-medium">ReMatch Engine Analyzing</h3>
                       <p className="text-sm text-white/40 mt-1 max-w-sm">Generating vector embeddings and calculating semantic similarity across the target schema...</p>
                     </div>
+                  </div>
+                ) : suggestions.length > 0 && (suggestions[0].status === 'error' || suggestions[0].target_table === 'ERROR') ? (
+                  <div className="h-full flex flex-col items-center justify-center gap-4 text-center px-8 animate-in fade-in duration-300">
+                    <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-2">
+                      <Icon name="AlertTriangle" className="w-8 h-8 text-red-500" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-red-400">Databricks AI Connection Failed</h3>
+                      <p className="text-sm text-red-400/70 mt-2 max-w-xl mx-auto p-4 bg-red-500/5 rounded-lg border border-red-500/10 font-mono text-left break-words">
+                        {suggestions[0].reason}
+                      </p>
+                    </div>
+                    <button 
+                      onClick={() => setMode("selection")}
+                      className="mt-6 px-6 py-2.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm font-medium"
+                    >
+                      Try Again
+                    </button>
                   </div>
                 ) : suggestions.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center gap-3 text-white/40">

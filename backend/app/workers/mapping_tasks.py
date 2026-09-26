@@ -184,6 +184,21 @@ def suggest_mappings_task(self, mapping_id: int) -> Dict[str, Any]:
                         }
             except Exception as exc:
                 logger.error("ReMatchEngine failed: %s", exc)
+                # Persist the error so the frontend polling loop stops and displays it
+                from app.models.mapping import AISuggestion
+                error_sugg = AISuggestion(
+                    mapping_id=m.id,
+                    target_table="ERROR",
+                    target_column="ERROR",
+                    source_table=list(source_schema.keys())[0] if source_schema else "ERROR",
+                    source_column="ERROR",
+                    confidence=0.0,
+                    reason=f"Databricks AI API Error: {str(exc)}",
+                    status="error"
+                )
+                db.add(error_sugg)
+                db.commit()
+                return {"status": "error", "mapping_id": mapping_id, "error": str(exc)}
 
         suggestions_created = 0
 
