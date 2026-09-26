@@ -68,15 +68,37 @@ def suggest_mappings_task(self, mapping_id: int) -> Dict[str, Any]:
             source_schema = SchemaService.get_full_schema(source_conn)
             target_schema = SchemaService.get_full_schema(target_conn)
             
-            # OPTIMIZATION: The frontend UI requests mapping for a specific source table,
-            # and passes it in the mapping name as "Map catalog.schema.table".
-            # We should only map that specific table to save massive processing time
-            # and ensure the suggestions pass the frontend's table filter.
+            # OPTIMIZATION: The frontend UI encodes the mapping as:
+            # "Map {source_catalog}.{source_schema}.{table} → {target_catalog}.{target_schema}"
+            # We parse this to filter source to one table, and target to the selected schema.
             if m.name and m.name.startswith("Map "):
-                specific_source_table = m.name[4:].strip()
+                rest = m.name[4:]  # e.g. "cat.schema.table → tgt_cat.tgt_schema"
+                
+                if " → " in rest:
+                    specific_source_table, target_schema_prefix = rest.split(" → ", 1)
+                    specific_source_table = specific_source_table.strip()
+                    target_schema_prefix = target_schema_prefix.strip()  # e.g. "cat.schema"
+                else:
+                    specific_source_table = rest.strip()
+                    target_schema_prefix = None
+                
+                # Filter source schema to just the one selected table
                 if specific_source_table in source_schema:
                     source_schema = {specific_source_table: source_schema[specific_source_table]}
                     logger.info("Filtered source schema to specific table: %s", specific_source_table)
+                
+                # Filter target schema to only tables in the selected target catalog.schema
+                if target_schema_prefix:
+                    filtered_target = {
+                        table_name: cols
+                        for table_name, cols in target_schema.items()
+                        if table_name.startswith(target_schema_prefix + ".")
+                    }
+                    if filtered_target:
+                        target_schema = filtered_target
+                        logger.info("Filtered target schema to prefix '%s': %d tables", target_schema_prefix, len(target_schema))
+                    else:
+                        logger.warning("No target tables found with prefix '%s', using all target tables", target_schema_prefix)
                 
         except Exception as exc:
             logger.warning(

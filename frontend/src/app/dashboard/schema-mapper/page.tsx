@@ -118,10 +118,12 @@ export default function SchemaMapperWorkbenchPage() {
     
     try {
       const fullSourceTableName = `${sourceCatalog}.${sourceSchema}.${sourceTable}`;
+      const fullTargetSchemaName = `${targetCatalog}.${targetSchema}`;
       
-      // Create mapping
+      // Create mapping — encode source table AND target schema in the name
+      // so the backend task can filter both sides correctly.
       const mapping = await api.post<any>("/api/v1/mappings/", {
-        name: `Map ${fullSourceTableName}`,
+        name: `Map ${fullSourceTableName} → ${fullTargetSchemaName}`,
         source_id: sparkConnId,
         target_id: sparkConnId
       });
@@ -130,7 +132,7 @@ export default function SchemaMapperWorkbenchPage() {
       // Request AI suggestions
       await api.post(`/api/v1/mappings/${mapping.id}/suggestions`, {});
       
-      // Poll for suggestions
+      // Poll for suggestions (AI takes ~72s, so give it 180s before giving up)
       const poll = setInterval(async () => {
         const res = await api.get<any>(`/api/v1/mappings/${mapping.id}/suggestions?limit=200`);
         if (res.items && res.items.length > 0) {
@@ -149,10 +151,13 @@ export default function SchemaMapperWorkbenchPage() {
           setSuggestions(relevant);
           setLoadingMapping(false);
         }
-      }, 3000);
+      }, 4000);
       
-      // Timeout after 60s
-      setTimeout(() => clearInterval(poll), 60000);
+      // Timeout after 180s (AI can take ~72s)
+      const timeout = setTimeout(() => {
+        clearInterval(poll);
+        setLoadingMapping(false);
+      }, 180000);
       
     } catch (e) {
       console.error(e);
