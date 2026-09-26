@@ -98,7 +98,7 @@ class DatabricksLLMProvider:
                 resp = requests.post(
                     f"https://{host.rstrip('/')}/oidc/v1/token",
                     auth=(client_id, client_secret),
-                    data={"grant_type": "client_credentials"},
+                    data={"grant_type": "client_credentials", "scope": "all-apis"},
                     timeout=10
                 )
                 if resp.status_code == 200:
@@ -198,7 +198,7 @@ class DatabricksLLMProvider:
                 resp = requests.post(
                     f"https://{host.rstrip('/')}/oidc/v1/token",
                     auth=(client_id, client_secret),
-                    data={"grant_type": "client_credentials"},
+                    data={"grant_type": "client_credentials", "scope": "all-apis"},
                     timeout=10
                 )
                 if resp.status_code == 200:
@@ -315,7 +315,7 @@ class DatabricksGenieProvider:
                 resp = requests.post(
                     f"https://{host.rstrip('/')}/oidc/v1/token",
                     auth=(client_id, client_secret),
-                    data={"grant_type": "client_credentials"},
+                    data={"grant_type": "client_credentials", "scope": "all-apis"},
                     timeout=10
                 )
                 if resp.status_code == 200:
