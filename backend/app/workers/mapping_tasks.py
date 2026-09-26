@@ -156,6 +156,8 @@ def suggest_mappings_task(self, mapping_id: int) -> Dict[str, Any]:
             except Exception as exc:
                 logger.error("ReMatchEngine failed: %s", exc)
 
+        suggestions_created = 0
+
         for tgt_table, tgt_cols in target_schema.items():
             unmapped_cols = [
                 c for c in tgt_cols
