@@ -22,29 +22,33 @@ class ReMatchEngine:
     Uses hybrid scoring (In-memory Vector similarity + Rule-based + LLM semantic reasoning).
     """
 
-    def __init__(self, db: Session, user_llm_model: Optional[str] = None):
+    def __init__(self, db: Session, user_llm_model: Optional[str] = None, workspace_url: Optional[str] = None, access_token: Optional[str] = None):
         self.db = db
         # Use user's selected model or fallback to default
         self.llm_model = user_llm_model or settings.DATABRICKS_LLM_ENDPOINT or "databricks-meta-llama-3-3-70b-instruct"
         self.embedding_endpoint = "databricks-bge-large-en"
+        self.workspace_url = workspace_url or settings.DATABRICKS_WORKSPACE_URL
+        self.access_token = access_token or settings.DATABRICKS_ACCESS_TOKEN
 
     def _get_embedding(self, text: str) -> List[float]:
         """Call Databricks Model Serving to get vector embedding."""
-        if not settings.DATABRICKS_WORKSPACE_URL or not settings.DATABRICKS_ACCESS_TOKEN:
-            # Fallback mock for local dev without Databricks
-            return [0.1] * 1024
+        if not self.workspace_url or not self.access_token:
+            raise ValueError("Databricks workspace URL and access token are required for embedding.")
             
         import requests
-        url = f"{settings.DATABRICKS_WORKSPACE_URL.rstrip('/')}/serving-endpoints/{self.embedding_endpoint}/invocations"
-        headers = {"Authorization": f"Bearer {settings.DATABRICKS_ACCESS_TOKEN}", "Content-Type": "application/json"}
+        url = f"{self.workspace_url.rstrip('/')}/serving-endpoints/{self.embedding_endpoint}/invocations"
+        headers = {"Authorization": f"Bearer {self.access_token}", "Content-Type": "application/json"}
         try:
             resp = requests.post(url, headers=headers, json={"inputs": [text]}, timeout=10)
             if resp.status_code == 200:
                 data = resp.json()
                 return data["predictions"][0]
+            else:
+                logger.error(f"Embedding API returned status {resp.status_code}: {resp.text}")
+                raise ValueError(f"Embedding failed with status {resp.status_code}")
         except Exception as e:
             logger.error(f"Embedding failed: {e}")
-        return [0.1] * 1024
+            raise
 
     def _cosine_similarity(self, vec1: List[float], vec2: List[float]) -> float:
         """Calculate cosine similarity between two vectors."""
@@ -91,11 +95,11 @@ class ReMatchEngine:
         4. LLM reasoning on the filtered context.
         5. Hybrid confidence calculation.
         """
-        try:
-            llm_provider = get_databricks_llm_provider(endpoint_name=self.llm_model)
-        except ValueError:
-            logger.warning("Databricks credentials missing. Using mocked LLM for ReMatchEngine.")
-            llm_provider = None
+        llm_provider = get_databricks_llm_provider(
+            endpoint_name=self.llm_model,
+            workspace_url=self.workspace_url,
+            access_token=self.access_token
+        )
         
         # 1. Pre-compute Target Embeddings in Memory
         target_embeddings = []
@@ -154,25 +158,12 @@ CANDIDATE TARGET TABLES:
 Return a JSON object with 'target_column', 'semantic_score' (0.0-1.0), and 'reasoning'.
 """
                 try:
-                    if llm_provider:
-                        response = llm_provider.generate(prompt=prompt, stream=False)
-                        text_resp = response.get("response", "{}")
-                        if "```json" in text_resp:
-                            text_resp = text_resp.split("```json")[1].split("```")[0]
-                        
-                        llm_result = json.loads(text_resp)
-                    else:
-                        # MOCK RESPONSE for local testing without credentials
-                        # Just pick the first target column as a naive mock
-                        llm_result = {
-                            "target_column": top_targets[0]["table_name"].split(".")[-1] + "_col", # Dummy 
-                            "semantic_score": 0.85,
-                            "reasoning": "Mocked LLM reasoning because Databricks tokens are missing."
-                        }
-                        # Better mock: just pick the very first column from the best target table
-                        t_name = top_targets[0]["table_name"]
-                        if target_schema.get(t_name) and len(target_schema[t_name]) > 0:
-                            llm_result["target_column"] = target_schema[t_name][0]["name"]
+                    response = llm_provider.generate(prompt=prompt, stream=False)
+                    text_resp = response.get("response", "{}")
+                    if "```json" in text_resp:
+                        text_resp = text_resp.split("```json")[1].split("```")[0]
+                    
+                    llm_result = json.loads(text_resp)
                             
                     tgt_col_name = llm_result.get("target_column")
                     llm_score = float(llm_result.get("semantic_score", 0.0))

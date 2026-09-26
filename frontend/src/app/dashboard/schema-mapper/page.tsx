@@ -159,7 +159,7 @@ export default function SchemaMapperWorkbenchPage() {
             <Icon name="Sparkles" className="w-4 h-4 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white tracking-tight">ReMatch Schema Engine</h1>
+            <h1 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-white/50 tracking-tight">ReMatch Schema Engine</h1>
             <p className="text-[13px] text-white/40 mt-0.5">Automated AI-powered vector mapping</p>
           </div>
         </div>
@@ -169,17 +169,17 @@ export default function SchemaMapperWorkbenchPage() {
         <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: "radial-gradient(circle at 2px 2px, white 1px, transparent 0)", backgroundSize: "32px 32px" }} />
 
         {mode === "selection" ? (
-          <div className="w-full max-w-7xl px-8 mx-auto h-full flex flex-col justify-center gap-12 relative z-10 animate-in fade-in zoom-in-95 duration-500">
+          <div className="w-full max-w-[100rem] px-8 xl:px-16 mx-auto h-full flex flex-col justify-center gap-12 relative z-10 animate-in fade-in zoom-in-95 duration-500">
             <div className="text-center space-y-3">
-              <h2 className="text-3xl font-bold tracking-tight text-white">Configure AI Mapping</h2>
+              <h2 className="text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-white via-white/80 to-white/30">Configure AI Mapping</h2>
               <p className="text-white/40 text-lg">Select your source table and target destination schema to begin.</p>
             </div>
 
             <div className="flex flex-col md:flex-row items-stretch gap-8 items-center">
               {/* SOURCE CARD */}
-              <div className="flex-1 w-full bg-[#111] border border-white/10 rounded-2xl p-8 shadow-2xl relative overflow-hidden group">
-                <div className="absolute top-0 left-0 w-full h-1 bg-white/20" />
-                <h3 className="text-xl font-semibold flex items-center gap-2 mb-8">
+              <div className="flex-1 w-full bg-gradient-to-b from-[#111] to-black border border-white/10 rounded-2xl p-10 shadow-2xl relative overflow-hidden group">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-white/10 via-white/40 to-white/10" />
+                <h3 className="text-xl font-semibold flex items-center gap-3 mb-10">
                   <Icon name="Database" className="w-5 h-5 text-white/70" /> Source Selection
                 </h3>
                 
@@ -209,13 +209,13 @@ export default function SchemaMapperWorkbenchPage() {
               </div>
 
               {/* ACTION BUTTON */}
-              <div className="flex flex-col items-center justify-center shrink-0 w-48">
+              <div className="flex flex-col items-center justify-center shrink-0 w-56">
                 <button 
                   onClick={handleStartMapping}
                   disabled={!sourceTable || !targetSchema}
-                  className="w-full py-4 rounded-xl bg-white text-black font-semibold hover:bg-white/90 transition-all disabled:opacity-50 disabled:hover:bg-white disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg"
+                  className="w-full py-5 rounded-xl bg-gradient-to-b from-white to-gray-200 text-black font-bold text-base hover:from-white hover:to-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-[0_0_40px_rgba(255,255,255,0.1)] hover:shadow-[0_0_60px_rgba(255,255,255,0.15)] ring-1 ring-white/50"
                 >
-                  <Icon name="Sparkles" className="w-4 h-4" />
+                  <Icon name="Sparkles" className="w-5 h-5" />
                   Auto Map
                 </button>
                 <div className="mt-4 flex items-center gap-2 text-white/30 text-xs font-medium uppercase tracking-widest">
@@ -226,9 +226,9 @@ export default function SchemaMapperWorkbenchPage() {
               </div>
 
               {/* TARGET CARD */}
-              <div className="flex-1 w-full bg-[#111] border border-white/10 rounded-2xl p-8 shadow-2xl relative overflow-hidden group">
-                <div className="absolute top-0 left-0 w-full h-1 bg-white/20" />
-                <h3 className="text-xl font-semibold flex items-center gap-2 mb-8">
+              <div className="flex-1 w-full bg-gradient-to-b from-[#111] to-black border border-white/10 rounded-2xl p-10 shadow-2xl relative overflow-hidden group">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-white/10 via-white/40 to-white/10" />
+                <h3 className="text-xl font-semibold flex items-center gap-3 mb-10">
                   <Icon name="LayoutTemplate" className="w-5 h-5 text-white/70" /> Target Destination
                 </h3>
                 

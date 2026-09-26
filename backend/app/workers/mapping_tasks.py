@@ -114,8 +114,26 @@ def suggest_mappings_task(self, mapping_id: int) -> Dict[str, Any]:
         # Pass schemas through the new ReMatchEngine
         from app.services.rematch_engine import ReMatchEngine
         # We fetch the owner's LLM preference if available
+        from app.models.user import User
+        user_model = None
+        if m.created_by:
+            mapping_owner = db.query(User).filter(User.email == m.created_by).first()
+            if mapping_owner and mapping_owner.llm_model:
+                user_model = mapping_owner.llm_model
+                logger.info("Using owner's selected LLM model: %s", user_model)
+        
+        # Databricks Apps don't have DATABRICKS_WORKSPACE_URL set globally.
+        # But we can extract it from the source Databricks connection config!
+        workspace_url = f"https://{source_conn.config.get('server_hostname', '')}" if source_conn.config.get('server_hostname') else None
+        access_token = source_conn.config.get('access_token')
+
         # But we'll let the engine fall back to default if not provided
-        engine = ReMatchEngine(db)
+        engine = ReMatchEngine(
+            db, 
+            user_llm_model=user_model,
+            workspace_url=workspace_url,
+            access_token=access_token
+        )
         
         # We only pass unmapped target columns to avoid embedding/matching everything
         filtered_target_schema = {}
