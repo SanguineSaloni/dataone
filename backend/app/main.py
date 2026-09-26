@@ -21,7 +21,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
-from app.api.routers import connectors, schema, agent, query, askdata, mapper, pipelines
+from app.api.routers import connectors, schema, agent, query, askdata, mapper, pipelines, llm
 from app.api.routers import tasks as tasks_router
 from app.api.routers import audit as audit_router
 from app.api.routers import auth as auth_router
@@ -404,6 +404,7 @@ async def log_requests(request: Request, call_next):
 app.include_router(connectors.router, prefix="/api/v1/connectors", tags=["Connectors"])
 app.include_router(schema.router, prefix="/api/v1/schema", tags=["Schema Intelligence"])
 app.include_router(agent.router, prefix="/api/v1/agent", tags=["AI Agent"])
+app.include_router(llm.router, prefix="/api/v1/llm", tags=["LLM"])
 app.include_router(query.router, prefix="/api/v1/query", tags=["Query (Legacy NL2SQL)"])
 app.include_router(query_studio_router.router, prefix="/api/v1/query-studio", tags=["Query Studio"])
 app.include_router(askdata.router, prefix="/api/v1/askdata", tags=["AskData Bot"])

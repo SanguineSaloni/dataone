@@ -6,6 +6,7 @@ export interface AuthUser {
   id?: number;
   email: string;
   role: string;
+  llm_model?: string;
 }
 
 interface LoginResponse extends AuthUser {
@@ -32,7 +33,7 @@ export const auth = {
       password,
     });
     storage()?.setItem(TOKEN_KEY, result.access_token);
-    return { email: result.email, role: result.role };
+    return { email: result.email, role: result.role, llm_model: result.llm_model };
   },
 
   /** Store a token obtained outside the password flow (e.g. Entra redirect). */

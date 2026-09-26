@@ -90,7 +90,14 @@ class SchemaService:
                 # multiple schemas (databases) from the source server. We must fetch all of them.
                 schema_data = {}
                 catalogs = connector.get_catalogs()
-                SKIP_SCHEMAS = {"information_schema", "mysql", "performance_schema", "sys", "__databricks_internal", "system"}
+                SKIP_SCHEMAS = {
+                    # Standard SQL / MySQL system schemas
+                    "information_schema", "mysql", "performance_schema", "sys",
+                    # Databricks internal
+                    "__databricks_internal", "system",
+                    # PostgreSQL system schemas (appear in federated/foreign catalogs)
+                    "pg_catalog", "pg_toast", "pg_temp",
+                }
                 
                 for cat in catalogs:
                     cat_name = cat["name"]

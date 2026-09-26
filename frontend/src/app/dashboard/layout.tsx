@@ -13,6 +13,7 @@ import CopilotPanel from "./components/CopilotPanel";
 import GlobalSearchPalette from "./components/GlobalSearchPalette";
 import NotificationCenter from "./components/NotificationCenter";
 import { KpiNotAvailable } from "./components/StateViews";
+import { LLMSelectModal } from "./components/LLMSelectModal";
 
 interface NavItem {
   id: string;
@@ -205,6 +206,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {children}
         </div>
       </main>
+
+      {/* LLM Selection Modal for first-time login */}
+      {user && !user.llm_model && (
+        <LLMSelectModal onComplete={(model) => setUser({ ...user, llm_model: model })} />
+      )}
     </div>
   );
 }

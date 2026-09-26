@@ -13,6 +13,7 @@ class User(Base):
     role = Column(String, nullable=False, default="viewer")  # admin | editor | viewer
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    llm_model = Column(String, nullable=True)  # Stores selected Databricks LLM model
     
     # Databricks OAuth fields
     databricks_user_id = Column(String, nullable=True, index=True)

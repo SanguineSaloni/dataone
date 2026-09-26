@@ -112,7 +112,17 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
 
 @router.get("/me")
 def me(current_user: User = Depends(get_current_user)):
-    return {"id": current_user.id, "email": current_user.email, "role": current_user.role}
+    return {"id": current_user.id, "email": current_user.email, "role": current_user.role, "llm_model": current_user.llm_model}
+
+from pydantic import BaseModel
+class LLMModelUpdateRequest(BaseModel):
+    llm_model: str
+
+@router.put("/me/llm_model")
+def update_llm_model(req: LLMModelUpdateRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    current_user.llm_model = req.llm_model
+    db.commit()
+    return {"status": "ok", "llm_model": current_user.llm_model}
 
 
 def _entra_client() -> msal.ConfidentialClientApplication:

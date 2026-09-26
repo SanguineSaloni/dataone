@@ -299,7 +299,11 @@ class DatabricksAutoDiscoveryService:
             logger.info(f"Discovered {len(catalogs)} catalogs")
 
             # System schemas to skip — they contain no user tables
-            SKIP_SCHEMAS = {"information_schema", "__databricks_internal", "system"}
+            SKIP_SCHEMAS = {
+                "information_schema", "__databricks_internal", "system",
+                # PostgreSQL system schemas (appear in federated/foreign catalogs)
+                "pg_catalog", "pg_toast", "pg_temp",
+            }
 
             schema_service = SchemaCatalogService()
             schema_data = {}
