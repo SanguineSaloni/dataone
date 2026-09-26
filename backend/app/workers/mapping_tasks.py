@@ -67,6 +67,17 @@ def suggest_mappings_task(self, mapping_id: int) -> Dict[str, Any]:
         try:
             source_schema = SchemaService.get_full_schema(source_conn)
             target_schema = SchemaService.get_full_schema(target_conn)
+            
+            # OPTIMIZATION: The frontend UI requests mapping for a specific source table,
+            # and passes it in the mapping name as "Map catalog.schema.table".
+            # We should only map that specific table to save massive processing time
+            # and ensure the suggestions pass the frontend's table filter.
+            if m.name and m.name.startswith("Map "):
+                specific_source_table = m.name[4:].strip()
+                if specific_source_table in source_schema:
+                    source_schema = {specific_source_table: source_schema[specific_source_table]}
+                    logger.info("Filtered source schema to specific table: %s", specific_source_table)
+                
         except Exception as exc:
             logger.warning(
                 "suggest_mappings_task: schema fetch failed for mapping %s: %s",
