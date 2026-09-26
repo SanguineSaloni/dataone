@@ -3,7 +3,18 @@
 import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
-import { Check, Database, Columns, LayoutTemplate, ArrowRight, Loader2, Sparkles, AlertCircle, Play } from "lucide-react";
+
+const Icon = ({ name, className }: { name: string, className?: string }) => {
+  switch (name) {
+    case 'Sparkles': return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" /></svg>;
+    case 'Database': return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M3 5V19A9 3 0 0 0 21 19V5" /><path d="M3 12A9 3 0 0 0 21 12" /></svg>;
+    case 'LayoutTemplate': return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M3 9h18" /><path d="M9 21V9" /></svg>;
+    case 'ArrowRight': return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>;
+    case 'AlertCircle': return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="10" /><line x1="12" x2="12" y1="8" y2="12" /><line x1="12" x2="12.01" y1="16" y2="16" /></svg>;
+    case 'Play': return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><polygon points="6 3 20 12 6 21 6 3" /></svg>;
+    default: return null;
+  }
+};
 
 interface CatalogTable {
   id: number;
@@ -145,7 +156,7 @@ export default function SchemaMapperWorkbenchPage() {
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06] bg-[#0d0d0d] flex-shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-emerald-400" />
+            <Icon name="Sparkles" className="w-4 h-4 text-emerald-400" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-white tracking-tight">ReMatch Schema Engine</h1>
@@ -169,7 +180,7 @@ export default function SchemaMapperWorkbenchPage() {
               <div className="flex-1 bg-[#111] border border-white/10 rounded-2xl p-6 shadow-2xl relative overflow-hidden group">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-cyan-400" />
                 <h3 className="text-lg font-semibold flex items-center gap-2 mb-6">
-                  <Database className="w-5 h-5 text-blue-400" /> Source Selection
+                  <Icon name="Database" className="w-5 h-5 text-blue-400" /> Source Selection
                 </h3>
                 
                 <div className="space-y-5">
@@ -204,7 +215,7 @@ export default function SchemaMapperWorkbenchPage() {
                   disabled={!sourceTable || !targetSchema}
                   className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-black shadow-[0_0_40px_rgba(52,211,153,0.3)] hover:scale-105 hover:shadow-[0_0_60px_rgba(52,211,153,0.5)] transition-all disabled:opacity-50 disabled:grayscale disabled:hover:scale-100 disabled:cursor-not-allowed group"
                 >
-                  <Play className="w-8 h-8 ml-1 fill-black group-hover:scale-110 transition-transform" />
+                  <Icon name="Play" className="w-8 h-8 ml-1 fill-black group-hover:scale-110 transition-transform" />
                 </button>
                 <span className="text-xs font-semibold text-emerald-400 tracking-wider uppercase">Auto Map</span>
               </div>
@@ -213,7 +224,7 @@ export default function SchemaMapperWorkbenchPage() {
               <div className="flex-1 bg-[#111] border border-white/10 rounded-2xl p-6 shadow-2xl relative overflow-hidden group">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-pink-400" />
                 <h3 className="text-lg font-semibold flex items-center gap-2 mb-6">
-                  <LayoutTemplate className="w-5 h-5 text-purple-400" /> Target Destination
+                  <Icon name="LayoutTemplate" className="w-5 h-5 text-purple-400" /> Target Destination
                 </h3>
                 
                 <div className="space-y-5">
@@ -232,7 +243,7 @@ export default function SchemaMapperWorkbenchPage() {
                     </select>
                   </div>
                   <div className="bg-purple-500/5 border border-purple-500/10 rounded-lg p-4 mt-8 flex items-start gap-3">
-                    <Sparkles className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
+                    <Icon name="Sparkles" className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
                     <p className="text-xs text-purple-200/60 leading-relaxed">
                       ReMatch Engine will automatically analyze all tables in this schema using vector search and select the best candidate table based on semantic meaning.
                     </p>
@@ -265,7 +276,7 @@ export default function SchemaMapperWorkbenchPage() {
               
               <div className="p-4 border-b border-white/5 flex items-center justify-between">
                 <h2 className="text-sm font-semibold flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-emerald-400" /> AI Mapping Results
+                  <Icon name="Sparkles" className="w-4 h-4 text-emerald-400" /> AI Mapping Results
                 </h2>
                 <button onClick={() => setMode("selection")} className="text-xs text-white/40 hover:text-white">Start Over</button>
               </div>
@@ -275,7 +286,7 @@ export default function SchemaMapperWorkbenchPage() {
                   <div className="h-full flex flex-col items-center justify-center gap-4 text-center">
                     <div className="relative">
                       <div className="w-16 h-16 rounded-full border-2 border-emerald-500/20 border-t-emerald-500 animate-spin" />
-                      <Sparkles className="w-6 h-6 text-emerald-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+                      <Icon name="Sparkles" className="w-6 h-6 text-emerald-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
                     </div>
                     <div>
                       <h3 className="text-white font-medium">ReMatch Engine Analyzing</h3>
@@ -284,7 +295,7 @@ export default function SchemaMapperWorkbenchPage() {
                   </div>
                 ) : suggestions.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center gap-3 text-white/40">
-                    <AlertCircle className="w-8 h-8" />
+                    <Icon name="AlertCircle" className="w-8 h-8" />
                     <p>No high-confidence mappings found.</p>
                   </div>
                 ) : (
@@ -301,7 +312,7 @@ export default function SchemaMapperWorkbenchPage() {
 
                         {/* Match Center */}
                         <div className="flex flex-col items-center gap-2 pt-2 px-4 shrink-0">
-                          <ArrowRight className="w-5 h-5 text-white/20" />
+                          <Icon name="ArrowRight" className="w-5 h-5 text-white/20" />
                           <div className="flex items-center gap-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider">
                             {s.confidence.toFixed(1)}% MATCH
                           </div>
@@ -317,7 +328,7 @@ export default function SchemaMapperWorkbenchPage() {
                         {/* Reasoning Popover (on hover) */}
                         <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-96 bg-[#1a1b23] border border-white/10 p-4 rounded-xl shadow-2xl opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 transition-all z-20">
                           <div className="flex items-center gap-2 mb-2">
-                            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                            <Icon name="Sparkles" className="w-3.5 h-3.5 text-emerald-400" />
                             <span className="text-xs font-bold tracking-wider text-emerald-400">AI REASONING</span>
                           </div>
                           <p className="text-xs text-white/70 leading-relaxed">{s.reason}</p>
@@ -337,7 +348,7 @@ export default function SchemaMapperWorkbenchPage() {
               </div>
               <div className="p-4 flex-1 overflow-auto">
                 <div className="flex flex-col items-center justify-center h-full text-center text-white/30 gap-3 px-4">
-                  <Database className="w-8 h-8 opacity-50" />
+                  <Icon name="Database" className="w-8 h-8 opacity-50" />
                   <p className="text-xs">ReMatch Engine automatically scans all tables in this schema to find the best fit.</p>
                 </div>
               </div>
