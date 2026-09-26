@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
-import ReactFlow, { Background, Controls, Handle, Position, MarkerType } from 'reactflow';
+import ReactFlow, { Background, Controls, Handle, Position, MarkerType, BackgroundVariant } from 'reactflow';
 import 'reactflow/dist/style.css';
 
 // ─── Minimal Icons (no emojis, pure SVG geometry) ──────────────────────────
@@ -379,7 +379,7 @@ export default function SchemaMapperPage() {
                       fitView
                       className="bg-[#0a0a0f]"
                     >
-                      <Background variant="dots" color="rgba(255,255,255,0.15)" gap={20} size={2} />
+                      <Background variant={BackgroundVariant.Dots} color="rgba(255,255,255,0.15)" gap={20} size={2} />
                       <Controls className="!bg-black/50 !border-white/10 !fill-white" />
                     </ReactFlow>
                   </div>
