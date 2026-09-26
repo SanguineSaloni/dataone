@@ -122,11 +122,6 @@ async def lifespan(app: FastAPI):
         logger.info("[startup] acquired initialization lock")
 
     # 1. Create tables
-    from app.services.rematch_engine import SchemaEmbedding
-    if engine.dialect.name == "postgresql":
-        with engine.connect() as conn:
-            conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
-            conn.commit()
     Base.metadata.create_all(bind=engine)
     # Additive compatibility upgrade: create_all does not add columns to an
     # existing deployment. `environment` is a label, never an isolation key.

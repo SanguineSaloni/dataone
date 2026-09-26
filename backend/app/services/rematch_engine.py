@@ -3,28 +3,13 @@ import json
 import math
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
-from sqlalchemy import Column, Integer, String, Float, Text, select
 from sqlalchemy.orm import Session
-from pgvector.sqlalchemy import Vector
-from app.core.database import Base
 from app.services.databricks_llm_provider import get_databricks_llm_provider
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-# ── 1. Database Model for Vector Search (pgvector) ──────────────────────────
-
-class SchemaEmbedding(Base):
-    __tablename__ = "schema_embeddings"
-
-    id = Column(Integer, primary_key=True, index=True)
-    tenant_id = Column(String, index=True, nullable=True) # For multi-tenancy compatibility
-    target_table_name = Column(String, index=True)
-    document = Column(Text)
-    # Using 1024 for Databricks BGE large, or 384 for sentence-transformers
-    embedding = Column(Vector(1024)) 
-
-# ── 2. Pydantic Models for LLM Structured Output ───────────────────────────
+# ── 1. Pydantic Models for LLM Structured Output ───────────────────────────
 
 class LLMMappingResponse(BaseModel):
     target_column: str = Field(description="The exact name of the target column matched.")
@@ -34,14 +19,13 @@ class LLMMappingResponse(BaseModel):
 class ReMatchEngine:
     """
     ReMatch Schema Mapping Engine.
-    Uses hybrid scoring (Vector similarity + Rule-based + LLM semantic reasoning).
+    Uses hybrid scoring (In-memory Vector similarity + Rule-based + LLM semantic reasoning).
     """
 
     def __init__(self, db: Session, user_llm_model: Optional[str] = None):
         self.db = db
         # Use user's selected model or fallback to default
         self.llm_model = user_llm_model or settings.DATABRICKS_LLM_ENDPOINT or "databricks-meta-llama-3-3-70b-instruct"
-        # We need an embedding endpoint, defaulting to databricks standard
         self.embedding_endpoint = "databricks-bge-large-en"
 
     def _get_embedding(self, text: str) -> List[float]:
@@ -61,6 +45,17 @@ class ReMatchEngine:
         except Exception as e:
             logger.error(f"Embedding failed: {e}")
         return [0.1] * 1024
+
+    def _cosine_similarity(self, vec1: List[float], vec2: List[float]) -> float:
+        """Calculate cosine similarity between two vectors."""
+        if len(vec1) != len(vec2):
+            return 0.0
+        dot_product = sum(a * b for a, b in zip(vec1, vec2))
+        magnitude1 = math.sqrt(sum(a * a for a in vec1))
+        magnitude2 = math.sqrt(sum(b * b for b in vec2))
+        if magnitude1 == 0.0 or magnitude2 == 0.0:
+            return 0.0
+        return dot_product / (magnitude1 * magnitude2)
 
     def _type_compatibility_score(self, src_type: str, tgt_type: str) -> float:
         """Rule-based Data Type Compatibility Matrix (Returns 0.0 to 1.0)."""
@@ -87,40 +82,32 @@ class ReMatchEngine:
             
         return 0.0
 
-    def prepare_target_embeddings(self, target_schema: Dict[str, List[Dict[str, Any]]]):
-        """Convert target tables into descriptive texts and store embeddings."""
-        # Ensure extension is created
-        self.db.execute("CREATE EXTENSION IF NOT EXISTS vector")
-        self.db.execute("TRUNCATE TABLE schema_embeddings") # Clear old embeddings for this session
-        
-        for table_name, columns in target_schema.items():
-            col_docs = [f"{c['name']} ({c.get('type', 'UNKNOWN')})" for c in columns]
-            doc = f"Table: {table_name}. Columns: {', '.join(col_docs)}."
-            
-            emb = self._get_embedding(doc)
-            
-            record = SchemaEmbedding(
-                target_table_name=table_name,
-                document=doc,
-                embedding=emb
-            )
-            self.db.add(record)
-        self.db.commit()
-
     def map_schemas(self, source_schema: Dict[str, List[Dict[str, Any]]], target_schema: Dict[str, List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
         """
-        Main execution flow:
-        1. Embed targets and save to pgvector.
+        Main execution flow using IN-MEMORY vector search.
+        1. Embed targets into memory.
         2. Embed each source column.
-        3. Filter Top-2 targets using vector cosine distance.
+        3. Filter Top-2 targets using in-memory cosine similarity.
         4. LLM reasoning on the filtered context.
         5. Hybrid confidence calculation.
         """
-        self.prepare_target_embeddings(target_schema)
         llm_provider = get_databricks_llm_provider(endpoint_name=self.llm_model)
         
+        # 1. Pre-compute Target Embeddings in Memory
+        target_embeddings = []
+        for table_name, columns in target_schema.items():
+            col_docs = [f"{c['name']} ({c.get('type', 'UNKNOWN')})" for c in columns]
+            doc = f"Table: {table_name}. Columns: {', '.join(col_docs)}."
+            emb = self._get_embedding(doc)
+            target_embeddings.append({
+                "table_name": table_name,
+                "document": doc,
+                "embedding": emb
+            })
+            
         mappings = []
         
+        # 2. Iterate Source Columns
         for src_table, src_cols in source_schema.items():
             for src_col in src_cols:
                 src_name = src_col["name"]
@@ -129,18 +116,25 @@ class ReMatchEngine:
                 
                 src_emb = self._get_embedding(src_doc)
                 
-                # Fetch Top 2 target tables using Cosine Distance (<=>)
-                top_targets = self.db.execute(
-                    select(SchemaEmbedding, SchemaEmbedding.embedding.cosine_distance(src_emb).label("distance"))
-                    .order_by("distance")
-                    .limit(2)
-                ).all()
+                # 3. Calculate Cosine Similarity to all target tables
+                scored_targets = []
+                for tgt in target_embeddings:
+                    sim = self._cosine_similarity(src_emb, tgt["embedding"])
+                    scored_targets.append({
+                        "table_name": tgt["table_name"],
+                        "document": tgt["document"],
+                        "similarity": sim
+                    })
+                
+                # Sort descending and take Top 2
+                scored_targets.sort(key=lambda x: x["similarity"], reverse=True)
+                top_targets = scored_targets[:2]
                 
                 if not top_targets:
                     continue
                 
-                # Build context for LLM
-                context_str = "\n".join([f"- {t[0].target_table_name}: {t[0].document}" for t in top_targets])
+                # 4. Build context for LLM
+                context_str = "\n".join([f"- {t['table_name']}: {t['document']}" for t in top_targets])
                 
                 prompt = f"""
 You are a database schema mapping assistant. Find the best matching target column for the following source column.
@@ -155,13 +149,9 @@ CANDIDATE TARGET TABLES:
 
 Return a JSON object with 'target_column', 'semantic_score' (0.0-1.0), and 'reasoning'.
 """
-                # Call LLM
                 try:
-                    # If the provider supports structured outputs, we can pass format="json"
                     response = llm_provider.generate(prompt=prompt, stream=False)
-                    # For simplicity, we parse JSON from text. In production, use LangChain withOutputParser.
                     text_resp = response.get("response", "{}")
-                    # Clean markdown code blocks if any
                     if "```json" in text_resp:
                         text_resp = text_resp.split("```json")[1].split("```")[0]
                     
@@ -183,8 +173,7 @@ Return a JSON object with 'target_column', 'semantic_score' (0.0-1.0), and 'reas
                 tgt_table_name = None
                 tgt_type = "UNKNOWN"
                 for t in top_targets:
-                    t_name = t[0].target_table_name
-                    # Find column type from target_schema
+                    t_name = t["table_name"]
                     for c in target_schema.get(t_name, []):
                         if c["name"].lower() == tgt_col_name.lower():
                             tgt_table_name = t_name
@@ -194,17 +183,14 @@ Return a JSON object with 'target_column', 'semantic_score' (0.0-1.0), and 'reas
                         break
                         
                 if not tgt_table_name:
-                    continue # Not found in candidate tables
+                    continue 
 
-                # Compute hybrid score
-                # distance is 0 to 2 (0 is identical). Similarity = 1 - (distance/2)
-                best_distance = float(top_targets[0][1])
-                vector_sim = 1.0 - (best_distance / 2.0) 
-                
+                # 5. Compute hybrid score
+                best_sim = top_targets[0]["similarity"]
                 type_score = self._type_compatibility_score(src_type, tgt_type)
                 
                 # Hybrid Formula: Vector(30%) + Rules(20%) + LLM(50%)
-                final_confidence = (0.3 * vector_sim) + (0.2 * type_score) + (0.5 * llm_score)
+                final_confidence = (0.3 * best_sim) + (0.2 * type_score) + (0.5 * llm_score)
                 
                 mappings.append({
                     "source_table": src_table,
