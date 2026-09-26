@@ -36,7 +36,7 @@ else:
     frontend_login_url = f"http://localhost:{databricks_port}/signin"
 
 # ── Environment variables ─────────────────────────────────────────────────────
-os.environ["APP_DATABASE_URL"] = "postgresql://dataone:Vaibhav123@ep-mute-moon-d8ql2bc9.database.us-east-2.cloud.databricks.com/databricks_postgres?sslmode=require"
+os.environ["APP_DATABASE_URL"] = "postgresql://dataone:Vaibhav%40123@ep-mute-moon-d8ql2bc9.database.us-east-2.cloud.databricks.com/databricks_postgres?sslmode=require"
 os.environ["LOG_LEVEL"]      = "INFO"
 os.environ["SECRET_KEY"]     = "databricks-dataone-secret-change-in-production"
 os.environ["ADMIN_DEFAULT_PASSWORD"] = "veladmin123"

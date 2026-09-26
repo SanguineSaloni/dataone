@@ -32,7 +32,7 @@ resources:
 
 env:
   - name: APP_DATABASE_URL
-    value: "postgresql://dataone:Vaibhav123@ep-mute-moon-d8ql2bc9.database.us-east-2.cloud.databricks.com/databricks_postgres?sslmode=require"
+    value: "postgresql://dataone:Vaibhav%40123@ep-mute-moon-d8ql2bc9.database.us-east-2.cloud.databricks.com/databricks_postgres?sslmode=require"
   - name: REDIS_URL  
     value: "redis://redis:6379/0"
   - name: DATABRICKS_NATIVE_MODE
