@@ -83,15 +83,20 @@ class SchemaService:
         """
         Extracts full schema structure (tables and columns) from the connection.
         """
-        # FAST PATH: Check if we have this connection's schema cached in the local database
+        # SUPER FAST PATH: Check if we have this connection's schema cached in SchemaSnapshot
         from app.core.database import SessionLocal
+        from app.models.schema_snapshot import SchemaSnapshot
         from app.models.schema_catalog import CatalogTable
         with SessionLocal() as db:
+            snapshot = db.query(SchemaSnapshot).filter(SchemaSnapshot.connection_id == connection.id).first()
+            if snapshot and snapshot.schema_json:
+                return dict(snapshot.schema_json)
+
+            # FALLBACK FAST PATH: CatalogTable
             tables = db.query(CatalogTable).filter(CatalogTable.connection_id == connection.id).all()
             if tables:
                 schema_data = {}
                 for table in tables:
-                    # Depending on how it's saved, table_name might already be catalog.schema.table
                     cols = [{"name": c.column_name, "type": c.data_type, "nullable": c.nullable} for c in table.columns]
                     schema_data[table.table_name] = cols
                 return schema_data

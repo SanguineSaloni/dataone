@@ -284,6 +284,19 @@ class DatabricksAutoDiscoveryService:
         try:
             logger.info("Starting auto-discovery of Unity Catalog schema...")
             
+            # Load snapshot if it exists
+            from app.models.schema_snapshot import SchemaSnapshot
+            snapshot = db.query(SchemaSnapshot).filter(SchemaSnapshot.connection_id == connection.id).first()
+            schema_data = {}
+            cached_catalogs = set()
+            if snapshot and snapshot.schema_json:
+                schema_data = dict(snapshot.schema_json)
+                for key in schema_data.keys():
+                    parts = key.split(".")
+                    if parts:
+                        cached_catalogs.add(parts[0])
+                logger.info(f"Loaded snapshot with {len(cached_catalogs)} cached catalogs.")
+            
             # Create connector from connection config
             config = connection.config or {}
             connector = DatabricksConnector(
@@ -306,13 +319,21 @@ class DatabricksAutoDiscoveryService:
             }
 
             schema_service = SchemaCatalogService()
-            schema_data = {}
+
+            # Track if we actually fetched any new catalogs to know if we should update the snapshot
+            made_changes = False
 
             for catalog_info in catalogs:  # All catalogs — no limit
                 catalog_name = catalog_info["name"]
-                logger.info(f"Processing catalog: {catalog_name}")
                 if catalog_name.lower() in ("system",):
                     continue
+
+                if catalog_name in cached_catalogs:
+                    logger.info(f"Skipping catalog {catalog_name} because it is already in the snapshot.")
+                    continue
+
+                logger.info(f"Processing catalog: {catalog_name}")
+                made_changes = True
 
                 # Get schemas in this catalog
                 try:
@@ -376,20 +397,28 @@ class DatabricksAutoDiscoveryService:
 
             connector.close()
             
-            # Save the SchemaSnapshot
-            import json, hashlib
-            from app.models.schema_snapshot import SchemaSnapshot
-            normalized = json.dumps(schema_data, sort_keys=True, default=str)
-            snapshot = SchemaSnapshot(
-                connection_id=connection.id,
-                connection_name=connection.name,
-                schema_hash=hashlib.sha256(normalized.encode()).hexdigest(),
-                schema_json=schema_data,
-            )
-            db.add(snapshot)
-            db.commit()
+            if made_changes:
+                # Save or update the SchemaSnapshot
+                import json, hashlib
+                normalized = json.dumps(schema_data, sort_keys=True, default=str)
+                schema_hash = hashlib.sha256(normalized.encode()).hexdigest()
+                
+                if snapshot:
+                    snapshot.schema_json = schema_data
+                    snapshot.schema_hash = schema_hash
+                else:
+                    snapshot = SchemaSnapshot(
+                        connection_id=connection.id,
+                        connection_name=connection.name,
+                        schema_hash=schema_hash,
+                        schema_json=schema_data,
+                    )
+                    db.add(snapshot)
+                db.commit()
+                logger.info("✅ Unity Catalog auto-discovery completed successfully and snapshot updated")
+            else:
+                logger.info("✅ Unity Catalog auto-discovery completed (no new catalogs found)")
 
-            logger.info("✅ Unity Catalog auto-discovery completed successfully")
             return True
 
         except Exception as e:
