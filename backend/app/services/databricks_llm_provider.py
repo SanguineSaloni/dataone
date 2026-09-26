@@ -104,7 +104,7 @@ class DatabricksLLMProvider:
             "temperature": temperature,
             "max_tokens": max_tokens
         }
-        
+        try:
             # Use Databricks WorkspaceClient native SDK to handle auth and routing properly
             response = wc.api_client.do(
                 method="POST",
