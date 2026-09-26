@@ -230,6 +230,27 @@ async def lifespan(app: FastAPI):
         ))
         startup_lock_connection.commit()
         logger.info("[startup] added pipelines.load_strategy")
+        
+    try:
+        snapshot_columns = {
+            column["name"] for column in inspect(engine).get_columns("schema_snapshots")
+        }
+        if snapshot_columns:
+            snapshot_upgrades = {
+                "connection_name": "VARCHAR",
+                "schema_hash": "VARCHAR",
+                "updated_at": "TIMESTAMP"
+            }
+            for col_name, col_type in snapshot_upgrades.items():
+                if col_name not in snapshot_columns:
+                    startup_lock_connection.execute(text(
+                        f"ALTER TABLE schema_snapshots ADD COLUMN {col_name} {col_type}"
+                    ))
+                    startup_lock_connection.commit()
+                    logger.info(f"[startup] added schema_snapshots.{col_name}")
+    except Exception as exc:
+        logger.warning(f"[startup] error upgrading schema_snapshots: {exc}")
+        
     install_audit_append_only_guard(engine)
 
     # 2. Seed default admin user
