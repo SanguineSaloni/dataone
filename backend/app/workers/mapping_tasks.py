@@ -185,7 +185,6 @@ def suggest_mappings_task(self, mapping_id: int) -> Dict[str, Any]:
             except Exception as exc:
                 logger.error("ReMatchEngine failed: %s", exc)
                 # Persist the error so the frontend polling loop stops and displays it
-                from app.models.mapping import AISuggestion
                 error_sugg = AISuggestion(
                     mapping_id=m.id,
                     target_table="ERROR",
