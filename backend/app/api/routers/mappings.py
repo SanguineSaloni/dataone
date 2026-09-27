@@ -463,15 +463,18 @@ def trigger_migration_run(
 @router.post("/{mapping_id}/runs/{run_id}/status", response_model=MappingRunResponse)
 def update_migration_run_status(
     mapping_id: int, run_id: int, payload: RunStatusUpdate,
-    db: Session = Depends(get_db),
-    # Note: For real implementations, validate the Authorization header against the run_token
+    request: Request,
+    db: Session = Depends(get_db)
 ):
-    """Callback for the Databricks notebook to report status. Uses token-based auth in practice."""
-    # For PoC, assuming run_token is passed somewhere, or bypassing
+    """Callback for the Databricks notebook to report status. Uses X-Run-Token auth."""
+    token = request.headers.get("X-Run-Token", "").strip()
+    if not token:
+        token = request.headers.get("Authorization", "").replace("Bearer ", "").strip()
+        
     run = db.query(MappingRun).filter(MappingRun.id == run_id, MappingRun.mapping_id == mapping_id).first()
-    if not run:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="Run not found")
+    from fastapi import HTTPException
+    if not run or run.run_token != token:
+        raise HTTPException(status_code=401, detail="Invalid run token")
         
     run.state = payload.state
     if payload.rows_read is not None: run.rows_read = payload.rows_read
@@ -491,7 +494,11 @@ def export_run_mapping(
     db: Session = Depends(get_db)
 ):
     """Special endpoint for Databricks runner to fetch mapping config using run_token."""
-    token = request.headers.get("Authorization", "").replace("Bearer ", "").strip()
+    token = request.headers.get("X-Run-Token", "").strip()
+    if not token:
+        # Fallback to Authorization for backwards compatibility just in case
+        token = request.headers.get("Authorization", "").replace("Bearer ", "").strip()
+        
     run = db.query(MappingRun).filter(MappingRun.id == run_id, MappingRun.mapping_id == mapping_id).first()
     from fastapi import HTTPException
     if not run or run.run_token != token:

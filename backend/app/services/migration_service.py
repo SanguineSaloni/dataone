@@ -89,7 +89,8 @@ class MigrationService:
                             "mapping_id": str(mapping_id),
                             "run_id": str(run.id),
                             "run_token": run_token,
-                            "api_url": os.environ.get("DATABRICKS_APP_URL", "http://localhost:8000")
+                            "api_url": os.environ.get("DATABRICKS_APP_URL", "http://localhost:8000"),
+                            "app_name": os.environ.get("DATABRICKS_APP_NAME", "dataonenew")
                         }
                     },
                     "environment_key": "default"
