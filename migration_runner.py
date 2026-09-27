@@ -27,19 +27,31 @@ def update_status(api_url, mapping_id, run_id, token, state, rows_read=None, row
         logger.error(f"Failed to update status {state}: {e}")
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--mapping_id", type=int, required=True)
-    parser.add_argument("--run_id", type=int, required=True)
-    parser.add_argument("--run_token", type=str, required=True)
-    parser.add_argument("--api_url", type=str, required=True)
-    args = parser.parse_args()
+    try:
+        # Databricks Notebook Task widgets
+        mapping_id = int(dbutils.widgets.get("mapping_id"))
+        run_id = int(dbutils.widgets.get("run_id"))
+        run_token = dbutils.widgets.get("run_token")
+        api_url = dbutils.widgets.get("api_url")
+    except Exception:
+        # Fallback to argparse for spark_python_task / local testing
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--mapping_id", type=int, required=True)
+        parser.add_argument("--run_id", type=int, required=True)
+        parser.add_argument("--run_token", type=str, required=True)
+        parser.add_argument("--api_url", type=str, required=True)
+        args = parser.parse_args()
+        mapping_id = args.mapping_id
+        run_id = args.run_id
+        run_token = args.run_token
+        api_url = args.api_url
     
-    update_status(args.api_url, args.mapping_id, args.run_id, args.run_token, "running")
+    update_status(api_url, mapping_id, run_id, run_token, "running")
     
     try:
         # Fetch mapping details from DataOne API
-        url = f"{args.api_url.rstrip('/')}/api/v1/mappings/{args.mapping_id}/export"
-        headers = {"Authorization": f"Bearer {args.run_token}"}
+        url = f"{api_url.rstrip('/')}/api/v1/mappings/{mapping_id}/export"
+        headers = {"Authorization": f"Bearer {run_token}"}
         resp = requests.get(url, headers=headers)
         resp.raise_for_status()
         mapping_spec = resp.json()
@@ -96,11 +108,11 @@ def main():
             .mode("append") \
             .save()
             
-        update_status(args.api_url, args.mapping_id, args.run_id, args.run_token, "succeeded", rows_read=rows_read, rows_written=rows_read)
+        update_status(api_url, mapping_id, run_id, run_token, "succeeded", rows_read=rows_read, rows_written=rows_read)
         
     except Exception as e:
         logger.exception("Migration failed")
-        update_status(args.api_url, args.mapping_id, args.run_id, args.run_token, "failed", error=str(e))
+        update_status(api_url, mapping_id, run_id, run_token, "failed", error=str(e))
         sys.exit(1)
 
 if __name__ == "__main__":
