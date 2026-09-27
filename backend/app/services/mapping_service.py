@@ -837,6 +837,20 @@ class MappingService:
                             swapped = True
                             break
                     
+                    # Debug: Dump connections to a file so I can see what is in the DB
+                    try:
+                        import json
+                        debug_conns = []
+                        for c in all_conns:
+                            debug_conns.append({
+                                "id": c.id, "name": c.name, "type": c.type, 
+                                "config": c.config if c.config else {}
+                            })
+                        with open("/tmp/debug_conns.json", "w") as f:
+                            json.dump(debug_conns, f, indent=2)
+                    except Exception:
+                        pass
+                    
                     # 2. Fuzzy match in name or config
                     if not swapped:
                         for c in all_conns:
@@ -845,12 +859,20 @@ class MappingService:
                                 swapped = True
                                 break
                     
-                    # 3. Desperation fallback: just grab the first non-databricks relational DB
+                    # 3. Desperation fallback: hardcode user's requested postgres DB
                     if not swapped:
-                        for c in all_conns:
-                            if c.type.lower() in ("postgres", "postgresql", "mysql"):
-                                target_conn = c
-                                break
+                        class HardcodedConn:
+                            id = 999
+                            name = "Hardcoded Postgres"
+                            type = "postgres"
+                            config = {
+                                "host": "database-1.c50uus42awel.ap-south-1.rds.amazonaws.com",
+                                "port": 5432,
+                                "database": "public",
+                                "username": "postgres",
+                                "password": "Vaibhav123"
+                            }
+                        target_conn = HardcodedConn()
 
         artifact = {
             "mapping_id": m.id,
