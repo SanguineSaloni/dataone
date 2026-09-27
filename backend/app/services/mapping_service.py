@@ -819,6 +819,18 @@ class MappingService:
             fallback_source_table = v.edges_snapshot[0].get("sources", [{}])[0].get("table")
             fallback_target_table = v.edges_snapshot[0].get("target", {}).get("table")
 
+        # Magic Swap: If the target table uses a federated catalog, look up the actual DBConnection
+        if fallback_target_table and target_conn and target_conn.type.lower() == "databricks":
+            parts = fallback_target_table.split(".")
+            if len(parts) >= 3:
+                catalog_name = parts[0]
+                # Find the DBConnection that has this catalog in its config
+                all_conns = db.query(DBConnection).all()
+                for c in all_conns:
+                    if c.config and c.config.get("catalog") == catalog_name:
+                        target_conn = c
+                        break
+
         artifact = {
             "mapping_id": m.id,
             "name": m.name,
@@ -840,8 +852,9 @@ class MappingService:
                 "db_type": target_conn.type if target_conn else "postgresql",
                 "host": target_conn.config.get("host") if target_conn and target_conn.config else None,
                 "port": target_conn.config.get("port") if target_conn and target_conn.config else None,
-                "database": target_conn.config.get("database") if target_conn and target_conn.config else None,
-                "username": target_conn.config.get("username") if target_conn and target_conn.config else None,
+                "database": (target_conn.config.get("database") or target_conn.config.get("dbname")) if target_conn and target_conn.config else None,
+                "username": (target_conn.config.get("username") or target_conn.config.get("user")) if target_conn and target_conn.config else None,
+                "password": target_conn.config.get("password") if target_conn and target_conn.config else None,
                 "secret_scope": target_conn.config.get("secret_scope") if target_conn and target_conn.config else None,
                 "secret_key": target_conn.config.get("secret_key") if target_conn and target_conn.config else None,
             },

@@ -150,7 +150,12 @@ def main():
 
         secret_scope = target_conn.get("secret_scope")
         secret_key = target_conn.get("secret_key")
-        password = dbutils.secrets.get(scope=secret_scope, key=secret_key) if secret_scope and secret_key else ""
+        password = target_conn.get("password") or ""
+        if secret_scope and secret_key:
+            try:
+                password = dbutils.secrets.get(scope=secret_scope, key=secret_key)
+            except Exception:
+                pass
 
         # Databricks writing to Databricks (Unity Catalog) doesn't use JDBC
         if db_type == "databricks":
