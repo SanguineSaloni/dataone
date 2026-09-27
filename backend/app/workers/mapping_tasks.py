@@ -285,6 +285,21 @@ def suggest_mappings_task(self, mapping_id: int) -> Dict[str, Any]:
                 ))
                 suggestions_created += 1
 
+        if suggestions_created == 0:
+            db.add(AISuggestion(
+                mapping_id=m.id,
+                target_table="ERROR",
+                target_column="ERROR",
+                target_type="ERROR",
+                source_table="ERROR",
+                source_column="ERROR",
+                source_type="ERROR",
+                confidence=0.0,
+                reason="Schemas are completely different or the AI found no matching columns.",
+                status="error",
+            ))
+            suggestions_created += 1
+
         db.flush()
         record_audit(
             db, "mapping_suggestions_ready",
