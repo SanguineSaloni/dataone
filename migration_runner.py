@@ -110,9 +110,19 @@ def main():
         resp.raise_for_status()
         mapping_spec = resp.json()
 
-        source_table_name = mapping_spec.get("source_table")
-        target_table_name = mapping_spec.get("target_table")
-        edges = mapping_spec.get("edges", [])
+        edges = mapping_spec.get("field_mappings", [])
+        if not edges:
+            raise ValueError("No field mappings found in published version")
+            
+        target_table_name = edges[0].get("target_table")
+        source_table_name = None
+        for edge in edges:
+            if edge.get("sources") and len(edge["sources"]) > 0:
+                source_table_name = edge["sources"][0].get("table")
+                break
+        
+        if not source_table_name:
+            raise ValueError("Could not determine source table from mapping edges")
 
         df = spark.table(source_table_name)
         rows_read = df.count()
@@ -127,8 +137,8 @@ def main():
         if exprs:
             df = df.selectExpr(*exprs)
 
-        target_conn = mapping_spec.get("target_connection", {})
-        db_type = target_conn.get("db_type", "postgresql")
+        target_conn = mapping_spec.get("target", {})
+        db_type = target_conn.get("db_type") or target_conn.get("type", "postgresql")
         host = target_conn.get("host")
         port = target_conn.get("port")
         db_name = target_conn.get("database")
