@@ -40,7 +40,7 @@ def get_platform_auth_header(app_name: str) -> dict:
         data={
             "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
             "subject_token": notebook_token,
-            "subject_token_type": "urn:databricks:params:oauth:token-type:personal-access-token",
+            "subject_token_type": "urn:ietf:params:oauth:token-type:access_token",
             "requested_token_type": "urn:ietf:params:oauth:token-type:access_token",
             "scope": "all-apis",
             "audience": app_client_id,
