@@ -19,7 +19,12 @@ def get_platform_auth_header(app_name: str) -> dict:
     """Exchange this job's notebook token for an OAuth token scoped to the DataOne app,
     so requests actually pass Databricks Apps' own front-door authentication."""
     w = WorkspaceClient()
-    app_client_id = w.apps.get(app_name).oauth2_app_client_id
+    app = w.apps.get(app_name)
+    
+    # Handle differing Databricks SDK versions pre-installed in different clusters
+    app_client_id = getattr(app, "oauth2_app_client_id", getattr(app, "service_principal_client_id", None))
+    if not app_client_id:
+        raise ValueError(f"Could not find client_id for Databricks App '{app_name}'")
 
     notebook_token = (
         dbutils.notebook.entry_point.getDbutils()
