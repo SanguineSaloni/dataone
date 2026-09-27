@@ -190,3 +190,20 @@ class AISuggestion(Base):
     decided_by = Column(String, nullable=True)
 
     mapping = relationship("Mapping", back_populates="suggestions")
+
+class MappingRun(Base):
+    __tablename__ = "mapping_runs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    mapping_id = Column(Integer, ForeignKey("mappings.id", ondelete="CASCADE"), nullable=False, index=True)
+    databricks_run_id = Column(String, nullable=True)
+    run_token = Column(String, nullable=False, index=True)
+    state = Column(String, nullable=False, default="queued")  # queued | running | succeeded | failed
+    rows_read = Column(Integer, nullable=True)
+    rows_written = Column(Integer, nullable=True)
+    error = Column(Text, nullable=True)
+    started_at = Column(DateTime(timezone=True), nullable=True)
+    finished_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    mapping = relationship("Mapping", backref="runs")

@@ -284,3 +284,25 @@ class TransformationPreviewResponse(BaseModel):
     available: bool
     reason: Optional[str] = None
     rows: List[PreviewRow]
+
+
+class MappingRunResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    mapping_id: int
+    databricks_run_id: Optional[str] = None
+    state: str
+    rows_read: Optional[int] = None
+    rows_written: Optional[int] = None
+    error: Optional[str] = None
+    started_at: Optional[datetime] = None
+    finished_at: Optional[datetime] = None
+    created_at: datetime
+
+
+class RunStatusUpdate(BaseModel):
+    state: str
+    rows_read: Optional[int] = None
+    rows_written: Optional[int] = None
+    error: Optional[str] = None

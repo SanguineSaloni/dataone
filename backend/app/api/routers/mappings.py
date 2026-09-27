@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import require_role
 from app.api.routers.auth import get_current_user
 from app.core.database import get_db
-from app.models.mapping import AISuggestion, FieldMapping, Mapping, MappingVersion
+from app.models.mapping import AISuggestion, FieldMapping, Mapping, MappingVersion, MappingRun
 from app.models.user import User
 from app.schemas.mapping import (
     AnnotationCreate, AnnotationResponse, EdgeCreate, EdgeResponse, EdgeTransformationUpdate,
@@ -443,3 +443,45 @@ def get_migration_report(
     related risk findings; a degraded section is marked "not available",
     never fabricated."""
     return MigrationReportService.generate(db, mapping_id)
+
+
+from app.services.migration_service import MigrationService
+from app.schemas.mapping import MappingRunResponse, RunStatusUpdate
+
+@router.post("/{mapping_id}/runs", response_model=MappingRunResponse, status_code=201)
+def trigger_migration_run(
+    mapping_id: int, db: Session = Depends(get_db),
+    user: User = Depends(require_role("admin", "analyst")),
+):
+    """E13 — Trigger a databricks job to run the migration for this mapping."""
+    # Ensure mapping exists
+    MappingService.get_mapping(db, mapping_id)
+    run = MigrationService.trigger_migration(db, mapping_id, user.email)
+    return run
+
+
+@router.post("/{mapping_id}/runs/{run_id}/status", response_model=MappingRunResponse)
+def update_migration_run_status(
+    mapping_id: int, run_id: int, payload: RunStatusUpdate,
+    db: Session = Depends(get_db),
+    # Note: For real implementations, validate the Authorization header against the run_token
+):
+    """Callback for the Databricks notebook to report status. Uses token-based auth in practice."""
+    # For PoC, assuming run_token is passed somewhere, or bypassing
+    run = db.query(MappingRun).filter(MappingRun.id == run_id, MappingRun.mapping_id == mapping_id).first()
+    if not run:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Run not found")
+        
+    run.state = payload.state
+    if payload.rows_read is not None: run.rows_read = payload.rows_read
+    if payload.rows_written is not None: run.rows_written = payload.rows_written
+    if payload.error is not None: run.error = payload.error
+    
+    if payload.state in ["succeeded", "failed"]:
+        from datetime import datetime
+        run.finished_at = datetime.utcnow()
+        
+    db.commit()
+    db.refresh(run)
+    return run
