@@ -27,6 +27,33 @@ class MigrationService:
         return os.environ.get("DATABRICKS_WORKSPACE_URL"), os.environ.get("DATABRICKS_ACCESS_TOKEN")
 
     @classmethod
+    def _ensure_runner_uploaded(cls, host: str, token: str):
+        # Auto-upload migration_runner.py to Databricks Workspace
+        url = f"https://{host.rstrip('/')}/api/2.0/workspace/import"
+        headers = {"Authorization": f"Bearer {token}"}
+        
+        try:
+            import base64
+            import os
+            # Locate migration_runner.py relative to the backend root (it's in the project root)
+            runner_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "migration_runner.py")
+            with open(runner_path, "rb") as f:
+                content = base64.b64encode(f.read()).decode("utf-8")
+                
+            payload = {
+                "path": "/Shared/dataone/migration_runner",
+                "format": "SOURCE",
+                "language": "PYTHON",
+                "content": content,
+                "overwrite": True
+            }
+            resp = requests.post(url, headers=headers, json=payload, timeout=10)
+            if not resp.ok:
+                logger.warning(f"Failed to auto-upload runner notebook: {resp.text}")
+        except Exception as e:
+            logger.warning(f"Exception auto-uploading runner notebook: {e}")
+
+    @classmethod
     def trigger_migration(cls, db: Session, mapping_id: int, user_email: str) -> MappingRun:
         run_token = str(uuid.uuid4())
         
@@ -42,6 +69,8 @@ class MigrationService:
 
         # Trigger notebook job in Databricks
         host, token = cls.get_databricks_token()
+        cls._ensure_runner_uploaded(host, token)
+        
         url = f"https://{host.rstrip('/')}/api/2.1/jobs/runs/submit"
         
         payload = {
