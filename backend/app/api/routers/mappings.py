@@ -298,7 +298,7 @@ def validate_mapping(
 @router.post("/{mapping_id}/publish", response_model=PublishResponse)
 def publish_mapping(
     mapping_id: int, db: Session = Depends(get_db),
-    user: User = Depends(require_role("admin")),
+    user: User = Depends(require_role("admin", "analyst")),
 ):
     v = MappingService.publish(db, mapping_id, actor=user.email)
     return PublishResponse(
