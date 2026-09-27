@@ -18,14 +18,6 @@ except Exception:
 def get_platform_auth_header(app_name: str) -> dict:
     """Exchange this job's notebook token for an OAuth token scoped to the DataOne app,
     so requests actually pass Databricks Apps' own front-door authentication."""
-    w = WorkspaceClient()
-    app = w.apps.get(app_name)
-    
-    # Handle differing Databricks SDK versions pre-installed in different clusters
-    app_client_id = getattr(app, "oauth2_app_client_id", getattr(app, "service_principal_client_id", None))
-    if not app_client_id:
-        raise ValueError(f"Could not find client_id for Databricks App '{app_name}'")
-
     notebook_token = (
         dbutils.notebook.entry_point.getDbutils()
         .notebook().getContext().apiToken().get()
@@ -34,6 +26,19 @@ def get_platform_auth_header(app_name: str) -> dict:
         dbutils.notebook.entry_point.getDbutils()
         .notebook().getContext().apiUrl().get()
     )
+
+    # Fetch app details directly via REST to bypass older SDK missing oauth2_app_client_id
+    app_resp = requests.get(
+        f"{workspace_host}/api/2.0/apps/{app_name}",
+        headers={"Authorization": f"Bearer {notebook_token}"},
+        timeout=10
+    )
+    app_resp.raise_for_status()
+    app_client_id = app_resp.json().get("oauth2_app_client_id")
+    if not app_client_id:
+        # Fallback just in case
+        app_client_id = app_resp.json().get("service_principal_client_id")
+
 
     resp = requests.post(
         f"{workspace_host}/oidc/v1/token",
@@ -47,6 +52,9 @@ def get_platform_auth_header(app_name: str) -> dict:
         },
         timeout=10,
     )
+    if resp.status_code != 200:
+        print("TOKEN EXCHANGE FAILED:", resp.status_code)
+        print("BODY:", resp.text)
     resp.raise_for_status()
     return {"Authorization": f"Bearer {resp.json()['access_token']}"}
 
