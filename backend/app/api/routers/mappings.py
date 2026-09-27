@@ -477,7 +477,6 @@ def update_migration_run_status(
     if payload.rows_read is not None: run.rows_read = payload.rows_read
     if payload.rows_written is not None: run.rows_written = payload.rows_written
     if payload.error is not None: run.error = payload.error
-    
     if payload.state in ["succeeded", "failed"]:
         from datetime import datetime
         run.finished_at = datetime.utcnow()
@@ -485,3 +484,17 @@ def update_migration_run_status(
     db.commit()
     db.refresh(run)
     return run
+
+@router.get("/{mapping_id}/runs/{run_id}/export")
+def export_run_mapping(
+    mapping_id: int, run_id: int, request: Request,
+    db: Session = Depends(get_db)
+):
+    """Special endpoint for Databricks runner to fetch mapping config using run_token."""
+    token = request.headers.get("Authorization", "").replace("Bearer ", "").strip()
+    run = db.query(MappingRun).filter(MappingRun.id == run_id, MappingRun.mapping_id == mapping_id).first()
+    from fastapi import HTTPException
+    if not run or run.run_token != token:
+        raise HTTPException(status_code=401, detail="Invalid run token")
+        
+    return MappingService.export_json(db, mapping_id, actor="system_runner")

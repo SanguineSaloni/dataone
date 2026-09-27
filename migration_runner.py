@@ -49,8 +49,8 @@ def main():
     update_status(api_url, mapping_id, run_id, run_token, "running")
     
     try:
-        # Fetch mapping details from DataOne API
-        url = f"{api_url.rstrip('/')}/api/v1/mappings/{mapping_id}/export"
+        # Fetch mapping details from DataOne API using the dedicated run token endpoint
+        url = f"{api_url.rstrip('/')}/api/v1/mappings/{mapping_id}/runs/{run_id}/export"
         headers = {"Authorization": f"Bearer {run_token}"}
         resp = requests.get(url, headers=headers)
         resp.raise_for_status()
