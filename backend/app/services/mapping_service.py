@@ -512,7 +512,18 @@ class MappingService:
         # after an earlier publish, it also carries the prior generation's
         # edges, now pinned to an older version_id. Only the still-mutable
         # draft (version_id is None) belongs in the version being published.
+        # MVP Auto-Accept: if there are no edges but there are suggestions,
+        # automatically accept all suggestions before publishing.
         draft_edges = [e for e in (m.edges or []) if e.version_id is None]
+        if not draft_edges and m.suggestions:
+            for sugg in m.suggestions:
+                MappingService.accept_suggestion(
+                    db, mapping_id, sugg.id, transformation={}, actor=actor
+                )
+            # Reload mapping to get newly created edges
+            db.refresh(m)
+            draft_edges = [e for e in (m.edges or []) if e.version_id is None]
+
         edges_snapshot = [_edge_to_dict(e) for e in draft_edges]
 
         version = MappingVersion(
