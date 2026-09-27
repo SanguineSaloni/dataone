@@ -111,18 +111,22 @@ def main():
         mapping_spec = resp.json()
 
         edges = mapping_spec.get("field_mappings", [])
-        if not edges:
-            raise ValueError("No field mappings found in published version")
-            
-        target_table_name = edges[0].get("target_table")
-        source_table_name = None
-        for edge in edges:
-            if edge.get("sources") and len(edge["sources"]) > 0:
-                source_table_name = edge["sources"][0].get("table")
-                break
         
-        if not source_table_name:
-            raise ValueError("Could not determine source table from mapping edges")
+        target_table_name = mapping_spec.get("target_table")
+        source_table_name = mapping_spec.get("source_table")
+        
+        if not source_table_name or not target_table_name:
+            # Fallback to extracting from edges if root keys aren't present
+            if not edges:
+                raise ValueError("No table names provided and no field mappings found in published version")
+            target_table_name = target_table_name or edges[0].get("target_table")
+            for edge in edges:
+                if edge.get("sources") and len(edge["sources"]) > 0:
+                    source_table_name = source_table_name or edge["sources"][0].get("table")
+                    break
+
+        if not source_table_name or not target_table_name:
+            raise ValueError("Could not determine source or target table")
 
         df = spark.table(source_table_name)
         rows_read = df.count()

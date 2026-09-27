@@ -798,6 +798,16 @@ class MappingService:
             db.query(DBConnection).filter(DBConnection.id == m.target_id).first()
         )
 
+        # Fallback for table names when there are no published edges
+        fallback_source_table = None
+        fallback_target_table = None
+        if not v.edges_snapshot and m.suggestions:
+            fallback_source_table = m.suggestions[0].source_table
+            fallback_target_table = m.suggestions[0].target_table
+        elif v.edges_snapshot:
+            fallback_source_table = v.edges_snapshot[0].get("sources", [{}])[0].get("table")
+            fallback_target_table = v.edges_snapshot[0].get("target_table")
+
         artifact = {
             "mapping_id": m.id,
             "name": m.name,
@@ -805,6 +815,8 @@ class MappingService:
             "status": "published",
             "published_at": v.published_at.isoformat() if v.published_at else None,
             "published_by": v.published_by,
+            "source_table": fallback_source_table,
+            "target_table": fallback_target_table,
             "source": {
                 "connection_id": source_conn.id if source_conn else None,
                 "name": source_conn.name if source_conn else None,
