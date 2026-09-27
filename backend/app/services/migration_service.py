@@ -35,6 +35,11 @@ class MigrationService:
         try:
             import base64
             import os
+            
+            # Ensure the parent directory exists
+            mkdir_url = f"https://{host.rstrip('/')}/api/2.0/workspace/mkdirs"
+            requests.post(mkdir_url, headers=headers, json={"path": "/Shared/dataone"}, timeout=10)
+            
             # Locate migration_runner.py relative to the backend root (it's in the project root)
             runner_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "migration_runner.py")
             with open(runner_path, "rb") as f:
