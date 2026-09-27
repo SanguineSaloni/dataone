@@ -109,6 +109,9 @@ def main():
             print("BODY:", resp.text)
         resp.raise_for_status()
         mapping_spec = resp.json()
+        print("=== FULL EXPORT PAYLOAD ===")
+        print(json.dumps(mapping_spec, indent=2))
+        print("=== END PAYLOAD ===")
 
         edges = mapping_spec.get("field_mappings", [])
         
