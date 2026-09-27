@@ -128,128 +128,91 @@ class ReMatchEngine:
         return 0.0
 
     def map_schemas(self, source_schema: Dict[str, List[Dict[str, Any]]], target_schema: Dict[str, List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
-        """
-        Main execution flow using IN-MEMORY vector search.
-        1. Embed targets into memory.
-        2. Embed each source column.
-        3. Filter Top-2 targets using in-memory cosine similarity.
-        4. LLM reasoning on the filtered context.
-        5. Hybrid confidence calculation.
-        """
         llm_provider = get_databricks_llm_provider(
             endpoint_name=self.llm_model,
             workspace_url=self.workspace_url,
             access_token=self.access_token
         )
         
-        # 1. Pre-compute Target Embeddings in Memory
-        target_embeddings = []
-        for table_name, columns in target_schema.items():
-            col_docs = [f"{c['name']} ({c.get('type', 'UNKNOWN')})" for c in columns]
-            doc = f"Table: {table_name}. Columns: {', '.join(col_docs)}."
-            emb = self._get_embedding(doc)
-            target_embeddings.append({
-                "table_name": table_name,
-                "document": doc,
-                "embedding": emb
-            })
-            
-        mappings = []
-        
-        # 2. Iterate Source Columns
-        for src_table, src_cols in source_schema.items():
-            for src_col in src_cols:
-                src_name = src_col["name"]
-                src_type = src_col.get("type", "UNKNOWN")
-                src_doc = f"Source Table: {src_table}, Column: {src_name}, Type: {src_type}"
+        # Build context for LLM
+        source_context = ""
+        for table, cols in source_schema.items():
+            source_context += f"Table {table}:\n"
+            for c in cols:
+                source_context += f"  - {c['name']} ({c.get('type', 'UNKNOWN')})\n"
                 
-                src_emb = self._get_embedding(src_doc)
-                
-                # 3. Calculate Cosine Similarity to all target tables
-                scored_targets = []
-                for tgt in target_embeddings:
-                    sim = self._cosine_similarity(src_emb, tgt["embedding"])
-                    scored_targets.append({
-                        "table_name": tgt["table_name"],
-                        "document": tgt["document"],
-                        "similarity": sim
-                    })
-                
-                # Sort descending and take Top 2
-                scored_targets.sort(key=lambda x: x["similarity"], reverse=True)
-                top_targets = scored_targets[:2]
-                
-                if not top_targets:
-                    continue
-                
-                # 4. Build context for LLM
-                context_str = "\n".join([f"- {t['table_name']}: {t['document']}" for t in top_targets])
-                
-                prompt = f"""
-You are a database schema mapping assistant. Find the best matching target column for the following source column.
+        target_context = ""
+        for table, cols in target_schema.items():
+            target_context += f"Table {table}:\n"
+            for c in cols:
+                target_context += f"  - {c['name']} ({c.get('type', 'UNKNOWN')})\n"
 
-SOURCE COLUMN:
-Table: {src_table}
-Column: {src_name}
-Type: {src_type}
+        prompt = f"""
+You are an expert database schema mapping assistant.
+Your task is to map ALL source columns to the best matching target columns.
+Only map a source column if a reasonably good semantic match exists in the target schema.
+Do NOT map multiple source columns to the same target column (1-to-1 matching only).
 
-CANDIDATE TARGET TABLES:
-{context_str}
+SOURCE SCHEMA:
+{source_context}
 
-Return a JSON object with 'target_column', 'semantic_score' (0.0-1.0), and 'reasoning'.
+TARGET SCHEMA:
+{target_context}
+
+Respond ONLY with a JSON array of objects. Do not include markdown formatting or explanations outside the JSON.
+Each object must have exactly these keys:
+- "source_table": string
+- "source_column": string
+- "target_table": string
+- "target_column": string
+- "semantic_score": float (0.0 to 1.0)
+- "reasoning": string
 """
-                try:
-                    response = llm_provider.generate(prompt=prompt, stream=False)
-                    text_resp = response.get("response", "{}")
-                    if "```json" in text_resp:
-                        text_resp = text_resp.split("```json")[1].split("```")[0]
-                    
-                    llm_result = json.loads(text_resp)
-                            
-                    tgt_col_name = llm_result.get("target_column")
-                    llm_score = float(llm_result.get("semantic_score", 0.0))
-                    reasoning = llm_result.get("reasoning", "No reasoning provided.")
-                    
-                except Exception as e:
-                    logger.error(f"LLM mapping failed for {src_name}: {e}")
-                    tgt_col_name = None
-                    llm_score = 0.0
-                    reasoning = f"LLM error: {e}"
-
-                if not tgt_col_name:
-                    continue
-
-                # Find which target table this column belongs to (from the top 2)
-                tgt_table_name = None
-                tgt_type = "UNKNOWN"
-                for t in top_targets:
-                    t_name = t["table_name"]
-                    for c in target_schema.get(t_name, []):
-                        if c["name"].lower() == tgt_col_name.lower():
-                            tgt_table_name = t_name
-                            tgt_type = c.get("type", "UNKNOWN")
-                            break
-                    if tgt_table_name:
-                        break
-                        
-                if not tgt_table_name:
-                    continue 
-
-                # 5. Compute hybrid score
-                best_sim = top_targets[0]["similarity"]
-                type_score = self._type_compatibility_score(src_type, tgt_type)
+        mappings = []
+        try:
+            response = llm_provider.generate(prompt=prompt, stream=False)
+            text_resp = response.get("response", "[]")
+            if "```json" in text_resp:
+                text_resp = text_resp.split("```json")[1].split("```")[0]
+            elif "```" in text_resp:
+                text_resp = text_resp.split("```")[1].split("```")[0]
+            
+            llm_result = json.loads(text_resp.strip())
+            if not isinstance(llm_result, list):
+                logger.error("LLM did not return a list.")
+                llm_result = []
                 
-                # Hybrid Formula: Vector(30%) + Rules(20%) + LLM(50%)
-                final_confidence = (0.3 * best_sim) + (0.2 * type_score) + (0.5 * llm_score)
+            for match in llm_result:
+                src_tbl = match.get("source_table")
+                src_col = match.get("source_column")
+                tgt_tbl = match.get("target_table")
+                tgt_col = match.get("target_column")
+                if not all([src_tbl, src_col, tgt_tbl, tgt_col]):
+                    continue
+                    
+                # Find types
+                src_type = "UNKNOWN"
+                for c in source_schema.get(src_tbl, []):
+                    if c["name"] == src_col: src_type = c.get("type", "UNKNOWN")
+                
+                tgt_type = "UNKNOWN"
+                for c in target_schema.get(tgt_tbl, []):
+                    if c["name"] == tgt_col: tgt_type = c.get("type", "UNKNOWN")
+                    
+                type_score = self._type_compatibility_score(src_type, tgt_type)
+                llm_score = float(match.get("semantic_score", 0.0))
+                final_confidence = (0.7 * llm_score) + (0.3 * type_score)
                 
                 mappings.append({
-                    "source_table": src_table,
-                    "source_column": src_name,
-                    "target_table": tgt_table_name,
-                    "target_column": tgt_col_name,
+                    "source_table": src_tbl,
+                    "source_column": src_col,
+                    "target_table": tgt_tbl,
+                    "target_column": tgt_col,
                     "confidence_score": round(final_confidence, 2),
                     "data_type_compatible": type_score >= 0.5,
-                    "reasoning": reasoning
+                    "reasoning": match.get("reasoning", "")
                 })
-                
+        except Exception as e:
+            logger.error(f"Batch LLM mapping failed: {e}")
+            
         return mappings

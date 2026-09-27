@@ -70,6 +70,8 @@ class MigrationService:
         headers = {"Authorization": f"Bearer {token}"}
         try:
             resp = requests.post(url, json=payload, headers=headers, timeout=15)
+            if not resp.ok:
+                logger.error(f"Databricks API Error: {resp.text}")
             resp.raise_for_status()
             data = resp.json()
             run.databricks_run_id = str(data.get("run_id"))
