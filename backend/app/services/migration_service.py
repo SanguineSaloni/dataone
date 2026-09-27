@@ -49,14 +49,14 @@ class MigrationService:
             "tasks": [
                 {
                     "task_key": "migrate",
-                    "spark_python_task": {
-                        "python_file": "dbfs:/FileStore/dataone/migration_runner.py",
-                        "parameters": [
-                            "--mapping_id", str(mapping_id),
-                            "--run_id", str(run.id),
-                            "--run_token", run_token,
-                            "--api_url", os.environ.get("DATABRICKS_APP_URL", "http://localhost:8000")
-                        ]
+                    "notebook_task": {
+                        "notebook_path": "/Shared/dataone/migration_runner",
+                        "base_parameters": {
+                            "mapping_id": str(mapping_id),
+                            "run_id": str(run.id),
+                            "run_token": run_token,
+                            "api_url": os.environ.get("DATABRICKS_APP_URL", "http://localhost:8000")
+                        }
                     },
                     "environment_key": "default"
                 }
@@ -64,7 +64,7 @@ class MigrationService:
             "environments": [{
                 "environment_key": "default",
                 "spec": {
-                    "client": "1",
+                    "client": "2",
                     "dependencies": []
                 }
             }]
