@@ -61,7 +61,10 @@ def update_status(api_url, app_name, mapping_id, run_id, run_token, platform_hea
     if error is not None: payload["error"] = error
 
     try:
-        requests.post(url, json=payload, headers=headers, timeout=10)
+        resp = requests.post(url, json=payload, headers=headers, timeout=10)
+        if resp.status_code >= 400:
+            print(f"STATUS UPDATE FAILED {resp.status_code}: {resp.text}")
+        resp.raise_for_status()
     except Exception as e:
         logger.error(f"Failed to update status {state}: {e}")
 
@@ -93,6 +96,9 @@ def main():
         url = f"{api_url.rstrip('/')}/api/v1/mappings/{mapping_id}/runs/{run_id}/export"
         headers = {**platform_headers, "X-Run-Token": run_token}
         resp = requests.get(url, headers=headers, timeout=15)
+        if resp.status_code != 200:
+            print("STATUS:", resp.status_code)
+            print("BODY:", resp.text)
         resp.raise_for_status()
         mapping_spec = resp.json()
 
