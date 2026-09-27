@@ -57,9 +57,17 @@ class MigrationService:
                             "--run_token", run_token,
                             "--api_url", os.environ.get("DATABRICKS_APP_URL", "http://localhost:8000")
                         ]
-                    }
+                    },
+                    "environment_key": "default"
                 }
-            ]
+            ],
+            "environments": [{
+                "environment_key": "default",
+                "spec": {
+                    "client": "1",
+                    "dependencies": []
+                }
+            }]
         }
         
         headers = {"Authorization": f"Bearer {token}"}
