@@ -63,7 +63,7 @@ class MigrationService:
         from app.models.mapping import MappingVersion
         published_version = db.query(MappingVersion).filter(
             MappingVersion.mapping_id == mapping_id,
-            MappingVersion.is_published == True
+            MappingVersion.status == "published"
         ).first()
         if not published_version:
             from fastapi import HTTPException
