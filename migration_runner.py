@@ -152,21 +152,25 @@ def main():
         secret_key = target_conn.get("secret_key")
         password = dbutils.secrets.get(scope=secret_scope, key=secret_key) if secret_scope and secret_key else ""
 
-        # Normalize db_type for Databricks Serverless
-        # Databricks Serverless requires specific format strings instead of generic "jdbc"
-        # Allowed formats: postgresql, mysql, sqlserver, snowflake, redshift
-        fmt = "postgresql" if db_type == "postgres" else db_type
+        # Databricks writing to Databricks (Unity Catalog) doesn't use JDBC
+        if db_type == "databricks":
+            df.write.mode("append").saveAsTable(target_table_name)
+        else:
+            # Normalize db_type for Databricks Serverless
+            # Databricks Serverless requires specific format strings instead of generic "jdbc"
+            # Allowed formats: postgresql, mysql, sqlserver, snowflake, redshift
+            fmt = "postgresql" if db_type == "postgres" else db_type
 
-        df.write \
-            .format(fmt) \
-            .option("host", host) \
-            .option("port", str(port)) \
-            .option("database", db_name) \
-            .option("dbtable", target_table_name.split(".")[-1]) \
-            .option("user", user) \
-            .option("password", password) \
-            .mode("append") \
-            .save()
+            df.write \
+                .format(fmt) \
+                .option("host", host) \
+                .option("port", str(port)) \
+                .option("database", db_name) \
+                .option("dbtable", target_table_name.split(".")[-1]) \
+                .option("user", user) \
+                .option("password", password) \
+                .mode("append") \
+                .save()
 
         update_status(api_url, app_name, mapping_id, run_id, run_token, platform_headers,
                        "succeeded", rows_read=rows_read, rows_written=rows_read)
