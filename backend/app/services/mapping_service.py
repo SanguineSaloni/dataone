@@ -868,7 +868,7 @@ class MappingService:
                             config = {
                                 "host": "database-1.c50uus42awel.ap-south-1.rds.amazonaws.com",
                                 "port": 5432,
-                                "database": "public",
+                                "database": "college",
                                 "username": "postgres",
                                 "password": "Vaibhav123"
                             }
