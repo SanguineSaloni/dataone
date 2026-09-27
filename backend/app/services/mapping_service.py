@@ -817,7 +817,7 @@ class MappingService:
             fallback_target_table = m.suggestions[0].target_table
         elif v.edges_snapshot:
             fallback_source_table = v.edges_snapshot[0].get("sources", [{}])[0].get("table")
-            fallback_target_table = v.edges_snapshot[0].get("target_table")
+            fallback_target_table = v.edges_snapshot[0].get("target", {}).get("table")
 
         artifact = {
             "mapping_id": m.id,

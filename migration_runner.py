@@ -119,7 +119,7 @@ def main():
             # Fallback to extracting from edges if root keys aren't present
             if not edges:
                 raise ValueError("No table names provided and no field mappings found in published version")
-            target_table_name = target_table_name or edges[0].get("target_table")
+            target_table_name = target_table_name or edges[0].get("target", {}).get("table")
             for edge in edges:
                 if edge.get("sources") and len(edge["sources"]) > 0:
                     source_table_name = source_table_name or edge["sources"][0].get("table")
