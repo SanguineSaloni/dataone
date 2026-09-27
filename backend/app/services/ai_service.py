@@ -185,23 +185,42 @@ class AIService:
             )
 
         import time as _time
+        from app.services.databricks_llm_provider import get_databricks_llm_provider
+
         for attempt in range(settings.OLLAMA_MAX_RETRIES + 1):
             try:
-                def _post():
-                    return requests.post(
-                        AIService.get_ollama_url(),
-                        json={
-                            "model": settings.OLLAMA_MODEL,
-                            "prompt": prompt,
-                            "stream": False,
-                            "format": "json",
-                        },
-                        timeout=settings.OLLAMA_TIMEOUT,
-                    )
-                response = ollama_circuit.call(_post)
-                if response.status_code == 200:
-                    result = response.json()
-                    parsed = json.loads(result.get("response", "{}"))
+                parsed = None
+                try:
+                    llm_provider = get_databricks_llm_provider()
+                    response = llm_provider.generate(prompt=prompt, stream=False)
+                    text_resp = response.get("response", "{}")
+                    if "```json" in text_resp:
+                        text_resp = text_resp.split("```json")[1].split("```")[0]
+                    elif "```" in text_resp:
+                        text_resp = text_resp.split("```")[1].split("```")[0]
+                    parsed = json.loads(text_resp.strip())
+                except ValueError:
+                    # Fallback to Ollama if Databricks LLM not configured
+                    def _post():
+                        return requests.post(
+                            AIService.get_ollama_url(),
+                            json={
+                                "model": settings.OLLAMA_MODEL,
+                                "prompt": prompt,
+                                "stream": False,
+                                "format": "json",
+                            },
+                            timeout=settings.OLLAMA_TIMEOUT,
+                        )
+                    response = ollama_circuit.call(_post)
+                    if response.status_code == 200:
+                        result = response.json()
+                        parsed = json.loads(result.get("response", "{}"))
+                    else:
+                        logger.warning("Ollama returned status %s on attempt %d", response.status_code, attempt + 1)
+                        raise Exception(f"Ollama HTTP {response.status_code}")
+
+                if parsed is not None:
                     normalized_matches = []
                     source_names = {c.get("name") for c in source_schema}
                     target_names = {c.get("name") for c in target_schema}
@@ -226,12 +245,12 @@ class AIService:
                     parsed["matches"] = normalized_matches
                     parsed["ai_processed"] = True
                     return parsed
-                logger.warning("Ollama returned status %s on attempt %d", response.status_code, attempt + 1)
+                    
             except CircuitBreakerOpen as e:
                 logger.warning("Ollama circuit open, skipping retries: %s", e)
                 break
             except Exception as e:
-                logger.warning("Ollama call failed (attempt %d/%d): %s", attempt + 1, settings.OLLAMA_MAX_RETRIES + 1, e)
+                logger.warning("LLM call failed (attempt %d/%d): %s", attempt + 1, settings.OLLAMA_MAX_RETRIES + 1, e)
                 if attempt < settings.OLLAMA_MAX_RETRIES:
                     _time.sleep(2 ** attempt)
 

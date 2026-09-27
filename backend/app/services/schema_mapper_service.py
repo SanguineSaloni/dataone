@@ -159,22 +159,39 @@ Return a JSON array of rules:
 JSON:"""
 
         import time
+        from app.services.databricks_llm_provider import get_databricks_llm_provider
+
         for attempt in range(settings.OLLAMA_MAX_RETRIES + 1):
             try:
-                resp = requests.post(
-                    f"{settings.OLLAMA_HOST}/api/generate",
-                    json={"model": settings.OLLAMA_MODEL, "prompt": prompt, "stream": False, "format": "json"},
-                    timeout=settings.OLLAMA_TIMEOUT,
-                )
-                if resp.status_code == 200:
-                    result = json.loads(resp.json().get("response", "[]"))
+                result = None
+                try:
+                    llm_provider = get_databricks_llm_provider()
+                    response = llm_provider.generate(prompt=prompt, stream=False)
+                    text_resp = response.get("response", "[]")
+                    if "```json" in text_resp:
+                        text_resp = text_resp.split("```json")[1].split("```")[0]
+                    elif "```" in text_resp:
+                        text_resp = text_resp.split("```")[1].split("```")[0]
+                    result = json.loads(text_resp.strip())
+                except ValueError:
+                    resp = requests.post(
+                        f"{settings.OLLAMA_HOST}/api/generate",
+                        json={"model": settings.OLLAMA_MODEL, "prompt": prompt, "stream": False, "format": "json"},
+                        timeout=settings.OLLAMA_TIMEOUT,
+                    )
+                    if resp.status_code == 200:
+                        result = json.loads(resp.json().get("response", "[]"))
+                    else:
+                        logger.warning("SchemaMapper Ollama returned status %s on attempt %d", resp.status_code, attempt + 1)
+                        raise Exception(f"Ollama HTTP {resp.status_code}")
+
+                if result is not None:
                     if isinstance(result, list):
                         return result
                     if isinstance(result, dict) and "rules" in result:
                         return result["rules"]
-                logger.warning("SchemaMapper Ollama returned status %s on attempt %d", resp.status_code, attempt + 1)
             except Exception as e:
-                logger.warning("SchemaMapper Ollama call failed (attempt %d/%d): %s", attempt + 1, settings.OLLAMA_MAX_RETRIES + 1, e)
+                logger.warning("SchemaMapper LLM call failed (attempt %d/%d): %s", attempt + 1, settings.OLLAMA_MAX_RETRIES + 1, e)
                 if attempt < settings.OLLAMA_MAX_RETRIES:
                     time.sleep(2 ** attempt)
         logger.info("SchemaMapper falling back to rule-based parsing")
