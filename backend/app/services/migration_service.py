@@ -57,11 +57,6 @@ class MigrationService:
                             "--run_token", run_token,
                             "--api_url", os.environ.get("DATABRICKS_APP_URL", "http://localhost:8000")
                         ]
-                    },
-                    "new_cluster": {
-                        "spark_version": "14.3.x-scala2.12",
-                        "node_type_id": "i3.xlarge",
-                        "num_workers": 1
                     }
                 }
             ]
