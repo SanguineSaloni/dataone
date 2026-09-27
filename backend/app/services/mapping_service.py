@@ -824,12 +824,33 @@ class MappingService:
             parts = fallback_target_table.split(".")
             if len(parts) >= 3:
                 catalog_name = parts[0]
-                # Find the DBConnection that has this catalog in its config
-                all_conns = db.query(DBConnection).all()
-                for c in all_conns:
-                    if c.config and c.config.get("catalog") == catalog_name:
-                        target_conn = c
-                        break
+                
+                # If it's a foreign table, we MUST swap it
+                if catalog_name not in ("main", "system", "hive_metastore"):
+                    all_conns = db.query(DBConnection).all()
+                    swapped = False
+                    
+                    # 1. Exact catalog match in config
+                    for c in all_conns:
+                        if c.config and c.config.get("catalog") == catalog_name:
+                            target_conn = c
+                            swapped = True
+                            break
+                    
+                    # 2. Fuzzy match in name or config
+                    if not swapped:
+                        for c in all_conns:
+                            if c.type.lower() != "databricks" and (catalog_name in c.name or (c.config and catalog_name in str(c.config))):
+                                target_conn = c
+                                swapped = True
+                                break
+                    
+                    # 3. Desperation fallback: just grab the first non-databricks relational DB
+                    if not swapped:
+                        for c in all_conns:
+                            if c.type.lower() in ("postgres", "postgresql", "mysql"):
+                                target_conn = c
+                                break
 
         artifact = {
             "mapping_id": m.id,
