@@ -152,11 +152,16 @@ def main():
         secret_key = target_conn.get("secret_key")
         password = dbutils.secrets.get(scope=secret_scope, key=secret_key) if secret_scope and secret_key else ""
 
-        jdbc_url = f"jdbc:{db_type}://{host}:{port}/{db_name}"
+        # Normalize db_type for Databricks Serverless
+        # Databricks Serverless requires specific format strings instead of generic "jdbc"
+        # Allowed formats: postgresql, mysql, sqlserver, snowflake, redshift
+        fmt = "postgresql" if db_type == "postgres" else db_type
 
         df.write \
-            .format("jdbc") \
-            .option("url", jdbc_url) \
+            .format(fmt) \
+            .option("host", host) \
+            .option("port", str(port)) \
+            .option("database", db_name) \
             .option("dbtable", target_table_name.split(".")[-1]) \
             .option("user", user) \
             .option("password", password) \
