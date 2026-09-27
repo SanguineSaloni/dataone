@@ -267,10 +267,23 @@ export default function SchemaMapperPage() {
         {mode === "run" && (
           <div className="flex items-center gap-2">
             {mappingId && !loading && suggestions.length > 0 && !migrationRun && (
-               <button onClick={triggerMigration} className="flex items-center gap-1.5 text-[11px] font-bold px-4 py-1.5 rounded-md transition-all duration-150 shadow-md"
-                  style={{ background: "#ffffff", color: "#000" }}>
-                 <Icon name="play" size={11} /> Execute Migration
-               </button>
+               <>
+                 <button onClick={async () => {
+                    try {
+                      await api.post(`/api/v1/mappings/${mappingId}/publish`, {});
+                      alert("Mapping published successfully!");
+                    } catch (e: any) {
+                      alert("Publish failed: " + (e.message || String(e)));
+                    }
+                 }} className="flex items-center gap-1.5 text-[11px] font-bold px-4 py-1.5 rounded-md transition-all duration-150 shadow-md"
+                    style={{ background: "#3b82f6", color: "#fff" }}>
+                   <Icon name="check" size={11} /> Publish
+                 </button>
+                 <button onClick={triggerMigration} className="flex items-center gap-1.5 text-[11px] font-bold px-4 py-1.5 rounded-md transition-all duration-150 shadow-md"
+                    style={{ background: "#ffffff", color: "#000" }}>
+                   <Icon name="play" size={11} /> Execute Migration
+                 </button>
+               </>
             )}
             {migrationRun && (
                <div className="flex items-center gap-2 text-[10px] px-3 py-1.5 rounded-md" style={{ background: "rgba(255,255,255,0.1)", color: "#fff" }}>
