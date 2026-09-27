@@ -60,6 +60,15 @@ class MigrationService:
 
     @classmethod
     def trigger_migration(cls, db: Session, mapping_id: int, user_email: str) -> MappingRun:
+        from app.models.mapping import MappingVersion
+        published_version = db.query(MappingVersion).filter(
+            MappingVersion.mapping_id == mapping_id,
+            MappingVersion.is_published == True
+        ).first()
+        if not published_version:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=400, detail="Cannot run migration: No published version exists for this mapping. Please publish a version first.")
+
         run_token = str(uuid.uuid4())
         
         run = MappingRun(
