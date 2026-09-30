@@ -127,8 +127,17 @@ export default function MigrationRunStatusPage() {
             {run.state === 'failed' && run.error && (
               <div className="px-8 py-6" style={{ borderTop: "1px solid rgba(255,255,255,0.08)", background: "rgba(239,68,68,0.02)" }}>
                 <p className="text-[10px] font-bold uppercase tracking-wider text-red-400 mb-2">Error Details</p>
-                <div className="p-4 rounded-lg bg-black/40 border border-red-500/20 text-red-300 text-xs font-mono break-words whitespace-pre-wrap">
-                  {run.error}
+                <div className="p-4 rounded-lg bg-black/40 border border-red-500/20 text-red-300 text-xs font-medium break-words whitespace-pre-wrap">
+                  {(() => {
+                    if (run.error.includes("duplicate key value violates unique constraint") || run.error.includes("already exists")) {
+                      return "Migration failed: The data you are trying to load already exists in the target table.";
+                    }
+                    const causedBy = run.error.split("Caused by: ")[1];
+                    if (causedBy) {
+                      return "Migration failed: " + causedBy.split("\n")[0];
+                    }
+                    return "Migration failed: " + run.error.split("\n")[0];
+                  })()}
                 </div>
               </div>
             )}
