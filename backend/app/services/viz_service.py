@@ -44,7 +44,7 @@ def _validate_identifier(name: str, *, kind: str) -> str:
 
 
 def _quote(dialect: str, identifier: str) -> str:
-    if dialect == "mysql":
+    if dialect in ("mysql", "databricks"):
         return "`" + identifier.replace("`", "``") + "`"
     return '"' + identifier.replace('"', '""') + '"'
 
