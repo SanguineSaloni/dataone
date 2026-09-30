@@ -93,8 +93,6 @@ export default function VisualizePage() {
             <ChartTypeSelector
               value={v.chartType}
               onChange={v.setChartType}
-              dimensionCount={v.dimensions.length}
-              measureCount={v.measures.length}
             />
           </div>
 
