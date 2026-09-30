@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import ReactFlow, { Background, Controls, Handle, Position, MarkerType, BackgroundVariant } from 'reactflow';
 import 'reactflow/dist/style.css';
@@ -120,6 +120,7 @@ const nodeTypes = { tableNode: TableNode };
 
 export default function SchemaMapperPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const connId = searchParams.get("connection_id");
 
   const [sparkConnId, setSparkConnId] = useState<number | null>(null);
@@ -204,11 +205,10 @@ export default function SchemaMapperPage() {
       const run = await api.post<any>(`/api/v1/mappings/${mappingId}/runs`, {});
       setMigrationRun(run);
       
-      const poll = setInterval(async () => {
-        // Assume we poll the mapping's runs endpoint, wait, we don't have a GET /runs endpoint! 
-        // We can just rely on the API returning a success on trigger, but a status check requires an endpoint.
-        // For PoC UI, we just show triggered.
-      }, 5000);
+      // Redirect to the newly created migration status page
+      if (run && run.id) {
+         router.push(`/dashboard/migration-status?mappingId=${mappingId}&runId=${run.id}`);
+      }
     } catch (e) {
       console.error(e);
     }

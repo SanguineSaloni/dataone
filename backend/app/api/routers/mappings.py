@@ -460,6 +460,18 @@ def trigger_migration_run(
     return run
 
 
+@router.get("/{mapping_id}/runs/{run_id}", response_model=MappingRunResponse)
+def get_migration_run(
+    mapping_id: int, run_id: int, db: Session = Depends(get_db),
+    _user: User = Depends(get_current_user),
+):
+    from fastapi import HTTPException
+    run = db.query(MappingRun).filter(MappingRun.id == run_id, MappingRun.mapping_id == mapping_id).first()
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+    return run
+
+
 @router.post("/{mapping_id}/runs/{run_id}/status", response_model=MappingRunResponse)
 def update_migration_run_status(
     mapping_id: int, run_id: int, payload: RunStatusUpdate,
