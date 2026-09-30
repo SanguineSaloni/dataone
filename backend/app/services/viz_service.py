@@ -38,6 +38,12 @@ _POLICY_OPERATOR_SQL = {
 
 
 def _validate_identifier(name: str, *, kind: str) -> str:
+    if kind == "table":
+        for part in name.split("."):
+            if not _IDENT_RE.match(part):
+                raise HTTPException(status_code=422, detail=f"invalid {kind} name: {name!r}")
+        return name
+
     if not _IDENT_RE.match(name):
         raise HTTPException(status_code=422, detail=f"invalid {kind} name: {name!r}")
     return name
@@ -47,6 +53,10 @@ def _quote(dialect: str, identifier: str) -> str:
     if dialect == "mysql":
         return "`" + identifier.replace("`", "``") + "`"
     return '"' + identifier.replace('"', '""') + '"'
+
+
+def _quote_table(dialect: str, table_name: str) -> str:
+    return ".".join(_quote(dialect, p) for p in table_name.split("."))
 
 
 def _placeholder(dialect: str) -> str:
@@ -148,7 +158,7 @@ class VizService:
                 if clause_parts:
                     where_clauses.append("(" + " ".join(clause_parts) + ")")
 
-        sql = f"SELECT {', '.join(select_parts)} FROM {q(table_name)}"
+        sql = f"SELECT {', '.join(select_parts)} FROM {_quote_table(dialect, table_name)}"
         if where_clauses:
             sql += " WHERE " + " AND ".join(where_clauses)
         if dimensions:

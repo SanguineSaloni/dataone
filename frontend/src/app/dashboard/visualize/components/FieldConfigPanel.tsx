@@ -1,4 +1,5 @@
 "use client";
+import { useState, useMemo, useEffect } from "react";
 import { classNames } from "../lib/format";
 import type { Aggregation, CatalogTableRef, MeasureSpec } from "../lib/types";
 
@@ -21,6 +22,47 @@ export default function FieldConfigPanel({
 }: FieldConfigPanelProps) {
   const selectedTable = catalogTables.find((t) => t.table_name === tableName) ?? null;
   const columns = selectedTable?.columns ?? [];
+
+  const [selectedCatalog, setSelectedCatalog] = useState<string>("");
+  const [selectedSchema, setSelectedSchema] = useState<string>("");
+
+  useEffect(() => {
+    if (tableName) {
+      const parts = tableName.split('.');
+      if (parts.length === 3) {
+        setSelectedCatalog(parts[0]);
+        setSelectedSchema(parts[1]);
+      } else if (parts.length === 2) {
+        setSelectedCatalog("default");
+        setSelectedSchema(parts[0]);
+      } else {
+        setSelectedCatalog("default");
+        setSelectedSchema("default");
+      }
+    }
+  }, [tableName]);
+
+  const hierarchy = useMemo(() => {
+    const h: Record<string, Record<string, { display: string, full: string }[]>> = {};
+    catalogTables.forEach(t => {
+      const parts = t.table_name.split('.');
+      let c = 'default', s = 'default', tbl = t.table_name;
+      if (parts.length === 3) { c = parts[0]; s = parts[1]; tbl = parts[2]; }
+      else if (parts.length === 2) { c = 'default'; s = parts[0]; tbl = parts[1]; }
+      
+      if (!h[c]) h[c] = {};
+      if (!h[c][s]) h[c][s] = [];
+      h[c][s].push({ display: tbl, full: t.table_name });
+    });
+    return h;
+  }, [catalogTables]);
+
+  const availableCatalogs = Object.keys(hierarchy);
+  const availableSchemas = selectedCatalog && hierarchy[selectedCatalog] ? Object.keys(hierarchy[selectedCatalog]) : [];
+  const availableTables = selectedCatalog && selectedSchema && hierarchy[selectedCatalog]?.[selectedSchema] ? hierarchy[selectedCatalog][selectedSchema] : [];
+
+  const showCatalog = availableCatalogs.length > 1 || (availableCatalogs.length === 1 && availableCatalogs[0] !== "default");
+  const showSchema = availableSchemas.length > 1 || (availableSchemas.length === 1 && availableSchemas[0] !== "default");
 
   const toggleDimension = (field: string) => {
     onDimensionsChange(
@@ -56,18 +98,59 @@ export default function FieldConfigPanel({
 
   return (
     <div className="flex flex-col gap-4">
-      <label className="text-xs text-fg-subtle">
-        Table
-        <select
-          value={tableName ?? ""}
-          onChange={(e) => onTableChange(e.target.value)}
-          className="mt-1 w-full px-3 py-2 rounded-lg bg-surface-overlay border border-border-strong text-sm text-fg focus:outline-none focus:border-accent"
-        >
-          {catalogTables.map((t) => (
-            <option key={t.id} value={t.table_name}>{t.table_name}</option>
-          ))}
-        </select>
-      </label>
+      <div className="flex flex-col gap-2">
+        {showCatalog && (
+          <label className="text-xs text-fg-subtle">
+            Catalog
+            <select
+              value={selectedCatalog}
+              onChange={(e) => {
+                const newCat = e.target.value;
+                setSelectedCatalog(newCat);
+                const firstSchema = Object.keys(hierarchy[newCat] || {})[0];
+                setSelectedSchema(firstSchema || "");
+                const firstTable = hierarchy[newCat]?.[firstSchema]?.[0]?.full;
+                if (firstTable) onTableChange(firstTable);
+              }}
+              className="mt-1 w-full px-3 py-2 rounded-lg bg-surface-overlay border border-border-strong text-sm text-fg focus:outline-none focus:border-accent"
+            >
+              <option value="" disabled>Select Catalog</option>
+              {availableCatalogs.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </label>
+        )}
+
+        {showSchema && (
+          <label className="text-xs text-fg-subtle">
+            Database
+            <select
+              value={selectedSchema}
+              onChange={(e) => {
+                const newSch = e.target.value;
+                setSelectedSchema(newSch);
+                const firstTable = hierarchy[selectedCatalog]?.[newSch]?.[0]?.full;
+                if (firstTable) onTableChange(firstTable);
+              }}
+              className="mt-1 w-full px-3 py-2 rounded-lg bg-surface-overlay border border-border-strong text-sm text-fg focus:outline-none focus:border-accent"
+            >
+              <option value="" disabled>Select Database</option>
+              {availableSchemas.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </label>
+        )}
+
+        <label className="text-xs text-fg-subtle">
+          Table
+          <select
+            value={tableName ?? ""}
+            onChange={(e) => onTableChange(e.target.value)}
+            className="mt-1 w-full px-3 py-2 rounded-lg bg-surface-overlay border border-border-strong text-sm text-fg focus:outline-none focus:border-accent"
+          >
+            <option value="" disabled>Select Table</option>
+            {availableTables.map(t => <option key={t.full} value={t.full}>{t.display}</option>)}
+          </select>
+        </label>
+      </div>
 
       <div>
         <div className="text-xs text-fg-subtle mb-1.5">Dimensions (group by)</div>
