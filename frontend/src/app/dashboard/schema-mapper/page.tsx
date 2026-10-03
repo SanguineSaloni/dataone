@@ -196,14 +196,22 @@ export default function SchemaMapperPage() {
   const srcSchs = srcCat ? Object.keys(struct[srcCat] || {}).sort() : [];
   const srcTbls = srcSch ? (struct[srcCat]?.[srcSch] || []).sort() : [];
   const tgtSchs = tgtCat ? Object.keys(struct[tgtCat] || {}).sort() : [];
-  const tgtTbls = useMemo(() => tgtCat && tgtSch ? tables.filter(t => t.table_name.startsWith(`${tgtCat}.${tgtSch}.`)) : [], [tables, tgtCat, tgtSch]);
-  const srcObj = tables.find(t => t.table_name === `${srcCat}.${srcSch}.${srcTbl}`);
+  const tgtTbls = useMemo(() => tgtCat && tgtSch ? tables.filter(t => {
+    const p = t.table_name.split(".");
+    const [c, s] = p.length >= 3 ? [p[0], p[1]] : p.length === 2 ? ["default", p[0]] : ["default", "default"];
+    return c === tgtCat && s === tgtSch;
+  }) : [], [tables, tgtCat, tgtSch]);
+  const srcObj = useMemo(() => tables.find(t => {
+    const p = t.table_name.split(".");
+    const [c, s, tb] = p.length >= 3 ? [p[0], p[1], p.slice(2).join(".")] : p.length === 2 ? ["default", p[0], p[1]] : ["default", "default", t.table_name];
+    return c === srcCat && s === srcSch && tb === srcTbl;
+  }), [tables, srcCat, srcSch, srcTbl]);
   const ready = !!srcTbl && !!tgtSch && !!sparkConnId;
 
   const run = async () => {
-    if (!ready) return;
+    if (!ready || !srcObj) return;
     setMode("run"); setLoading(true); setSuggestions([]);
-    const fullSrc = `${srcCat}.${srcSch}.${srcTbl}`;
+    const fullSrc = srcObj.table_name;
     const fullTgt = `${tgtCat}.${tgtSch}`;
     try {
       const m = await api.post<any>("/api/v1/mappings/", { name: `Map ${fullSrc} \u2192 ${fullTgt}`, source_id: sparkConnId, target_id: sparkConnId });
