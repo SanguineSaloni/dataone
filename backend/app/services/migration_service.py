@@ -59,7 +59,7 @@ class MigrationService:
             logger.warning(f"Exception auto-uploading runner notebook: {e}")
 
     @classmethod
-    def trigger_migration(cls, db: Session, mapping_id: int, user_email: str) -> MappingRun:
+    def trigger_migration(cls, db: Session, mapping_id: int, user_email: str, transformation_code: str = None) -> MappingRun:
         from app.models.mapping import MappingVersion
         published_version = db.query(MappingVersion).filter(
             MappingVersion.mapping_id == mapping_id,
@@ -99,7 +99,8 @@ class MigrationService:
                             "run_id": str(run.id),
                             "run_token": run_token,
                             "api_url": os.environ.get("DATABRICKS_APP_URL", "http://localhost:8000"),
-                            "app_name": os.environ.get("DATABRICKS_APP_NAME", "dataonenew")
+                            "app_name": os.environ.get("DATABRICKS_APP_NAME", "dataonenew"),
+                            "transformation_code": transformation_code or ""
                         }
                     },
                     "environment_key": "default"

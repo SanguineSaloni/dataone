@@ -48,6 +48,7 @@ from app.api.routers import governance as governance_router
 from app.api.routers import schema_comparison as schema_comparison_router
 from app.api.routers import workspace_layout as workspace_layout_router
 from app.api.routers import demo_data as demo_data_router
+from app.api.routers import transformation as transformation_router
 from app.core.celery_app import celery_app  # noqa: F401  (registers tasks on import)
 from app.core.audit_guard import install_audit_append_only_guard
 from app.core.config import settings
@@ -458,6 +459,7 @@ app.include_router(schema_comparison_router.router, prefix="/api/v1/schema-compa
 app.include_router(workspace_layout_router.router, prefix="/api/v1/workspace-layout", tags=["Dockable Workspace Shell"])
 app.include_router(demo_data_router.router, prefix="/api/v1/demo-data", tags=["Demo Data"])
 app.include_router(databricks_ingest_router.router, prefix="/api/v1/databricks/ingest", tags=["Databricks Ingestion"])
+app.include_router(transformation_router.router, prefix="/api/v1/transformation", tags=["Transformation Copilot"])
 
 
 @app.get("/health")

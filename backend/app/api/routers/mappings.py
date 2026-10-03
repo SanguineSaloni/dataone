@@ -447,16 +447,23 @@ def get_migration_report(
 
 from app.services.migration_service import MigrationService
 from app.schemas.mapping import MappingRunResponse, RunStatusUpdate
+from pydantic import BaseModel
+
+class MappingRunCreate(BaseModel):
+    transformation_code: Optional[str] = None
 
 @router.post("/{mapping_id}/runs", response_model=MappingRunResponse, status_code=201)
 def trigger_migration_run(
-    mapping_id: int, db: Session = Depends(get_db),
+    mapping_id: int, 
+    req: Optional[MappingRunCreate] = None,
+    db: Session = Depends(get_db),
     user: User = Depends(require_role("admin", "analyst")),
 ):
     """E13 — Trigger a databricks job to run the migration for this mapping."""
     # Ensure mapping exists
     MappingService.get_mapping(db, mapping_id)
-    run = MigrationService.trigger_migration(db, mapping_id, user.email)
+    transformation_code = req.transformation_code if req else None
+    run = MigrationService.trigger_migration(db, mapping_id, user.email, transformation_code)
     return run
 
 

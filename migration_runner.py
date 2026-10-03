@@ -79,11 +79,16 @@ def update_status(api_url, app_name, mapping_id, run_id, run_token, platform_hea
 
 def main():
     try:
-        mapping_id = int(dbutils.widgets.get("mapping_id"))
-        run_id = int(dbutils.widgets.get("run_id"))
-        run_token = dbutils.widgets.get("run_token")
-        api_url = dbutils.widgets.get("api_url")
-        app_name = dbutils.widgets.get("app_name")
+        try:
+            mapping_id = int(dbutils.widgets.get("mapping_id"))
+            run_id = int(dbutils.widgets.get("run_id"))
+            run_token = dbutils.widgets.get("run_token")
+            api_url = dbutils.widgets.get("api_url")
+            app_name = dbutils.widgets.get("app_name")
+            transformation_code = dbutils.widgets.get("transformation_code")
+        except Exception:
+            transformation_code = ""
+            pass
     except Exception:
         parser = argparse.ArgumentParser()
         parser.add_argument("--mapping_id", type=int, required=True)
@@ -91,9 +96,10 @@ def main():
         parser.add_argument("--run_token", type=str, required=True)
         parser.add_argument("--api_url", type=str, required=True)
         parser.add_argument("--app_name", type=str, required=True)
+        parser.add_argument("--transformation_code", type=str, required=False, default="")
         args = parser.parse_args()
-        mapping_id, run_id, run_token, api_url, app_name = (
-            args.mapping_id, args.run_id, args.run_token, args.api_url, args.app_name
+        mapping_id, run_id, run_token, api_url, app_name, transformation_code = (
+            args.mapping_id, args.run_id, args.run_token, args.api_url, args.app_name, args.transformation_code
         )
 
     platform_headers = get_platform_auth_header(app_name)
@@ -109,9 +115,6 @@ def main():
             print("BODY:", resp.text)
         resp.raise_for_status()
         mapping_spec = resp.json()
-        print("=== FULL EXPORT PAYLOAD ===")
-        print(json.dumps(mapping_spec, indent=2))
-        print("=== END PAYLOAD ===")
 
         edges = mapping_spec.get("field_mappings", [])
         
@@ -119,7 +122,6 @@ def main():
         source_table_name = mapping_spec.get("source_table")
         
         if not source_table_name or not target_table_name:
-            # Fallback to extracting from edges if root keys aren't present
             if not edges:
                 raise ValueError("No table names provided and no field mappings found in published version")
             target_table_name = target_table_name or edges[0].get("target", {}).get("table")
@@ -132,6 +134,15 @@ def main():
             raise ValueError("Could not determine source or target table")
 
         df = spark.table(source_table_name)
+        
+        # === NEW: Execute User AI Transformations ===
+        if transformation_code:
+            print("Executing custom transformations...")
+            import pyspark.sql.functions as F
+            local_scope = {"df": df, "spark": spark, "F": F}
+            exec(transformation_code, globals(), local_scope)
+            df = local_scope.get("df", df)
+
         rows_read = df.count()
 
         exprs = []

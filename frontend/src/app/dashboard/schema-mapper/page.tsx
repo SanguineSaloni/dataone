@@ -133,6 +133,32 @@ export default function SchemaMapperPage() {
   const [loading, setLoading] = useState(false);
   const [mappingId, setMappingId] = useState<number | null>(null);
   const [migrationRun, setMigrationRun] = useState<any>(null);
+  const [initialized, setInitialized] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("schema_mapper_state");
+    if (saved) {
+      try {
+        const s = JSON.parse(saved);
+        if (s.srcCat) setSrcCat(s.srcCat);
+        if (s.srcSch) setSrcSch(s.srcSch);
+        if (s.srcTbl) setSrcTbl(s.srcTbl);
+        if (s.tgtCat) setTgtCat(s.tgtCat);
+        if (s.tgtSch) setTgtSch(s.tgtSch);
+        if (s.mode) setMode(s.mode);
+        if (s.suggestions) setSuggestions(s.suggestions);
+        if (s.mappingId) setMappingId(s.mappingId);
+      } catch (e) {}
+    }
+    setInitialized(true);
+  }, []);
+
+  useEffect(() => {
+    if (!initialized) return;
+    localStorage.setItem("schema_mapper_state", JSON.stringify({
+      srcCat, srcSch, srcTbl, tgtCat, tgtSch, mode, suggestions, mappingId
+    }));
+  }, [initialized, srcCat, srcSch, srcTbl, tgtCat, tgtSch, mode, suggestions, mappingId]);
 
   useEffect(() => {
     if (connId) { setSparkConnId(+connId); return; }
@@ -197,7 +223,10 @@ export default function SchemaMapperPage() {
     } catch { setLoading(false); }
   };
 
-  const reset = () => { setMode("cfg"); setSuggestions([]); setMappingId(null); setMigrationRun(null); };
+  const reset = () => { 
+    setMode("cfg"); setSuggestions([]); setMappingId(null); setMigrationRun(null); 
+    localStorage.removeItem("schema_mapper_state");
+  };
 
   const triggerMigration = async () => {
     if (!mappingId) return;
@@ -279,9 +308,9 @@ export default function SchemaMapperPage() {
                     style={{ background: "#3b82f6", color: "#fff" }}>
                    <Icon name="check" size={11} /> Publish
                  </button>
-                 <button onClick={triggerMigration} className="flex items-center gap-1.5 text-[11px] font-bold px-4 py-1.5 rounded-md transition-all duration-150 shadow-md"
+                 <button onClick={() => router.push(`/dashboard/transformation?mappingId=${mappingId}`)} className="flex items-center gap-1.5 text-[11px] font-bold px-4 py-1.5 rounded-md transition-all duration-150 shadow-md"
                     style={{ background: "#ffffff", color: "#000" }}>
-                   <Icon name="play" size={11} /> Execute Migration
+                   Next: Transformation & Cleaning <Icon name="arrow-r" size={11} />
                  </button>
                </>
             )}
