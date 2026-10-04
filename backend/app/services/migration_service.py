@@ -3,6 +3,7 @@ import requests
 import uuid
 import logging
 from datetime import datetime
+from typing import List, Dict, Any
 from sqlalchemy.orm import Session
 from app.models.mapping import MappingRun
 
