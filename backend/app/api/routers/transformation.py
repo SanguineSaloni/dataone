@@ -38,14 +38,19 @@ class PreviewResponse(BaseModel):
 @router.get("/preview/{mapping_id}", response_model=PreviewResponse)
 def get_table_preview(
     mapping_id: int,
-    limit: int = 200,
+    limit: int = 300,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
     """
     Fetch a sample of the source table for the given mapping.
     Returns rows split into clean (no NULLs) and unclean (has NULLs/blanks).
+    Uses the existing DatabricksConnector (SQL Warehouse) — no SparkSession required.
     """
+    from app.models.mapping import Mapping
+    from app.models.connection import DBConnection
+    from app.services.schema_service import get_connector
+
     m = db.query(Mapping).filter(Mapping.id == mapping_id).first()
     if not m:
         raise HTTPException(status_code=404, detail="Mapping not found")
@@ -56,30 +61,45 @@ def get_table_preview(
         source_table = m.name.split(" \u2192 ")[0].replace("Map ", "").strip()
 
     if not source_table:
-        raise HTTPException(status_code=422, detail="Cannot determine source table from mapping")
+        raise HTTPException(status_code=422, detail="Cannot determine source table from mapping name")
+
+    # Get the source DBConnection
+    source_conn = db.query(DBConnection).filter(DBConnection.id == m.source_id).first()
+    if not source_conn:
+        raise HTTPException(status_code=422, detail="Source connection not found for this mapping")
 
     try:
-        from databricks.sdk.runtime import dbutils  # available inside Databricks Apps
-        import importlib
-        pyspark_sql = importlib.import_module("pyspark.sql")
-        SparkSession = pyspark_sql.SparkSession
-        spark = SparkSession.builder.getOrCreate()
+        connector = get_connector(source_conn)
+        sql_conn = connector.connect()
 
-        df = spark.table(source_table).limit(limit)
-        cols = df.columns
-        rows_raw = df.collect()
+        # Quote the three-part name safely for SQL
+        safe_table = ".".join(f"`{p}`" for p in source_table.split("."))
+        query = f"SELECT * FROM {safe_table} LIMIT {int(limit)}"
 
-        all_rows = [[row[c] for c in cols] for row in rows_raw]
+        cursor = sql_conn.cursor()
+        cursor.execute(query)
+        col_names = [desc[0] for desc in cursor.description]
+        raw_rows = cursor.fetchall()
+        cursor.close()
+        connector.close()
 
-        clean_rows = [r for r in all_rows if all(v is not None and str(v).strip() != "" for v in r)]
-        unclean_rows = [r for r in all_rows if any(v is None or str(v).strip() == "" for v in r)]
+        all_rows = [list(row) for row in raw_rows]
+
+        # A row is "unclean" if ANY cell is None or an empty/whitespace string
+        def is_unclean(row: list) -> bool:
+            return any(v is None or (isinstance(v, str) and v.strip() == "") for v in row)
+
+        clean_rows   = [r for r in all_rows if not is_unclean(r)]
+        unclean_rows = [r for r in all_rows if is_unclean(r)]
 
         return PreviewResponse(
-            cols=cols,
+            cols=col_names,
             clean_rows=clean_rows,
             unclean_rows=unclean_rows,
             source_table=source_table,
         )
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("Preview fetch failed for mapping %s: %s", mapping_id, e)
         raise HTTPException(status_code=500, detail=f"Failed to fetch table preview: {str(e)}")
