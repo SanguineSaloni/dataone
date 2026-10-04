@@ -136,29 +136,12 @@ export default function SchemaMapperPage() {
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem("schema_mapper_state");
-    if (saved) {
-      try {
-        const s = JSON.parse(saved);
-        if (s.srcCat) setSrcCat(s.srcCat);
-        if (s.srcSch) setSrcSch(s.srcSch);
-        if (s.srcTbl) setSrcTbl(s.srcTbl);
-        if (s.tgtCat) setTgtCat(s.tgtCat);
-        if (s.tgtSch) setTgtSch(s.tgtSch);
-        if (s.mode) setMode(s.mode);
-        if (s.suggestions) setSuggestions(s.suggestions);
-        if (s.mappingId) setMappingId(s.mappingId);
-      } catch (e) {}
-    }
+    // Always start fresh — clear any stale cached state from previous sessions.
+    localStorage.removeItem("schema_mapper_state");
     setInitialized(true);
   }, []);
 
-  useEffect(() => {
-    if (!initialized) return;
-    localStorage.setItem("schema_mapper_state", JSON.stringify({
-      srcCat, srcSch, srcTbl, tgtCat, tgtSch, mode, suggestions, mappingId
-    }));
-  }, [initialized, srcCat, srcSch, srcTbl, tgtCat, tgtSch, mode, suggestions, mappingId]);
+  // Intentionally not persisting schema mapper state — always load fresh catalogs on visit.
 
   useEffect(() => {
     if (connId) { setSparkConnId(+connId); return; }
