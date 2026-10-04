@@ -86,8 +86,13 @@ def main():
             api_url = dbutils.widgets.get("api_url")
             app_name = dbutils.widgets.get("app_name")
             transformation_code = dbutils.widgets.get("transformation_code")
+            try:
+                patches_json = dbutils.widgets.get("patches_json")
+            except Exception:
+                patches_json = "[]"
         except Exception:
             transformation_code = ""
+            patches_json = "[]"
             pass
     except Exception:
         parser = argparse.ArgumentParser()
@@ -97,9 +102,10 @@ def main():
         parser.add_argument("--api_url", type=str, required=True)
         parser.add_argument("--app_name", type=str, required=True)
         parser.add_argument("--transformation_code", type=str, required=False, default="")
+        parser.add_argument("--patches_json", type=str, required=False, default="[]")
         args = parser.parse_args()
-        mapping_id, run_id, run_token, api_url, app_name, transformation_code = (
-            args.mapping_id, args.run_id, args.run_token, args.api_url, args.app_name, args.transformation_code
+        mapping_id, run_id, run_token, api_url, app_name, transformation_code, patches_json = (
+            args.mapping_id, args.run_id, args.run_token, args.api_url, args.app_name, args.transformation_code, args.patches_json
         )
 
     platform_headers = get_platform_auth_header(app_name)
@@ -142,6 +148,26 @@ def main():
             local_scope = {"df": df, "spark": spark, "F": F}
             exec(transformation_code, globals(), local_scope)
             df = local_scope.get("df", df)
+
+        # === NEW: Apply UI Row-Level Patches ===
+        if patches_json and patches_json != "[]":
+            print(f"Applying patches: {patches_json}")
+            try:
+                import pyspark.sql.functions as F
+                patches = json.loads(patches_json)
+                for p in patches:
+                    pk_col = p.get("pk_col")
+                    pk_val = p.get("pk_val")
+                    col = p.get("col")
+                    new_val = p.get("new_val")
+                    if pk_col and col:
+                        # Ensure we handle casting appropriately if needed, but string equality usually works
+                        df = df.withColumn(
+                            col,
+                            F.when(F.col(pk_col).cast("string") == str(pk_val), F.lit(new_val)).otherwise(F.col(col))
+                        )
+            except Exception as e:
+                print(f"Failed to apply patches: {e}")
 
         rows_read = df.count()
 

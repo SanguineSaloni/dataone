@@ -449,8 +449,10 @@ from app.services.migration_service import MigrationService
 from app.schemas.mapping import MappingRunResponse, RunStatusUpdate
 from pydantic import BaseModel
 
+from typing import Any, Dict, List, Optional
 class MappingRunCreate(BaseModel):
     transformation_code: Optional[str] = None
+    patches: Optional[List[Dict[str, Any]]] = None
 
 @router.post("/{mapping_id}/runs", response_model=MappingRunResponse, status_code=201)
 def trigger_migration_run(
@@ -463,7 +465,8 @@ def trigger_migration_run(
     # Ensure mapping exists
     MappingService.get_mapping(db, mapping_id)
     transformation_code = req.transformation_code if req else None
-    run = MigrationService.trigger_migration(db, mapping_id, user.email, transformation_code)
+    patches = req.patches if req else None
+    run = MigrationService.trigger_migration(db, mapping_id, user.email, transformation_code, patches)
     return run
 
 
