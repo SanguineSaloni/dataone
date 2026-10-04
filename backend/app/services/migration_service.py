@@ -66,8 +66,24 @@ class MigrationService:
             MappingVersion.status == "published"
         ).first()
         if not published_version:
-            from fastapi import HTTPException
-            raise HTTPException(status_code=400, detail="Cannot run migration: No published version exists for this mapping. Please publish a version first.")
+            # Auto-publish the latest draft version so the user doesn't have to
+            # manually go back to the schema mapper and click Publish first.
+            from app.models.mapping import MappingVersion
+            from datetime import datetime as _dt
+            latest_version = db.query(MappingVersion).filter(
+                MappingVersion.mapping_id == mapping_id,
+            ).order_by(MappingVersion.version_number.desc()).first()
+            if not latest_version:
+                from fastapi import HTTPException
+                raise HTTPException(status_code=400, detail="Cannot run migration: This mapping has no versions at all. Please complete schema mapping first.")
+            # Mark it published
+            latest_version.status = "published"
+            latest_version.published_at = _dt.utcnow()
+            latest_version.published_by = user_email
+            db.commit()
+            db.refresh(latest_version)
+            published_version = latest_version
+
 
         run_token = str(uuid.uuid4())
         
