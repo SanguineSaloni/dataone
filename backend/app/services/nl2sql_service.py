@@ -24,12 +24,6 @@ class NL2SQLService:
     # ── Pre-built query templates ──────────────────────────────
 
     TEMPLATES = {
-        "show all tables": "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';",
-        "list tables": "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';",
-        "show tables": "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';",
-        "count rows": "SELECT '{table}' AS table_name, COUNT(*) AS row_count FROM {table};",
-        "describe table": "PRAGMA table_info({table});",
-        "show columns": "PRAGMA table_info({table});",
         "find pii columns": None,  # handled specially
         "database health": None,   # handled specially
         "schema gaps": None,       # handled specially
@@ -91,7 +85,7 @@ USER REQUEST: {natural_query}
 
 Rules:
 - Return ONLY the SQL query, nothing else
-- Use only SELECT statements (read-only)
+- Use only read-only statements (e.g. SELECT, SHOW, DESCRIBE)
 - Reference only tables and columns that exist in the schema above
 
 SQL:"""
@@ -184,7 +178,7 @@ SQL:"""
         elif "all" in query_lower or "everything" in query_lower or "select" in query_lower:
             sql = f"SELECT * FROM {target_table} LIMIT 100;"
         elif "column" in query_lower or "schema" in query_lower or "structure" in query_lower:
-            sql = f"PRAGMA table_info({target_table});"
+            sql = f"DESCRIBE {target_table};"
         else:
             sql = f"SELECT * FROM {target_table} LIMIT 50;"
 
