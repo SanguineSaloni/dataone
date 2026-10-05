@@ -34,6 +34,7 @@ from app.api.routers import dashboard as dashboard_router
 from app.api.routers import semantic as semantic_router
 from app.api.routers import query_studio as query_studio_router
 from app.api.routers import viz as viz_router
+from app.api.routers import viz_ai as viz_ai_router
 from app.api.routers import roles as roles_router
 from app.api.routers import users_admin as users_admin_router
 from app.api.routers import policies as policies_router
@@ -444,6 +445,7 @@ app.include_router(autopilot_router.router, prefix="/api/v1/autopilot", tags=["A
 app.include_router(dashboard_router.router, prefix="/api/v1/dashboard", tags=["Dashboard"])
 app.include_router(semantic_router.router, prefix="/api/v1/semantic", tags=["Semantic / Metrics"])
 app.include_router(viz_router.router, prefix="/api/v1/viz", tags=["Visualize"])
+app.include_router(viz_ai_router.router, prefix="/api/v1/viz", tags=["Visualize AI"])
 app.include_router(roles_router.router, prefix="/api/v1/roles", tags=["Security — Roles"])
 app.include_router(users_admin_router.router, prefix="/api/v1/users", tags=["Security — Users"])
 app.include_router(policies_router.router, prefix="/api/v1/policies", tags=["Security — Policies"])
