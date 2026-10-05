@@ -235,10 +235,11 @@ export default function VisualizePage() {
 
   // Load connections on mount
   useEffect(() => {
-    api.get<{ connections: Connection[] }>("/api/v1/connectors/connections")
-      .then((d) => {
-        setConnections(d.connections || []);
-        const db = (d.connections || []).find(c => c.type?.toLowerCase() === "databricks");
+    api.get<Connection[]>("/api/v1/connectors/")
+      .then((res) => {
+        const list = Array.isArray(res) ? res : (res as any).connectors ?? [];
+        setConnections(list);
+        const db = list.find((c: any) => c.type?.toLowerCase() === "databricks");
         if (db) setConnId(db.id);
       })
       .catch(() => {});
