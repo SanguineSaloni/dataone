@@ -4,7 +4,7 @@
  * User picks catalog → database → table. Databricks LLM automatically
  * analyzes the columns and generates an insightful multi-chart dashboard.
  */
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { api } from "@/lib/api";
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
@@ -222,9 +222,13 @@ function SkeletonCard() {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function VisualizePage() {
   const [connections, setConnections] = useState<Connection[]>([]);
-  const [catalogTables, setCatalogTables] = useState<CatalogTable[]>([]);
+  const [tables, setTables] = useState<any[]>([]);
   const [connId, setConnId] = useState<number | null>(null);
-  const [tableName, setTableName] = useState<string>("");
+  
+  const [srcCat, setSrcCat] = useState("");
+  const [srcSch, setSrcSch] = useState("");
+  const [srcTbl, setSrcTbl] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AIInsightResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -234,34 +238,56 @@ export default function VisualizePage() {
     api.get<{ connections: Connection[] }>("/api/v1/connectors/connections")
       .then((d) => {
         setConnections(d.connections || []);
-        if (d.connections?.length) setConnId(d.connections[0].id);
+        const db = (d.connections || []).find(c => c.type?.toLowerCase() === "databricks");
+        if (db) setConnId(db.id);
       })
       .catch(() => {});
   }, []);
 
-  // Load catalog tables when connection changes
+  // Load schema and parse tables
   useEffect(() => {
     if (!connId) return;
-    setCatalogTables([]);
-    setTableName("");
+    setTables([]);
+    setSrcCat("");
+    setSrcSch("");
+    setSrcTbl("");
     setResult(null);
-    api.get<{ tables: CatalogTable[]; connection_id: number }>(`/api/v1/catalog/${connId}/tables`)
-      .then((d) => {
-        setCatalogTables(d.tables || []);
-        if (d.tables?.length) setTableName(d.tables[0].table_name);
+    api.get<{ schema: Record<string, any[]> }>(`/api/v1/connectors/${connId}/schema`)
+      .then((res) => {
+        let uid = 1;
+        setTables(Object.entries(res.schema ?? {}).map(([name, cols]) => ({
+          id: uid++, table_name: name,
+          columns: (cols || []).map(c => ({ id: uid++, column_name: c.name, data_type: c.type ?? "", is_primary_key: c.primary_key ?? false })),
+        })));
       })
       .catch(() => {});
   }, [connId]);
 
+  const struct = useMemo(() => {
+    const s: Record<string, Record<string, string[]>> = {};
+    tables.forEach(t => {
+      const p = t.table_name.split(".");
+      const [cat, sch, tbl] = p.length >= 3 ? [p[0], p[1], p.slice(2).join(".")] : p.length === 2 ? ["default", p[0], p[1]] : ["default", "default", t.table_name];
+      if (!s[cat]) s[cat] = {};
+      if (!s[cat][sch]) s[cat][sch] = [];
+      s[cat][sch].push(tbl);
+    });
+    return s;
+  }, [tables]);
+
+  const cats = Object.keys(struct).sort();
+  const srcSchs = srcCat ? Object.keys(struct[srcCat] || {}).sort() : [];
+  const srcTbls = srcSch ? (struct[srcCat]?.[srcSch] || []).sort() : [];
+
   const analyze = useCallback(async () => {
-    if (!connId || !tableName) return;
+    if (!connId || !srcCat || !srcSch || !srcTbl) return;
     setLoading(true);
     setError(null);
     setResult(null);
     try {
       const data = await api.post<AIInsightResponse>("/api/v1/viz/ai-insights", {
         connection_id: connId,
-        table_name: tableName,
+        table_name: `${srcCat}.${srcSch}.${srcTbl}`,
       });
       setResult(data);
     } catch (e: unknown) {
@@ -270,7 +296,7 @@ export default function VisualizePage() {
     } finally {
       setLoading(false);
     }
-  }, [connId, tableName]);
+  }, [connId, srcCat, srcSch, srcTbl]);
 
   const gridClass =
     result && result.charts.length > 0
@@ -298,17 +324,30 @@ export default function VisualizePage() {
 
             {/* Controls */}
             <div className="flex items-center gap-3 flex-wrap">
-              {/* Connection picker */}
+              {/* Catalog picker */}
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] text-white/30 uppercase tracking-widest font-semibold">Connection</label>
+                <label className="text-[10px] text-white/30 uppercase tracking-widest font-semibold">Catalog</label>
                 <select
-                  value={connId ?? ""}
-                  onChange={(e) => setConnId(Number(e.target.value))}
-                  className="bg-[#111318] border border-white/[0.08] rounded-lg px-3 py-2 text-[13px] text-white/80 focus:outline-none focus:border-white/20 min-w-[160px]"
+                  value={srcCat}
+                  onChange={(e) => { setSrcCat(e.target.value); setSrcSch(""); setSrcTbl(""); }}
+                  className="bg-[#111318] border border-white/[0.08] rounded-lg px-3 py-2 text-[13px] text-white/80 focus:outline-none focus:border-white/20 min-w-[140px]"
                 >
-                  {connections.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
+                  <option value="">— select —</option>
+                  {cats.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+
+              {/* Schema picker */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] text-white/30 uppercase tracking-widest font-semibold">Schema</label>
+                <select
+                  value={srcSch}
+                  onChange={(e) => { setSrcSch(e.target.value); setSrcTbl(""); }}
+                  disabled={!srcCat}
+                  className="bg-[#111318] border border-white/[0.08] rounded-lg px-3 py-2 text-[13px] text-white/80 focus:outline-none focus:border-white/20 min-w-[140px] disabled:opacity-40"
+                >
+                  <option value="">— select —</option>
+                  {srcSchs.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
 
@@ -316,16 +355,13 @@ export default function VisualizePage() {
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] text-white/30 uppercase tracking-widest font-semibold">Table</label>
                 <select
-                  value={tableName}
-                  onChange={(e) => setTableName(e.target.value)}
-                  className="bg-[#111318] border border-white/[0.08] rounded-lg px-3 py-2 text-[13px] text-white/80 focus:outline-none focus:border-white/20 min-w-[200px]"
+                  value={srcTbl}
+                  onChange={(e) => setSrcTbl(e.target.value)}
+                  disabled={!srcSch}
+                  className="bg-[#111318] border border-white/[0.08] rounded-lg px-3 py-2 text-[13px] text-white/80 focus:outline-none focus:border-white/20 min-w-[140px] disabled:opacity-40"
                 >
-                  {catalogTables.length === 0 && (
-                    <option value="">— no tables scanned —</option>
-                  )}
-                  {catalogTables.map((t) => (
-                    <option key={t.id} value={t.table_name}>{t.table_name}</option>
-                  ))}
+                  <option value="">— select —</option>
+                  {srcTbls.map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
               </div>
 
@@ -334,7 +370,7 @@ export default function VisualizePage() {
                 <label className="text-[10px] text-transparent uppercase tracking-widest">-</label>
                 <button
                   onClick={analyze}
-                  disabled={loading || !connId || !tableName}
+                  disabled={loading || !connId || !srcTbl}
                   className="flex items-center gap-2 px-5 py-2 rounded-lg font-semibold text-[13px] transition-all duration-200 disabled:opacity-40"
                   style={{
                     background: loading ? "rgba(99,102,241,0.3)" : "linear-gradient(135deg,#6366f1,#8b5cf6)",
