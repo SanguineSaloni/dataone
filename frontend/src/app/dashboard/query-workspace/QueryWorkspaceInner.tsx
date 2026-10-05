@@ -133,7 +133,6 @@ function QueryWorkspaceInner() {
             onChange={handleModeChange}
             options={[
               { value: "ask", label: "Ask", indicator: bgAskComplete },
-              { value: "sql", label: "SQL", indicator: bgSqlComplete },
             ]}
           />
         }

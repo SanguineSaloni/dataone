@@ -329,6 +329,7 @@ def ask(
     history: List[Dict[str, str]],
     actor: str = "unknown",
     session_id: Optional[str] = None,
+    user_llm_model: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Run one conversational turn: classify intent, ground, generate, classify, execute, mask, summarize."""
     # Intent gate (agentic_dba_tasks #1): classify BEFORE grounding/generation
@@ -425,7 +426,7 @@ def ask(
         return result
 
     augmented = _augment_with_history(question, history)
-    gen = NL2SQLService.generate_sql(augmented, schema, connection.type)
+    gen = NL2SQLService.generate_sql(augmented, schema, connection.type, user_llm_model=user_llm_model)
     result["sql"] = gen.get("sql")
     result["confidence"] = gen.get("confidence", 0)
     result["method"] = gen.get("method", "unknown")

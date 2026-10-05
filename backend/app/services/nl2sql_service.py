@@ -13,6 +13,7 @@ import requests
 from typing import List, Dict, Any, Optional
 from app.core.config import settings
 from app.core.circuit_breaker import ollama_circuit, CircuitBreakerOpen
+from app.services.databricks_llm_provider import get_databricks_llm_provider
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +51,7 @@ class NL2SQLService:
         natural_query: str,
         schema_context: Dict[str, Any],
         db_type: str = "sqlite",
+        user_llm_model: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Convert a natural language query to SQL.
@@ -78,7 +80,7 @@ class NL2SQLService:
         if "health" in query_lower or "report" in query_lower:
             return NL2SQLService._health_report(schema_context)
 
-        # ── LLM path via Ollama ───────────────────────────────
+        # ── LLM path via Databricks ───────────────────────────────
         schema_desc = NL2SQLService._schema_to_desc(schema_context)
         prompt = f"""You are a SQL expert. Convert the following natural language request to a valid {db_type} SQL query.
 
@@ -94,28 +96,20 @@ Rules:
 
 SQL:"""
 
+        llm_model = user_llm_model or settings.DATABRICKS_LLM_ENDPOINT or "databricks-meta-llama-3-3-70b-instruct"
+        llm_provider = get_databricks_llm_provider(endpoint_name=llm_model)
+
         for attempt in range(settings.OLLAMA_MAX_RETRIES + 1):
             try:
-                def _post():
-                    return requests.post(
-                        f"{settings.OLLAMA_HOST}/api/generate",
-                        json={"model": settings.OLLAMA_MODEL, "prompt": prompt, "stream": False},
-                        timeout=settings.OLLAMA_TIMEOUT,
-                    )
-                resp = ollama_circuit.call(_post)
-                if resp.status_code == 200:
-                    generated = resp.json().get("response", "").strip()
-                    sql_match = re.search(r"```sql\s*(.*?)```", generated, re.DOTALL)
-                    sql = sql_match.group(1).strip() if sql_match else generated.strip()
-                    if NL2SQLService._is_safe(sql):
-                        return {"sql": sql, "method": "llm", "confidence": 88}
-                    return {"sql": sql, "method": "llm", "confidence": 0, "blocked": True, "reason": "Unsafe query detected"}
-                logger.warning("Ollama NL2SQL returned status %s on attempt %d", resp.status_code, attempt + 1)
-            except CircuitBreakerOpen as e:
-                logger.warning("Ollama circuit open, skipping NL2SQL retries: %s", e)
-                break
+                response = llm_provider.generate(prompt=prompt, stream=False)
+                generated = response.get("response", "").strip()
+                sql_match = re.search(r"```sql\s*(.*?)```", generated, re.DOTALL)
+                sql = sql_match.group(1).strip() if sql_match else generated.strip()
+                if NL2SQLService._is_safe(sql):
+                    return {"sql": sql, "method": "llm", "confidence": 88}
+                return {"sql": sql, "method": "llm", "confidence": 0, "blocked": True, "reason": "Unsafe query detected"}
             except Exception as e:
-                logger.warning("Ollama NL2SQL call failed (attempt %d/%d): %s", attempt + 1, settings.OLLAMA_MAX_RETRIES + 1, e)
+                logger.warning("Databricks NL2SQL call failed (attempt %d/%d): %s", attempt + 1, settings.OLLAMA_MAX_RETRIES + 1, e)
                 if attempt < settings.OLLAMA_MAX_RETRIES:
                     time.sleep(2 ** attempt)
         logger.info("NL2SQL falling back to heuristic generator")
