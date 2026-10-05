@@ -496,7 +496,7 @@ function CatalogBrowser() {
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
-type Tab = "new" | "pipelines" | "catalog" | "connections";
+type Tab = "new" | "connections";
 
 export default function ConnectorsPage() {
   const router = useRouter();
@@ -620,8 +620,6 @@ export default function ConnectorsPage() {
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "new",       label: "New Connection",    icon: <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M12 5v14M5 12h14" /></svg> },
     { id: "connections", label: "Saved Connections", icon: <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg> },
-    { id: "pipelines", label: "Active Pipelines",  icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> },
-    { id: "catalog",   label: "Unity Catalog",     icon: <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M4 20L12 4l8 16" /><path d="M12 11l-3 4h6z" /></svg> },
   ];
 
   return (
@@ -858,103 +856,7 @@ export default function ConnectorsPage() {
           </div>
         )}
 
-        {/* ── ACTIVE PIPELINES TAB ── */}
-        {activeTab === "pipelines" && (
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-white/40 text-sm">{runs.length} total pipeline run{runs.length !== 1 ? "s" : ""}</p>
-            </div>
-            {loadingData ? (
-              <div className="flex items-center justify-center py-16 gap-3">
-                <div className="w-5 h-5 border-2 border-white/20/30 border-t-white rounded-full animate-spin" />
-                <span className="text-white/40 text-sm">Loading pipelines…</span>
-              </div>
-            ) : runs.length === 0 ? (
-              <div className="text-center py-16">
-                <div className="text-5xl mb-4"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg></div>
-                <p className="text-white/40 text-sm">No pipelines yet.</p>
-                <p className="text-white/25 text-xs mt-1">Create a connection in the &quot;New Connection&quot; tab to trigger your first Databricks ingestion pipeline.</p>
-                <button onClick={() => setActiveTab("new")}
-                  className="mt-6 px-6 py-2.5 rounded-lg bg-white/20 text-white text-sm font-semibold hover:bg-white/10 transition-colors">
-                  Create Connection →
-                </button>
-              </div>
-            ) : (
-              <div className="rounded-xl border border-white/[0.06] overflow-hidden">
-                <table className="w-full text-[13px]">
-                  <thead>
-                    <tr className="bg-[#111] border-b border-white/[0.06]">
-                      <th className="text-left px-5 py-3 text-white/40 font-medium">Run ID</th>
-                      <th className="text-left px-5 py-3 text-white/40 font-medium">Source Type</th>
-                      <th className="text-left px-5 py-3 text-white/40 font-medium">Status</th>
-                      <th className="text-left px-5 py-3 text-white/40 font-medium">Databricks Run</th>
-                      <th className="text-left px-5 py-3 text-white/40 font-medium">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/[0.04]">
-                    {runs.map(run => (
-                      <tr key={run.id} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="px-5 py-3 text-white/70 font-mono">#{run.id}</td>
-                        <td className="px-5 py-3 text-white/70 capitalize">{run.source_type || "—"}</td>
-                        <td className="px-5 py-3"><StatusBadge status={run.status} /></td>
-                        <td className="px-5 py-3">
-                          {run.databricks_run_url ? (
-                            <a href={run.databricks_run_url} target="_blank" rel="noopener noreferrer"
-                              className="text-white/80 hover:text-white/60 underline">
-                              {run.databricks_run_id ? `#${run.databricks_run_id}` : "View →"}
-                            </a>
-                          ) : <span className="text-white/30">{run.databricks_run_id ? `#${run.databricks_run_id}` : "—"}</span>}
-                        </td>
-                        <td className="px-5 py-3">
-                          <button
-                            onClick={() => router.push(`/dashboard/schema-mapper?conn=${run.source_connection_id}`)}
-                            className="px-3 py-1 bg-white/5 hover:bg-white/10 text-white text-[11px] font-semibold rounded-lg transition-colors border border-white/10">
-                            View Schema Mapping
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
 
-            {/* Connected sources summary */}
-            {connections.length > 0 && (
-              <div className="mt-4">
-                <p className="text-[13px] text-white/40 mb-3 font-medium">Registered Connections ({connections.length})</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {connections.map(conn => (
-                    <div key={conn.id} className="bg-[#111] border border-white/[0.06] rounded-xl p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[13px] font-semibold text-white/90 truncate">{conn.name}</span>
-                        <StatusBadge status={conn.health_status} />
-                      </div>
-                      <p className="text-[12px] text-white/40 capitalize">{conn.type} · {conn.environment}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── UNITY CATALOG TAB ── */}
-        {activeTab === "catalog" && (
-          <div>
-            <p className="text-white/40 text-sm mb-6">
-              Browse your Databricks Unity Catalog tables and schemas. Auto-discovered connections appear automatically.
-            </p>
-            {loadingData ? (
-              <div className="flex items-center justify-center py-16 gap-3">
-                <div className="w-5 h-5 border-2 border-white/20/30 border-t-white rounded-full animate-spin" />
-                <span className="text-white/40 text-sm">Loading connections…</span>
-              </div>
-            ) : (
-              <CatalogBrowser />
-            )}
-          </div>
-        )}
 
       </div>
     </div>
