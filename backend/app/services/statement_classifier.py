@@ -24,11 +24,13 @@ class StatementType(enum.Enum):
     UPDATE = "update"
     DELETE = "delete"
     DDL = "ddl"  # CREATE, ALTER, DROP, TRUNCATE
+    SHOW = "show"  # SHOW DATABASES, SHOW TABLES, DESCRIBE, USE — safe metadata queries
     UNKNOWN = "unknown"
 
 
 _WRITE_KEYWORDS = {"insert", "update", "delete", "merge", "upsert"}
 _DDL_KEYWORDS = {"create", "alter", "drop", "truncate", "rename", "comment", "grant", "revoke"}
+_SHOW_KEYWORDS = {"show", "describe", "desc", "use", "explain"}  # safe read-only metadata ops
 
 
 @dataclass
@@ -147,6 +149,8 @@ def _classify_single(stmt: Statement) -> StatementType:
     first_word = stmt_str.split()[0] if stmt_str.split() else ""
     if first_word == "select":
         return StatementType.SELECT
+    if first_word in _SHOW_KEYWORDS:
+        return StatementType.SHOW
     if first_word in _WRITE_KEYWORDS:
         return {
             "insert": StatementType.INSERT,
@@ -219,6 +223,7 @@ def _is_more_restrictive(new: StatementType, current: StatementType) -> bool:
     rank = {
         StatementType.UNKNOWN: 0,
         StatementType.SELECT: 1,
+        StatementType.SHOW: 1,  # SHOW/DESCRIBE are equally safe as SELECT
         StatementType.INSERT: 2,
         StatementType.UPDATE: 2,
         StatementType.DELETE: 2,

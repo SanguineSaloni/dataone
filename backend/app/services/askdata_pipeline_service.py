@@ -447,8 +447,9 @@ def ask(
 
     sql = gen.get("sql") or ""
     classified = classify(sql)
-    if classified.type != StatementType.SELECT:
-        result["error"] = "Generated SQL was not a read-only SELECT — refusing to execute for safety."
+    SAFE_TYPES = {StatementType.SELECT, StatementType.SHOW}
+    if classified.type not in SAFE_TYPES:
+        result["error"] = "Generated SQL was not a read-only statement — refusing to execute for safety."
         result["warnings"].append(f"Classified as {classified.type.value}.")
         return result
 

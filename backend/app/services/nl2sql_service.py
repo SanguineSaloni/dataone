@@ -76,18 +76,50 @@ class NL2SQLService:
 
         # ── LLM path via Databricks ───────────────────────────────
         schema_desc = NL2SQLService._schema_to_desc(schema_context)
-        prompt = f"""You are a SQL expert. Convert the following natural language request to a valid {db_type} SQL query.
 
-DATABASE SCHEMA:
+        # Extract catalog/database metadata so the LLM knows the namespace structure
+        catalogs: set = set()
+        databases: set = set()
+        for table_key in schema_context.keys():
+            parts = table_key.split(".")
+            if len(parts) == 3:
+                catalogs.add(parts[0])
+                databases.add(f"{parts[0]}.{parts[1]}")
+            elif len(parts) == 2:
+                databases.add(parts[0])
+
+        catalog_meta = ""
+        if catalogs:
+            catalog_meta += f"\nAvailable catalogs: {', '.join(sorted(catalogs))}"
+        if databases:
+            catalog_meta += f"\nAvailable databases/schemas: {', '.join(sorted(databases))}"
+
+        dialect_hint = ""
+        if db_type and db_type.lower() in ("databricks", "spark", "delta"):
+            dialect_hint = (
+                "\n- This is Databricks Unity Catalog. Use Databricks SQL syntax."
+                "\n- List catalogs: SHOW CATALOGS;"
+                "\n- List schemas/databases in a catalog: SHOW SCHEMAS IN <catalog>;"
+                "\n- List tables in a schema: SHOW TABLES IN <catalog>.<schema>;"
+                "\n- Describe a table: DESCRIBE TABLE <catalog>.<schema>.<table>;"
+                "\n- Query data: SELECT ... FROM <catalog>.<schema>.<table>;"
+            )
+
+        prompt = f"""You are a SQL expert. The user is querying a database using plain English.
+Convert the user's request to a valid {db_type} SQL query.
+{catalog_meta}
+
+DATABASE SCHEMA (available tables and columns):
 {schema_desc}
 
 USER REQUEST: {natural_query}
 
 Rules:
-- Return ONLY the SQL query, nothing else
-- Use only read-only statements (e.g. SELECT, SHOW, DESCRIBE)
-- Reference only tables and columns that exist in the schema above
-
+- Return ONLY the raw SQL query - no explanation, no markdown, no code blocks
+- Use only read-only statements (SELECT, SHOW, DESCRIBE, SHOW SCHEMAS, SHOW TABLES, SHOW CATALOGS)
+- Never wrap the SQL in triple backticks or any other markdown - return raw SQL only
+- Use the catalog, schema, and table names exactly as shown above
+{dialect_hint}
 SQL:"""
 
         llm_model = user_llm_model or settings.DATABRICKS_LLM_ENDPOINT or "databricks-meta-llama-3-3-70b-instruct"
