@@ -646,9 +646,6 @@ export default function ConnectorsPage() {
                     : "text-white/40 border-transparent hover:text-white/70 hover:border-white/20"
                 ].join(" ")}>
                 <span>{tab.icon}</span>{tab.label}
-                {tab.id === "pipelines" && runs.length > 0 && (
-                  <span className="ml-1 px-1.5 py-0.5 rounded-full bg-white/10/20 text-white/80 text-[10px] font-bold">{runs.length}</span>
-                )}
               </button>
             ))}
           </div>
