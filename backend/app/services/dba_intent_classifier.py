@@ -22,6 +22,12 @@ import re
 from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional, Tuple
 
+from app.services.databricks_llm_provider import get_databricks_llm_provider
+from app.core.config import settings
+import logging
+
+logger = logging.getLogger(__name__)
+
 # ── Result types ──────────────────────────────────────────────────────────
 
 
@@ -219,14 +225,44 @@ register_intent(IntentSpec(
 ))
 
 
-def classify_intent(question: str) -> IntentClassification:
-    """Classify one AskData question against every registered intent.
-    Deterministic; no LLM, no I/O. Highest score wins; ties break by
-    priority; nothing matching → ambiguous."""
+def classify_intent(question: str, user_llm_model: Optional[str] = None) -> IntentClassification:
+    """Classify one AskData question against every registered intent using LLM and deterministic fallback."""
     text = (question or "").strip()
     if not text:
         return IntentClassification("ambiguous", 0.0, "empty question")
 
+    prompt = f"""You are an intent classifier for a database assistant.
+Classify the following user request into exactly one of these categories:
+- platform_insight: questions about the platform's own governance, risk, or data quality metadata.
+- schema_design: requests to create, design, or build new schemas, tables, or pipelines.
+- external_action: requests to email, send, notify, or create tickets/issues in external systems.
+- read_query: requests to query, show, describe, or count data/schema/catalogs/tables/databases.
+- ambiguous: anything else that is unclear.
+
+Reply with ONLY the category name and nothing else.
+
+User request: {text}"""
+
+    try:
+        llm_model = user_llm_model or settings.DATABRICKS_LLM_ENDPOINT or "databricks-meta-llama-3-3-70b-instruct"
+        llm_provider = get_databricks_llm_provider(endpoint_name=llm_model)
+        response = llm_provider.generate(prompt=prompt, stream=False)
+        generated = response.get("response", "").strip().lower()
+        
+        # Check LLM response against registered intents
+        valid_intents = ["platform_insight", "schema_design", "external_action", "read_query", "ambiguous"]
+        for intent_name in valid_intents:
+            if intent_name in generated:
+                handler = None
+                for spec in registered_intents():
+                    if spec.name == intent_name:
+                        handler = spec.handler
+                        break
+                return IntentClassification(intent_name, 0.9, "llm classified", handler=handler)
+    except Exception as e:
+        logger.warning(f"LLM intent classification failed: {e}. Falling back to deterministic.")
+
+    # Fallback deterministic matching
     best: Optional[Tuple[float, int, IntentSpec, float, str]] = None
     for spec in registered_intents():
         result = spec.matcher(text)

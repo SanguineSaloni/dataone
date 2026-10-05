@@ -335,7 +335,7 @@ def ask(
     # Intent gate (agentic_dba_tasks #1): classify BEFORE grounding/generation
     # on the raw question (not the history-augmented text — prior turns must
     # not tip a fresh read question into the build bucket or vice versa).
-    intent = classify_intent(question)
+    intent = classify_intent(question, user_llm_model=user_llm_model)
     logger.info("[askdata] stage=intent_classified intent=%s confidence=%s", intent.intent, intent.confidence)
 
     if intent.intent == "platform_insight":
