@@ -327,7 +327,8 @@ async def upload_csv(
                 raise Exception(f"SQL execution failed: {err} \nStatement: {stmt[:100]}...")
             return res
 
-        # Ensure schema exists
+        # Ensure catalog and schema exist
+        exec_sql(f"CREATE CATALOG IF NOT EXISTS {catalog}")
         exec_sql(f"CREATE SCHEMA IF NOT EXISTS {catalog}.{schema}")
         
         # Create Table
