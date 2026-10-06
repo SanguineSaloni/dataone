@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { useWidgetData } from "./hooks/useWidgetData";
 import type { DashboardSummary, TimeRange } from "./types";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 interface Connector { id: number; name: string; type: string; }
 interface DriftAlert { id: number; connection_name: string | null; created_at: string; payload: Record<string, unknown> | null; }
 
@@ -34,46 +34,13 @@ function getIcon(name: string) {
   return icons[name] || icons['chart-bar'];
 }
 
-function KpiCircle({ kpi }: { kpi: any }) {
+function VerticalKpi({ kpi }: { kpi: any }) {
   const isPercent = String(kpi.label).includes('%') || String(kpi.label).includes('Score');
-  let percentValue = 0;
-  
-  if (!isNaN(Number(kpi.value))) {
-    const v = Number(kpi.value);
-    if (v <= 0) {
-      percentValue = 0;
-    } else if (isPercent) {
-      percentValue = Math.min(100, v);
-    } else {
-      // For raw numbers, cap the visual ring at 100.
-      percentValue = Math.min(100, v);
-    }
-  }
-
-  const dash = (percentValue / 100) * 283;
   return (
-    <Link href={kpi.link_url} className="flex flex-col items-center justify-center p-8 bg-[#111] rounded-[2rem] border border-white/5 relative overflow-hidden group hover:border-white/20 transition-all cursor-pointer">
-      <h3 className="text-[14px] text-white/70 font-semibold mb-6 tracking-wide text-center h-10 flex items-center justify-center">{kpi.label}</h3>
-      <div className="relative flex items-center justify-center w-32 h-32 mb-6">
-        <svg className="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-           <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="6" />
-           <circle cx="50" cy="50" r="45" fill="none" stroke="url(#kpiGradient)" strokeWidth="6"
-             strokeDasharray="283" strokeDashoffset={283 - dash} strokeLinecap="round" 
-             className="transition-all duration-1000 ease-out group-hover:opacity-80" />
-           <defs>
-             <linearGradient id="kpiGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-               <stop offset="0%" stopColor="#818cf8" />
-               <stop offset="100%" stopColor="#34d399" />
-             </linearGradient>
-           </defs>
-        </svg>
-        <div className="flex flex-col items-center justify-center absolute">
-           <div className="text-white/60 mb-2">{getIcon(kpi.icon)}</div>
-           <span className="text-2xl font-bold text-white tracking-tight">{kpi.value}{isPercent ? '%' : ''}</span>
-        </div>
-      </div>
-      <span className="text-[11px] text-white/40 text-center px-2 uppercase tracking-widest leading-relaxed h-8 line-clamp-2">{kpi.subtitle}</span>
-    </Link>
+    <div className="flex flex-col justify-center p-6 bg-transparent border-b border-white/5 last:border-b-0 hover:bg-white/[0.02] transition-colors cursor-pointer">
+      <h3 className="text-[13px] text-white/50 font-medium mb-3 tracking-wide">{kpi.label}</h3>
+      <div className="text-4xl font-bold text-[#3b82f6] tracking-tight">{kpi.value}{isPercent ? '%' : ''}</div>
+    </div>
   )
 }
 
@@ -119,50 +86,51 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col h-full bg-[#09090b] text-white">
-      <div className="flex-1 overflow-y-auto p-6 lg:p-10">
+      <div className="flex-1 overflow-y-auto p-6 lg:p-10 max-w-7xl mx-auto w-full">
         
         {/* Page header */}
-        <div className="flex items-start justify-between mb-10 px-2">
-          <div>
-            <h1 className="text-3xl font-bold text-white tracking-tight">Analytics Dashboard</h1>
-            <p className="text-[15px] text-white/60 mt-2">Real-time telemetry and platform intelligence metrics.</p>
-          </div>
-          <div className="flex items-center">
-            <button className="flex items-center gap-3 px-4 py-2 rounded-lg border border-white/20 text-white text-sm font-medium hover:bg-white/5 transition-all">
-              Last 7 days
-              <svg className="w-4 h-4 text-white/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
-            </button>
-          </div>
+        <div className="flex items-start justify-between mb-8">
+          <h1 className="text-3xl font-bold text-white tracking-tight">Analytics</h1>
         </div>
 
-        {/* Dynamic KPI grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 px-2 mb-14">
-          {kpis.map((kpi, idx) => (
-            <KpiCircle key={idx} kpi={kpi} />
-          ))}
+        {/* Filter Bar */}
+        <div className="flex flex-wrap lg:flex-nowrap items-center gap-4 mb-8 bg-[#111] border border-white/5 p-2 rounded-xl">
+          <div className="flex items-center flex-1 max-w-sm px-4 py-2">
+            <select className="bg-transparent border-none outline-none text-sm text-white/80 w-full appearance-none cursor-pointer">
+              <option value="all">All analytics tags</option>
+              <option value="prod">Production</option>
+              <option value="dev">Development</option>
+            </select>
+          </div>
+          
+          <div className="flex items-center gap-4 flex-1 px-4 py-2 border-l border-white/5">
+            <svg className="w-4 h-4 text-white/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+            <div className="flex items-center justify-between flex-1 text-sm text-white/80">
+              <span>06/15/2022</span>
+              <span className="text-white/40 mx-4">→</span>
+              <span>06/21/2022</span>
+            </div>
+          </div>
+
+          <button className="bg-[#0ea5e9] hover:bg-[#0284c7] text-white px-6 py-2 rounded-lg text-sm font-semibold transition-all shadow-[0_0_15px_rgba(14,165,233,0.3)] ml-auto">
+            Apply filters
+          </button>
         </div>
 
-        {/* Analytics Graphs */}
-        <div className="grid grid-cols-1 gap-6 px-2 pb-10">
-          <div className="rounded-2xl bg-[#111111] border border-white/[0.06] p-7 flex flex-col">
-            <h2 className="text-[17px] font-semibold text-white/90 mb-8">Platform Usage over Time</h2>
-            <div className="h-[350px] w-full">
+        {/* Main Section: KPIs + Chart */}
+        <div className="flex flex-col lg:flex-row gap-6 mb-12">
+          {/* Left: Stacked KPIs */}
+          <div className="w-full lg:w-1/4 flex flex-col bg-[#111] border border-white/5 rounded-xl overflow-hidden shadow-sm">
+            {kpis.slice(0, 3).map((kpi, idx) => (
+              <VerticalKpi key={idx} kpi={kpi} />
+            ))}
+          </div>
+
+          {/* Right: Main Chart */}
+          <div className="w-full lg:w-3/4 bg-[#111] border border-white/5 rounded-xl p-8 shadow-sm flex flex-col">
+            <div className="flex-1 h-[350px] w-full mt-4">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={mockTimeseriesData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorMigrations" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#818cf8" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#818cf8" stopOpacity={0}/>
-                    </linearGradient>
-                    <linearGradient id="colorViz" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#34d399" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#34d399" stopOpacity={0}/>
-                    </linearGradient>
-                    <linearGradient id="colorTime" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#f472b6" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#f472b6" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
+                <LineChart data={mockTimeseriesData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                   <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} dy={10} />
                   <YAxis stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} dx={-10} />
@@ -170,11 +138,94 @@ export default function DashboardPage() {
                     contentStyle={{ backgroundColor: '#111', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }}
                     itemStyle={{ color: '#fff' }}
                   />
-                  <Area type="monotone" dataKey="migrations" stroke="#818cf8" strokeWidth={3} fillOpacity={1} fill="url(#colorMigrations)" />
-                  <Area type="monotone" dataKey="visualizations" stroke="#34d399" strokeWidth={3} fillOpacity={1} fill="url(#colorViz)" />
-                  <Area type="monotone" dataKey="hours_saved" stroke="#f472b6" strokeWidth={3} fillOpacity={1} fill="url(#colorTime)" />
-                </AreaChart>
+                  <Line type="monotone" dataKey="migrations" stroke="#6ee7b7" strokeWidth={2} dot={{ r: 4, strokeWidth: 2, fill: "#09090b" }} activeDot={{ r: 6 }} />
+                  <Line type="monotone" dataKey="visualizations" stroke="#c084fc" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 4, strokeWidth: 2, fill: "#09090b" }} />
+                  <Line type="monotone" dataKey="hours_saved" stroke="#38bdf8" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 4, strokeWidth: 2, fill: "#09090b" }} />
+                </LineChart>
               </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Section: Tables */}
+        <div className="pt-8">
+          <div className="flex items-center gap-2 mb-2">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <h2 className="text-xl font-bold text-white tracking-tight">Platform analytics</h2>
+          </div>
+          <p className="text-white/50 text-sm mb-8">Gain insight into the most frequent active connectors, and recent drift alerts.</p>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+            {/* Table 1: Top Connectors */}
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-semibold text-white">Top Active Connectors</h3>
+                <button className="text-[#3b82f6] text-sm hover:underline flex items-center gap-1">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  View all
+                </button>
+              </div>
+              <div className="border border-white/10 rounded-lg overflow-hidden bg-[#111]">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-white/5 text-white/50 text-xs">
+                    <tr>
+                      <th className="px-4 py-3 font-medium">Connector Name</th>
+                      <th className="px-4 py-3 font-medium">Type</th>
+                      <th className="px-4 py-3 font-medium text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5 text-white/80">
+                    {connectors.data?.slice(0, 4).map((c, i) => (
+                      <tr key={i} className="hover:bg-white/5">
+                        <td className="px-4 py-3 text-[#3b82f6] font-medium">{c.name}</td>
+                        <td className="px-4 py-3"><span className="px-2 py-1 bg-white/10 rounded text-xs">{c.type}</span></td>
+                        <td className="px-4 py-3 flex gap-2 text-white/40 justify-end">
+                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </td>
+                      </tr>
+                    ))}
+                    {!connectors.data?.length && (
+                      <tr><td colSpan={3} className="px-4 py-8 text-center text-white/40">No connectors found</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Table 2: Recent Drift */}
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-semibold text-white">Recent Drift Alerts</h3>
+                <button className="text-[#3b82f6] text-sm hover:underline flex items-center gap-1">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  View all
+                </button>
+              </div>
+              <div className="border border-white/10 rounded-lg overflow-hidden bg-[#111]">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-white/5 text-white/50 text-xs">
+                    <tr>
+                      <th className="px-4 py-3 font-medium">Connection</th>
+                      <th className="px-4 py-3 font-medium">Detected At</th>
+                      <th className="px-4 py-3 font-medium text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5 text-white/80">
+                    {drift.data?.slice(0, 4).map((d, i) => (
+                      <tr key={i} className="hover:bg-white/5">
+                        <td className="px-4 py-3 text-[#3b82f6] font-medium">{d.connection_name ?? "Unknown"}</td>
+                        <td className="px-4 py-3"><span className="px-2 py-1 bg-white/10 rounded text-xs">{new Date(d.created_at).toLocaleDateString()}</span></td>
+                        <td className="px-4 py-3 flex gap-2 text-white/40 justify-end">
+                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </td>
+                      </tr>
+                    ))}
+                    {!drift.data?.length && (
+                      <tr><td colSpan={3} className="px-4 py-8 text-center text-white/40">No alerts found</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>

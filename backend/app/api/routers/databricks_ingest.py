@@ -9,7 +9,7 @@ POST /api/v1/databricks/ingest/genie            — Genie AI query
 """
 import logging
 from typing import Optional, List
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File, Form
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -264,4 +264,84 @@ def get_ingestion_tables(
         
     except Exception as e:
         logger.error("[databricks_ingest] get_ingestion_tables failed: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/upload-csv")
+async def upload_csv(
+    catalog: str = Form(...),
+    schema: str = Form(default="default"),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Upload a CSV directly to a Databricks Unity Catalog table."""
+    import csv
+    import io
+    from app.services.databricks_ingestion_service import _get_workspace_client
+    
+    try:
+        content = await file.read()
+        text = content.decode("utf-8-sig")
+        reader = csv.DictReader(io.StringIO(text))
+        rows = list(reader)
+        if not rows:
+            raise HTTPException(status_code=400, detail="CSV is empty")
+            
+        # Clean table name
+        table_name = file.filename.replace(".csv", "").replace("-", "_").replace(" ", "_")
+        if not table_name[0].isalpha():
+            table_name = "t_" + table_name
+        full_table_name = f"{catalog}.{schema}.{table_name}"
+        
+        wc = _get_workspace_client(None)
+        
+        # We need the warehouse_id
+        # We can get it from settings or just find a running warehouse
+        from app.core.config import settings
+        warehouse_id = getattr(settings, "DATABRICKS_SQL_WAREHOUSE_ID", None)
+        if not warehouse_id:
+            # Try to auto-detect a warehouse if not configured
+            warehouses = list(wc.warehouses.list())
+            if not warehouses:
+                raise Exception("No Databricks SQL Warehouses available to execute the query.")
+            warehouse_id = warehouses[0].id
+            
+        columns = list(rows[0].keys())
+        col_defs = ", ".join([f"`{c}` STRING" for c in columns])
+        
+        # Create Table
+        create_sql = f"CREATE TABLE IF NOT EXISTS {full_table_name} ({col_defs})"
+        wc.statement_execution.execute_statement(
+            warehouse_id=warehouse_id,
+            statement=create_sql,
+            wait_timeout="50s"
+        )
+        
+        # Insert rows in batches
+        batch_size = 100
+        for i in range(0, len(rows), batch_size):
+            batch = rows[i:i+batch_size]
+            values = []
+            for row in batch:
+                row_vals = []
+                for col in columns:
+                    val = str(row.get(col, "")).replace("'", "''")
+                    row_vals.append(f"'{val}'")
+                values.append("(" + ", ".join(row_vals) + ")")
+                
+            insert_sql = f"INSERT INTO {full_table_name} ({', '.join([f'`{c}`' for c in columns])}) VALUES {', '.join(values)}"
+            wc.statement_execution.execute_statement(
+                warehouse_id=warehouse_id,
+                statement=insert_sql,
+                wait_timeout="50s"
+            )
+            
+        # Record audit
+        record_audit(db, "csv_uploaded", actor=user.email, payload={"table": full_table_name, "rows": len(rows)})
+        db.commit()
+            
+        return {"message": "Success", "table": full_table_name, "rows": len(rows)}
+        
+    except Exception as e:
+        logger.error(f"[databricks_ingest] CSV upload failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))

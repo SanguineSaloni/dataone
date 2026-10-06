@@ -514,8 +514,35 @@ export default function ConnectorsPage() {
 
   // CSV upload
   const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [csvCatalog, setCsvCatalog] = useState("");
+  const [csvUploading, setCsvUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleUploadCsv = async () => {
+    if (!csvFile || !csvCatalog.trim()) return;
+    setError("");
+    setCsvUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", csvFile);
+      formData.append("catalog", csvCatalog.trim());
+      formData.append("schema", "default");
+
+      // We are adding postForm to api.ts, so we can cast it if needed
+      await (api as any).postForm("/api/v1/databricks/ingest/upload-csv", formData);
+
+      setCsvFile(null);
+      setCsvCatalog("");
+      alert("CSV uploaded to Databricks successfully!");
+      // Optionally trigger scan or something
+      setActiveTab("connections");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to upload CSV.");
+    } finally {
+      setCsvUploading(false);
+    }
+  };
 
   // Real data
   const [connections, setConnections] = useState<Connection[]>([]);
@@ -736,17 +763,17 @@ export default function ConnectorsPage() {
                   onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
                   onDragLeave={() => setIsDragging(false)}
                   onDrop={handleDrop}
-                  onClick={() => fileInputRef.current?.click()}>
+                  onClick={() => !csvFile && fileInputRef.current?.click()}>
                   <input ref={fileInputRef} type="file" accept=".csv" className="hidden"
                     onChange={e => { const f = e.target.files?.[0]; if (f) setCsvFile(f); }} />
                   {csvFile ? (
-                    <>
+                    <div className="w-full flex flex-col items-center">
                       <div className="text-4xl">📄</div>
-                      <p className="text-[15px] text-white/90 font-medium text-center">{csvFile.name}</p>
+                      <p className="text-[15px] text-white/90 font-medium text-center truncate w-full">{csvFile.name}</p>
                       <p className="text-[13px] text-white/40">{(csvFile.size / 1024 / 1024).toFixed(1)} MB</p>
                       <button onClick={e => { e.stopPropagation(); setCsvFile(null); }}
                         className="text-[13px] text-red-400 hover:text-red-300 transition-colors mt-2">Remove</button>
-                    </>
+                    </div>
                   ) : (
                     <>
                       <svg className="w-10 h-10 text-white/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
@@ -760,7 +787,36 @@ export default function ConnectorsPage() {
                     </>
                   )}
                 </div>
-                <p className="text-[12px] text-white/30 text-center mt-5">Supports .csv files up to 500 MB</p>
+                
+                {csvFile && (
+                  <div className="mt-4 flex flex-col gap-3">
+                    <div>
+                      <label className="text-[12px] text-white/60 mb-1 block">Unity Catalog Name</label>
+                      <input 
+                        type="text" 
+                        value={csvCatalog} 
+                        onChange={e => setCsvCatalog(e.target.value)} 
+                        placeholder="e.g. workspace"
+                        className="w-full px-3 py-2 rounded-lg bg-[#1a1a1a] border border-white/10 text-white text-[13px] placeholder:text-white/20 focus:outline-none focus:border-white/30 transition-colors"
+                      />
+                    </div>
+                    <button 
+                      onClick={handleUploadCsv} 
+                      disabled={csvUploading || !csvCatalog.trim()}
+                      className="w-full py-2.5 rounded-lg bg-[#3b82f6] text-white text-[13px] font-semibold hover:bg-[#2563eb] disabled:opacity-50 transition-colors flex justify-center items-center gap-2">
+                      {csvUploading ? (
+                        <>
+                          <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        "Upload to Unity Catalog"
+                      )}
+                    </button>
+                  </div>
+                )}
+                
+                <p className="text-[12px] text-white/30 text-center mt-4">Supports .csv files up to 500 MB</p>
               </div>
 
               {/* OR */}

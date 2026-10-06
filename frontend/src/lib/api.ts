@@ -145,6 +145,17 @@ export const api = {
     return res.json() as Promise<T>;
   },
 
+  async postForm<T>(path: string, body: FormData): Promise<T> {
+    const res = await fetch(`${API_BASE}${path}`, {
+      method: "POST",
+      headers: authHeaders(false),
+      body: body,
+    });
+    if (res.status === 401) { handle401(); throw new ApiError(401, "Unauthorized"); }
+    if (!res.ok) await throwApiError(res);
+    return res.json() as Promise<T>;
+  },
+
   async put<T>(path: string, body: unknown): Promise<T> {
     const res = await fetch(`${API_BASE}${path}`, {
       method: "PUT",
