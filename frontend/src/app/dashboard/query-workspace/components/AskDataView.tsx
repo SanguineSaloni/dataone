@@ -235,35 +235,38 @@ export default function AskDataView({
   };
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between gap-4 border-b border-border bg-glass-bg px-4 py-3 backdrop-blur-sm">
+    <div className="flex h-full flex-col bg-[#0b0c10]">
+      {/* HEADER */}
+      <div className="flex items-center justify-between gap-4 border-b border-white/[0.06] bg-[#111318] px-6 py-4 shadow-sm z-10 relative">
         <div>
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-fg">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-soft text-sm text-accent" aria-hidden="true">✦</span>
-            AskData
+          <h2 className="flex items-center gap-2 text-[15px] font-bold text-white/90 tracking-wide">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-white/5 text-[15px]" aria-hidden="true">✨</span>
+            NL2SQL Genie
           </h2>
-          <p className="ml-10 text-xs text-fg-subtle">Grounded, transparent SQL with read-only execution.</p>
+          <p className="ml-10 mt-1 text-[12px] text-white/40 font-medium">Conversational query generation grounded in Unity Catalog.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
           {sessionId && (
             <button
               type="button"
               onClick={startNewChat}
-              className="rounded-lg border border-border-strong bg-surface-overlay px-3 py-1.5 text-xs font-semibold text-fg-subtle hover:border-accent/30 hover:text-accent"
+              className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-[12px] font-semibold text-white/60 hover:text-white hover:bg-white/10 transition-all shadow-sm"
             >
-              + New chat
+              + New Chat
             </button>
           )}
-          <ConnectionPicker connections={connections} value={connectionId} onChange={setConnectionId} />
+          
+          <div className="flex items-center gap-2 bg-black/20 p-1 rounded-xl border border-white/[0.04]">
+            <ConnectionPicker connections={connections} value={connectionId} onChange={setConnectionId} />
           
           {/* Catalog Picker */}
           <select
             value={srcCat}
             onChange={(e) => { setSrcCat(e.target.value); setSrcSch(""); setSrcTbl(""); }}
-            className="rounded-lg border border-border-strong bg-surface-overlay px-3 py-1.5 text-xs text-fg-subtle focus:border-accent/50 focus:outline-none"
+            className="bg-[#111318] border border-transparent hover:border-white/10 rounded-lg px-3 py-1.5 text-[12px] text-white/70 focus:outline-none focus:border-white/20 transition-colors appearance-none cursor-pointer"
             title="Catalog"
           >
-            <option value="">Catalog</option>
+            <option value="">Catalog…</option>
             {cats.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
           {/* Schema Picker */}
@@ -271,10 +274,10 @@ export default function AskDataView({
             value={srcSch}
             onChange={(e) => { setSrcSch(e.target.value); setSrcTbl(""); }}
             disabled={!srcCat}
-            className="rounded-lg border border-border-strong bg-surface-overlay px-3 py-1.5 text-xs text-fg-subtle focus:border-accent/50 focus:outline-none disabled:opacity-50"
+            className="bg-[#111318] border border-transparent hover:border-white/10 rounded-lg px-3 py-1.5 text-[12px] text-white/70 focus:outline-none focus:border-white/20 transition-colors disabled:opacity-30 appearance-none cursor-pointer"
             title="Schema"
           >
-            <option value="">Schema</option>
+            <option value="">Schema…</option>
             {srcSchs.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
           {/* Table Picker */}
@@ -282,22 +285,24 @@ export default function AskDataView({
             value={srcTbl}
             onChange={(e) => setSrcTbl(e.target.value)}
             disabled={!srcSch}
-            className="rounded-lg border border-border-strong bg-surface-overlay px-3 py-1.5 text-xs text-fg-subtle focus:border-accent/50 focus:outline-none disabled:opacity-50"
+            className="bg-[#111318] border border-transparent hover:border-white/10 rounded-lg px-3 py-1.5 text-[12px] text-white/70 focus:outline-none focus:border-white/20 transition-colors disabled:opacity-30 appearance-none cursor-pointer"
             title="Table"
           >
-            <option value="">Table (Optional)</option>
+            <option value="">Table (Optional)…</option>
             {srcTbls.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
+          </div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+      {/* CHAT AREA */}
+      <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4 relative">
         {turns.map((turn, i) => (
           <div key={i}>
             <ChatBubble turn={turn} connectionId={connectionId} onEditInSql={onEditInSql} />
             {turn.response?.plan_id != null && (
-              <div className="flex justify-start">
-                <div className="max-w-[80%] w-full">
+              <div className="flex justify-start mb-6 animate-in fade-in duration-300">
+                <div className="max-w-[85%] w-full">
                   <SchemaDesignPlanCard planId={turn.response.plan_id} />
                 </div>
               </div>
@@ -305,27 +310,28 @@ export default function AskDataView({
           </div>
         ))}
         {loading && (
-          <div className="flex justify-start">
-            <div className="bg-surface-elevated border border-border rounded-2xl px-4 py-3 flex items-center gap-2">
-              <div className="flex gap-1">
-                <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+          <div className="flex justify-start mb-6 animate-in fade-in duration-300">
+            <div className="bg-[#111318] border border-white/[0.06] rounded-2xl px-5 py-4 flex items-center gap-3 shadow-xl">
+              <div className="flex gap-1.5">
+                <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                <div className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
               </div>
-              <span className="text-xs text-fg-subtle">Thinking…</span>
+              <span className="text-[12px] font-medium text-white/50 tracking-wide">Genie is thinking…</span>
             </div>
           </div>
         )}
         <div ref={endRef} />
       </div>
 
+      {/* SUGGESTIONS */}
       {turns.length <= 1 && (
-        <div className="px-4 pb-2 flex flex-wrap gap-2">
+        <div className="px-6 pb-4 flex flex-wrap gap-2.5">
           {SUGGESTIONS.map((s, i) => (
             <button
               key={i}
               onClick={() => sendMessage(s)}
-              className="rounded-full border border-border bg-surface-overlay px-3 py-1.5 text-[11px] text-fg-muted transition-all hover:border-accent/30 hover:bg-accent-soft hover:text-accent"
+              className="rounded-full border border-white/10 bg-[#111318] px-4 py-2 text-[12px] font-medium text-white/50 transition-all hover:border-white/20 hover:bg-white/5 hover:text-white/90 hover:-translate-y-0.5 shadow-sm"
             >
               {s}
             </button>
@@ -333,23 +339,31 @@ export default function AskDataView({
         </div>
       )}
 
-      <div className="border-t border-border bg-glass-bg-strong p-4 backdrop-blur-xl">
-        <div className="flex gap-2">
+      {/* INPUT BAR */}
+      <div className="p-6 pt-0">
+        <div className="relative flex items-center bg-[#111318] border border-white/[0.08] rounded-2xl p-2 shadow-lg transition-all focus-within:border-white/20 focus-within:shadow-[0_0_15px_rgba(255,255,255,0.05)]">
           <input
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-            placeholder="Ask about your data…"
+            placeholder="Ask a read-only question in english... (e.g. what is the avg sales rate this quarter?)"
             aria-label="Ask a question about your data"
-            className="flex-1 rounded-xl border border-border-strong bg-surface-overlay px-4 py-2.5 text-sm text-fg placeholder:text-fg-subtle focus:border-accent focus:outline-none"
+            className="flex-1 bg-transparent px-4 py-3 text-[14px] text-white/90 placeholder:text-white/30 focus:outline-none"
           />
           <button
             onClick={() => sendMessage()}
             disabled={loading || !input.trim() || connectionId == null}
-            className="workspace-primary-action px-5 py-2.5"
+            className="shrink-0 flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-[13px] tracking-wide transition-all disabled:opacity-40"
+            style={{
+              background: loading || !input.trim() || connectionId == null
+                ? "rgba(255,255,255,0.05)"
+                : "linear-gradient(135deg,#6366f1,#8b5cf6)",
+              color: loading || !input.trim() || connectionId == null ? "rgba(255,255,255,0.3)" : "white",
+              boxShadow: loading || !input.trim() || connectionId == null ? "none" : "0 4px 15px -3px rgba(99, 102, 241, 0.4)",
+            }}
           >
-            Send
+            {loading ? "Asking..." : "Ask Genie"}
           </button>
         </div>
       </div>
