@@ -269,7 +269,7 @@ def get_ingestion_tables(
 @router.post("/upload-csv")
 async def upload_csv(
     catalog: str = Form(...),
-    schema: str = Form(default="default"),
+    schema_name: str = Form(default="default", alias="schema"),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
@@ -291,7 +291,7 @@ async def upload_csv(
         table_name = file.filename.replace(".csv", "").replace("-", "_").replace(" ", "_")
         if not table_name[0].isalpha():
             table_name = "t_" + table_name
-        full_table_name = f"{catalog}.{schema}.{table_name}"
+        full_table_name = f"{catalog}.{schema_name}.{table_name}"
         
         wc = _get_workspace_client(None)
         
@@ -334,9 +334,9 @@ async def upload_csv(
         except Exception as e:
             logger.warning(f"[databricks_ingest] Could not set catalog owner: {e}")
 
-        exec_sql(f"CREATE SCHEMA IF NOT EXISTS {catalog}.{schema}")
+        exec_sql(f"CREATE SCHEMA IF NOT EXISTS {catalog}.{schema_name}")
         try:
-            exec_sql(f"ALTER SCHEMA {catalog}.{schema} OWNER TO `{user.email}`")
+            exec_sql(f"ALTER SCHEMA {catalog}.{schema_name} OWNER TO `{user.email}`")
         except Exception as e:
             logger.warning(f"[databricks_ingest] Could not set schema owner: {e}")
         
