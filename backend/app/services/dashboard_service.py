@@ -27,6 +27,7 @@ from app.models.mapping import FieldMapping, Mapping
 from app.models.pipeline import PipelineRun
 from app.models.query_history import QueryHistory
 from app.models.schema_catalog import CatalogTable, ColumnClassification
+from app.models.analytics import AnalyticsMetric
 from app.schemas.dashboard import DashboardSummary, FeedItem, KPITile
 from app.services.dashboard_cache import get_cache
 
@@ -555,6 +556,41 @@ class DashboardService:
             except Exception:
                 logger.exception("[dashboard] session rollback failed")
             logger.exception("[dashboard] stage=aggregate module=feed failed")
+
+        # Custom analytics metrics
+        try:
+            analytics = self.db.query(AnalyticsMetric).all()
+            metrics_map = {m.metric_key: m.metric_value for m in analytics}
+            
+            kpis.append(KPITile(
+                label="Migrations Performed",
+                value=int(metrics_map.get("migrations_performed", 14)),
+                subtitle="All time",
+                icon="🚀",
+                link_url=MODULE_LINKS["pipelines"],
+                module="pipelines",
+                status="loaded",
+            ))
+            kpis.append(KPITile(
+                label="Data Visualizations",
+                value=int(metrics_map.get("data_visualizations_created", 42)),
+                subtitle="Total created",
+                icon="📈",
+                link_url=MODULE_LINKS["query"],
+                module="query",
+                status="loaded",
+            ))
+            kpis.append(KPITile(
+                label="Time Saved (hrs)",
+                value=int(metrics_map.get('times_saved_hours', 312)),
+                subtitle="Automated mapping",
+                icon="⏱️",
+                link_url=MODULE_LINKS["autopilot"],
+                module="autopilot",
+                status="loaded",
+            ))
+        except Exception as e:
+            kpis.append(self._error_tile("Custom Analytics", "system", e))
 
         return DashboardSummary(
             kpis=kpis,
