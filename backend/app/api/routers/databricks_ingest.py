@@ -309,13 +309,30 @@ async def upload_csv(
         columns = list(rows[0].keys())
         col_defs = ", ".join([f"`{c}` STRING" for c in columns])
         
+        def exec_sql(stmt: str):
+            res = wc.statement_execution.execute_statement(
+                warehouse_id=warehouse_id,
+                statement=stmt,
+                wait_timeout="50s"
+            )
+            
+            # If still pending/running, wait for it
+            import time
+            while res.status and res.status.state and res.status.state.value in ('PENDING', 'RUNNING'):
+                time.sleep(2)
+                res = wc.statement_execution.get_statement(res.statement_id)
+                
+            if res.status and res.status.state and res.status.state.value == 'FAILED':
+                err = res.status.error.message if res.status.error else "Unknown error"
+                raise Exception(f"SQL execution failed: {err} \nStatement: {stmt[:100]}...")
+            return res
+
+        # Ensure schema exists
+        exec_sql(f"CREATE SCHEMA IF NOT EXISTS {catalog}.{schema}")
+        
         # Create Table
         create_sql = f"CREATE TABLE IF NOT EXISTS {full_table_name} ({col_defs})"
-        wc.statement_execution.execute_statement(
-            warehouse_id=warehouse_id,
-            statement=create_sql,
-            wait_timeout="50s"
-        )
+        exec_sql(create_sql)
         
         # Insert rows in batches
         batch_size = 5000
@@ -330,11 +347,7 @@ async def upload_csv(
                 values.append("(" + ", ".join(row_vals) + ")")
                 
             insert_sql = f"INSERT INTO {full_table_name} ({', '.join([f'`{c}`' for c in columns])}) VALUES {', '.join(values)}"
-            wc.statement_execution.execute_statement(
-                warehouse_id=warehouse_id,
-                statement=insert_sql,
-                wait_timeout="50s"
-            )
+            exec_sql(insert_sql)
             
         # Record audit
         record_audit(db, "csv_uploaded", actor=user.email, payload={"table": full_table_name, "rows": len(rows)})

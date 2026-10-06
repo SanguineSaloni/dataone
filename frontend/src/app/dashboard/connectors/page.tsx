@@ -530,11 +530,11 @@ export default function ConnectorsPage() {
       formData.append("schema", "default");
 
       // We are adding postForm to api.ts, so we can cast it if needed
-      await (api as any).postForm("/api/v1/databricks/ingest/upload-csv", formData);
+      const res = await (api as any).postForm("/api/v1/databricks/ingest/upload-csv", formData);
 
       setCsvFile(null);
       setCsvCatalog("");
-      alert("CSV uploaded to Databricks successfully!");
+      alert(`CSV uploaded successfully!\nLocation: ${res.table}\nRows inserted: ${res.rows}`);
       // Optionally trigger scan or something
       setActiveTab("connections");
     } catch (err) {
