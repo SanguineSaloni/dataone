@@ -329,24 +329,11 @@ async def upload_csv(
 
         # Ensure catalog and schema exist
         exec_sql(f"CREATE CATALOG IF NOT EXISTS {catalog}")
-        try:
-            exec_sql(f"ALTER CATALOG {catalog} OWNER TO `{user.email}`")
-        except Exception as e:
-            logger.warning(f"[databricks_ingest] Could not set catalog owner: {e}")
-
         exec_sql(f"CREATE SCHEMA IF NOT EXISTS {catalog}.{schema_name}")
-        try:
-            exec_sql(f"ALTER SCHEMA {catalog}.{schema_name} OWNER TO `{user.email}`")
-        except Exception as e:
-            logger.warning(f"[databricks_ingest] Could not set schema owner: {e}")
         
         # Create Table
         create_sql = f"CREATE TABLE IF NOT EXISTS {full_table_name} ({col_defs})"
         exec_sql(create_sql)
-        try:
-            exec_sql(f"ALTER TABLE {full_table_name} OWNER TO `{user.email}`")
-        except Exception as e:
-            logger.warning(f"[databricks_ingest] Could not set table owner: {e}")
         
         # Insert rows in batches
         batch_size = 5000
@@ -362,6 +349,20 @@ async def upload_csv(
                 
             insert_sql = f"INSERT INTO {full_table_name} ({', '.join([f'`{c}`' for c in columns])}) VALUES {', '.join(values)}"
             exec_sql(insert_sql)
+            
+        # Transfer ownership to user so they can see it
+        try:
+            exec_sql(f"ALTER CATALOG {catalog} OWNER TO `{user.email}`")
+        except Exception as e:
+            logger.warning(f"[databricks_ingest] Could not set catalog owner: {e}")
+        try:
+            exec_sql(f"ALTER SCHEMA {catalog}.{schema_name} OWNER TO `{user.email}`")
+        except Exception as e:
+            logger.warning(f"[databricks_ingest] Could not set schema owner: {e}")
+        try:
+            exec_sql(f"ALTER TABLE {full_table_name} OWNER TO `{user.email}`")
+        except Exception as e:
+            logger.warning(f"[databricks_ingest] Could not set table owner: {e}")
             
         # Record audit
         record_audit(db, "csv_uploaded", actor=user.email, payload={"table": full_table_name, "rows": len(rows)})
