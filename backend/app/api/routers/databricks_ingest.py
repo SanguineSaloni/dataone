@@ -318,7 +318,7 @@ async def upload_csv(
         )
         
         # Insert rows in batches
-        batch_size = 100
+        batch_size = 5000
         for i in range(0, len(rows), batch_size):
             batch = rows[i:i+batch_size]
             values = []
