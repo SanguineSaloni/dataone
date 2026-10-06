@@ -350,19 +350,21 @@ async def upload_csv(
             insert_sql = f"INSERT INTO {full_table_name} ({', '.join([f'`{c}`' for c in columns])}) VALUES {', '.join(values)}"
             exec_sql(insert_sql)
             
-        # Transfer ownership to user so they can see it
+        # Transfer permissions to user so they can see and manage it
+        # We use GRANT instead of ALTER OWNER so the App Service Principal 
+        # retains permissions to upload additional files to this catalog in the future.
         try:
-            exec_sql(f"ALTER CATALOG {catalog} OWNER TO `{user.email}`")
+            exec_sql(f"GRANT ALL PRIVILEGES ON CATALOG {catalog} TO `{user.email}`")
         except Exception as e:
-            logger.warning(f"[databricks_ingest] Could not set catalog owner: {e}")
+            logger.warning(f"[databricks_ingest] Could not grant catalog privileges: {e}")
         try:
-            exec_sql(f"ALTER SCHEMA {catalog}.{schema_name} OWNER TO `{user.email}`")
+            exec_sql(f"GRANT ALL PRIVILEGES ON SCHEMA {catalog}.{schema_name} TO `{user.email}`")
         except Exception as e:
-            logger.warning(f"[databricks_ingest] Could not set schema owner: {e}")
+            logger.warning(f"[databricks_ingest] Could not grant schema privileges: {e}")
         try:
-            exec_sql(f"ALTER TABLE {full_table_name} OWNER TO `{user.email}`")
+            exec_sql(f"GRANT ALL PRIVILEGES ON TABLE {full_table_name} TO `{user.email}`")
         except Exception as e:
-            logger.warning(f"[databricks_ingest] Could not set table owner: {e}")
+            logger.warning(f"[databricks_ingest] Could not grant table privileges: {e}")
             
         # Record audit
         record_audit(db, "csv_uploaded", actor=user.email, payload={"table": full_table_name, "rows": len(rows)})
