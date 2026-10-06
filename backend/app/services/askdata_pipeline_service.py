@@ -46,12 +46,14 @@ PII_MASK_ROLES = {"viewer"}
 MAX_HISTORY_MESSAGES = 6
 
 
-def _ground_schema(db: Session, connection: DBConnection) -> Tuple[Dict[str, Any], bool]:
+def _ground_schema(db: Session, connection: DBConnection, table_name: Optional[str] = None) -> Tuple[Dict[str, Any], bool]:
     """Returns (schema_context, grounded).
 
     grounded=False means the connection hasn't been scanned into the Schema
     Intel catalog yet, so this fell back to live introspection.
     """
+    schema = {}
+    grounded = False
     catalog_tables = SchemaCatalogService.get_catalog(db, connection.id)
     if catalog_tables:
         schema = {
@@ -66,12 +68,24 @@ def _ground_schema(db: Session, connection: DBConnection) -> Tuple[Dict[str, Any
             ]
             for t in catalog_tables
         }
-        return schema, True
-    try:
-        return SchemaService.get_full_schema(connection), False
-    except Exception as exc:
-        logger.warning("AskData: live schema fallback failed for connection %s: %s", connection.id, exc)
-        return {}, False
+        grounded = True
+    else:
+        try:
+            schema = SchemaService.get_full_schema(connection)
+        except Exception as exc:
+            logger.warning("AskData: live schema fallback failed for connection %s: %s", connection.id, exc)
+            return {}, False
+
+    if table_name and schema:
+        if table_name in schema:
+            schema = {table_name: schema[table_name]}
+        else:
+            for t_name in schema.keys():
+                if t_name.endswith("." + table_name.split(".")[-1]) or table_name.endswith(t_name):
+                    schema = {t_name: schema[t_name]}
+                    break
+
+    return schema, grounded
 
 
 def _augment_with_history(question: str, history: List[Dict[str, str]]) -> str:
@@ -329,12 +343,14 @@ def ask(
     history: List[Dict[str, str]],
     actor: str = "unknown",
     session_id: Optional[str] = None,
+    user_llm_model: Optional[str] = None,
+    table_name: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Run one conversational turn: classify intent, ground, generate, classify, execute, mask, summarize."""
     # Intent gate (agentic_dba_tasks #1): classify BEFORE grounding/generation
     # on the raw question (not the history-augmented text — prior turns must
     # not tip a fresh read question into the build bucket or vice versa).
-    intent = classify_intent(question)
+    intent = classify_intent(question, user_llm_model=user_llm_model)
     logger.info("[askdata] stage=intent_classified intent=%s confidence=%s", intent.intent, intent.confidence)
 
     if intent.intent == "platform_insight":
@@ -352,7 +368,7 @@ def ask(
         }
         return _handle_platform_insight(db, question, result)
 
-    schema, grounded = _ground_schema(db, connection)
+    schema, grounded = _ground_schema(db, connection, table_name)
     result: Dict[str, Any] = {
         "sql": None, "grounded": grounded, "confidence": 0, "method": "none",
         "executed": False, "columns": [], "rows": [], "row_count": 0,
@@ -425,7 +441,7 @@ def ask(
         return result
 
     augmented = _augment_with_history(question, history)
-    gen = NL2SQLService.generate_sql(augmented, schema, connection.type)
+    gen = NL2SQLService.generate_sql(augmented, schema, connection.type, user_llm_model=user_llm_model)
     result["sql"] = gen.get("sql")
     result["confidence"] = gen.get("confidence", 0)
     result["method"] = gen.get("method", "unknown")
@@ -446,8 +462,9 @@ def ask(
 
     sql = gen.get("sql") or ""
     classified = classify(sql)
-    if classified.type != StatementType.SELECT:
-        result["error"] = "Generated SQL was not a read-only SELECT — refusing to execute for safety."
+    SAFE_TYPES = {StatementType.SELECT, StatementType.SHOW}
+    if classified.type not in SAFE_TYPES:
+        result["error"] = "Generated SQL was not a read-only statement — refusing to execute for safety."
         result["warnings"].append(f"Classified as {classified.type.value}.")
         return result
 

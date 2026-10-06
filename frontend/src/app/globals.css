@@ -205,15 +205,15 @@ body {
 }
 .workspace-header { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 1.5rem; }
 .workspace-header > .workspace-header-actions { flex: 1 1 auto; min-width: 0; justify-content: flex-end; }
-.workspace-eyebrow { margin-bottom: .35rem; color: var(--accent); font-size: .6875rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
-.workspace-primary-action { display: inline-flex; min-height: 2.5rem; align-items: center; justify-content: center; gap: .5rem; border-radius: .75rem; padding: .625rem 1rem; background: linear-gradient(135deg, var(--accent), var(--info)); color: var(--accent-fg); font-size: .875rem; font-weight: 650; box-shadow: var(--accent-glow); transition: transform 150ms ease, filter 150ms ease; }
+.workspace-eyebrow { margin-bottom: .35rem; color: var(--fg); font-size: .6875rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.workspace-primary-action { display: inline-flex; min-height: 2.5rem; align-items: center; justify-content: center; gap: .5rem; border-radius: .75rem; padding: .625rem 1rem; background: var(--fg); color: var(--background); font-size: .875rem; font-weight: 650; box-shadow: none; transition: transform 150ms ease, filter 150ms ease; }
 .workspace-primary-action:hover { filter: brightness(1.06); }
 .workspace-primary-action:active { transform: translateY(1px); }
 .workspace-primary-action:disabled { cursor: not-allowed; filter: grayscale(.4); opacity: .55; }
 .workspace-segments { display: inline-flex; gap: .25rem; padding: .25rem; border: 1px solid var(--border); border-radius: .75rem; background: var(--surface-overlay); }
 .workspace-segment { position: relative; min-width: 4rem; border-radius: .5rem; padding: .45rem .8rem; color: var(--fg-muted); font-size: .75rem; font-weight: 650; transition: background-color 150ms ease, color 150ms ease, box-shadow 150ms ease; }
 .workspace-segment:hover { color: var(--fg); }
-.workspace-segment-active { background: var(--surface-elevated); color: var(--accent); box-shadow: var(--glass-shadow); }
+.workspace-segment-active { background: var(--surface-elevated); color: var(--fg); box-shadow: var(--glass-shadow); }
 .workspace-segment-indicator { position: absolute; right: .25rem; top: .25rem; width: .4rem; height: .4rem; border-radius: 999px; background: var(--success); }
 @media (max-width: 640px) {
   .workspace-header { flex-direction: column; }

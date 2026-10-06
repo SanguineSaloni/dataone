@@ -73,7 +73,8 @@ def ask(
 
     result = askdata_pipeline_service.ask(
         db, conn, req.question, user.role, history,
-        actor=user.email, session_id=session_id,
+        actor=user.email, session_id=session_id, user_llm_model=user.llm_model,
+        table_name=req.table_name
     )
 
     db.add(ChatMessage(

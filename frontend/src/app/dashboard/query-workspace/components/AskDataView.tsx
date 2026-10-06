@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { api, ApiError } from "@/lib/api";
 import ChatBubble from "../../askdata/components/ChatBubble";
 import ConnectionPicker from "../../askdata/components/ConnectionPicker";
@@ -108,7 +108,46 @@ export default function AskDataView({
   const inputRef = useRef<HTMLInputElement>(null);
   const restoreAttemptedRef = useRef(false);
 
+  // Schema state
+  const [tables, setTables] = useState<any[]>([]);
+  const [srcCat, setSrcCat] = useState("");
+  const [srcSch, setSrcSch] = useState("");
+  const [srcTbl, setSrcTbl] = useState("");
+
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [turns]);
+
+  // Load schema
+  useEffect(() => {
+    if (!connectionId) return;
+    setTables([]);
+    setSrcCat("");
+    setSrcSch("");
+    setSrcTbl("");
+    api.get<{ schema: Record<string, any[]> }>(`/api/v1/connectors/${connectionId}/schema`)
+      .then((res) => {
+        let uid = 1;
+        setTables(Object.entries(res.schema ?? {}).map(([name, cols]) => ({
+          id: uid++, table_name: name,
+        })));
+      })
+      .catch(() => {});
+  }, [connectionId]);
+
+  const struct = useMemo(() => {
+    const s: Record<string, Record<string, string[]>> = {};
+    tables.forEach(t => {
+      const p = t.table_name.split(".");
+      const [cat, sch, tbl] = p.length >= 3 ? [p[0], p[1], p.slice(2).join(".")] : p.length === 2 ? ["default", p[0], p[1]] : ["default", "default", t.table_name];
+      if (!s[cat]) s[cat] = {};
+      if (!s[cat][sch]) s[cat][sch] = [];
+      s[cat][sch].push(tbl);
+    });
+    return s;
+  }, [tables]);
+
+  const cats = Object.keys(struct).sort();
+  const srcSchs = srcCat ? Object.keys(struct[srcCat] || {}).sort() : [];
+  const srcTbls = srcSch ? (struct[srcCat]?.[srcSch] || []).sort() : [];
 
   // Restore the last conversation in this browser tab (B05): this
   // component remounts fresh whenever the user navigates to a different
@@ -160,11 +199,16 @@ export default function AskDataView({
     setInput("");
     setLoading(true);
     try {
-      const data = await api.post<AskDataAskResponse>("/api/v1/askdata/ask", {
+      const payload: any = {
         connection_id: connectionId,
         question,
         session_id: sessionId,
-      });
+      };
+      if (srcCat && srcSch && srcTbl) {
+        payload.table_name = `${srcCat}.${srcSch}.${srcTbl}`;
+      }
+      
+      const data = await api.post<AskDataAskResponse>("/api/v1/askdata/ask", payload);
       setSessionId(data.session_id);
       writeStoredSession({ sessionId: data.session_id, connectionId });
       setTurns((p) => [...p, {
@@ -190,91 +234,143 @@ export default function AskDataView({
     inputRef.current?.focus();
   };
 
-  return (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between gap-4 border-b border-border bg-glass-bg px-4 py-3 backdrop-blur-sm">
-        <div>
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-fg">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-soft text-sm text-accent" aria-hidden="true">✦</span>
-            AskData
-          </h2>
-          <p className="ml-10 text-xs text-fg-subtle">Grounded, transparent SQL with read-only execution.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {sessionId && (
-            <button
-              type="button"
-              onClick={startNewChat}
-              className="rounded-lg border border-border-strong bg-surface-overlay px-3 py-1.5 text-xs font-semibold text-fg-subtle hover:border-accent/30 hover:text-accent"
-            >
-              + New chat
-            </button>
-          )}
-          <ConnectionPicker connections={connections} value={connectionId} onChange={setConnectionId} />
-        </div>
-      </div>
+  const isInitialState = turns.length <= 1;
 
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
-        {turns.map((turn, i) => (
-          <div key={i}>
-            <ChatBubble turn={turn} connectionId={connectionId} onEditInSql={onEditInSql} />
-            {turn.response?.plan_id != null && (
-              <div className="flex justify-start">
-                <div className="max-w-[80%] w-full">
-                  <SchemaDesignPlanCard planId={turn.response.plan_id} />
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
-        {loading && (
-          <div className="flex justify-start">
-            <div className="bg-surface-elevated border border-border rounded-2xl px-4 py-3 flex items-center gap-2">
-              <div className="flex gap-1">
-                <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-              </div>
-              <span className="text-xs text-fg-subtle">Thinking…</span>
+  return (
+    <div className="flex h-full flex-col bg-[#050505] p-2 sm:p-4 text-fg relative">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white/[0.03] via-transparent to-transparent pointer-events-none" />
+
+      {/* CURVED CHAT WINDOW */}
+      <div className="flex-1 flex flex-col bg-background rounded-t-[2.5rem] rounded-b-3xl border border-white/[0.05] shadow-[0_0_40px_rgba(0,0,0,0.5)] overflow-hidden relative isolate">
+        
+        {/* Animated Glow Effect */}
+        <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_60px_rgba(255,255,255,0.02)] animate-pulse" style={{ animationDuration: '4s' }} />
+
+        {/* INTEGRATED HEADER */}
+        <div className="flex items-center justify-between gap-4 border-b border-border/40 bg-background/60 backdrop-blur-xl px-8 py-5 z-10 relative">
+          <div className="flex items-center gap-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/5 to-transparent shadow-sm">
+              <svg className="w-5 h-5 text-fg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            </div>
+            <div>
+              <h2 className="text-[16px] font-semibold text-fg tracking-tight">AskData</h2>
+              <p className="text-[12px] text-fg-subtle font-medium mt-0.5">Conversational database intelligence</p>
             </div>
           </div>
-        )}
-        <div ref={endRef} />
-      </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 bg-surface-overlay/50 p-1.5 rounded-xl border border-border/50 backdrop-blur-md">
+              <ConnectionPicker connections={connections} value={connectionId} onChange={setConnectionId} />
+            
+              {/* Catalog Picker */}
+              <select
+                value={srcCat}
+                onChange={(e) => { setSrcCat(e.target.value); setSrcSch(""); setSrcTbl(""); }}
+                className="bg-transparent hover:bg-surface rounded-lg px-3 py-1.5 text-[12px] text-fg focus:outline-none transition-colors appearance-none cursor-pointer"
+                title="Catalog"
+              >
+                <option value="">Catalog…</option>
+                {cats.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              {/* Schema Picker */}
+              <select
+                value={srcSch}
+                onChange={(e) => { setSrcSch(e.target.value); setSrcTbl(""); }}
+                disabled={!srcCat}
+                className="bg-transparent hover:bg-surface rounded-lg px-3 py-1.5 text-[12px] text-fg focus:outline-none transition-colors disabled:opacity-30 appearance-none cursor-pointer"
+                title="Schema"
+              >
+                <option value="">Schema…</option>
+                {srcSchs.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+              {/* Table Picker */}
+              <select
+                value={srcTbl}
+                onChange={(e) => setSrcTbl(e.target.value)}
+                disabled={!srcSch}
+                className="bg-transparent hover:bg-surface rounded-lg px-3 py-1.5 text-[12px] text-fg focus:outline-none transition-colors disabled:opacity-30 appearance-none cursor-pointer"
+                title="Table"
+              >
+                <option value="">Table (Optional)…</option>
+                {srcTbls.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            {sessionId && (
+              <button
+                onClick={startNewChat}
+                className="flex items-center justify-center w-9 h-9 rounded-xl border border-border/50 bg-surface-overlay/50 hover:bg-surface transition-colors text-fg-subtle hover:text-fg backdrop-blur-md"
+                title="New Chat"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+              </button>
+            )}
+          </div>
+        </div>
 
-      {turns.length <= 1 && (
-        <div className="px-4 pb-2 flex flex-wrap gap-2">
-          {SUGGESTIONS.map((s, i) => (
-            <button
-              key={i}
-              onClick={() => sendMessage(s)}
-              className="rounded-full border border-border bg-surface-overlay px-3 py-1.5 text-[11px] text-fg-muted transition-all hover:border-accent/30 hover:bg-accent-soft hover:text-accent"
-            >
-              {s}
-            </button>
+      {/* CHAT AREA */}
+      {!isInitialState && (
+        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 relative bg-background">
+          {turns.slice(1).map((turn, i) => (
+            <div key={i}>
+              <ChatBubble turn={turn} connectionId={connectionId} onEditInSql={onEditInSql} />
+              {turn.response?.plan_id != null && (
+                <div className="flex justify-start mb-6 animate-in fade-in duration-300">
+                  <div className="max-w-[85%] w-full">
+                    <SchemaDesignPlanCard planId={turn.response.plan_id} />
+                  </div>
+                </div>
+              )}
+            </div>
           ))}
+          {loading && (
+            <div className="flex justify-start mb-6 animate-in fade-in duration-300">
+              <div className="bg-surface-overlay border border-border rounded-xl px-5 py-3 flex items-center gap-3 shadow-sm">
+                <div className="flex gap-1.5">
+                  <div className="w-1.5 h-1.5 bg-fg rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <div className="w-1.5 h-1.5 bg-fg rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <div className="w-1.5 h-1.5 bg-fg rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                </div>
+                <span className="text-[12px] font-medium text-fg-subtle tracking-wide">Analyzing data...</span>
+              </div>
+            </div>
+          )}
+          <div ref={endRef} className="h-4" />
         </div>
       )}
 
-      <div className="border-t border-border bg-glass-bg-strong p-4 backdrop-blur-xl">
-        <div className="flex gap-2">
-          <input
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-            placeholder="Ask about your data…"
-            aria-label="Ask a question about your data"
-            className="flex-1 rounded-xl border border-border-strong bg-surface-overlay px-4 py-2.5 text-sm text-fg placeholder:text-fg-subtle focus:border-accent focus:outline-none"
-          />
-          <button
-            onClick={() => sendMessage()}
-            disabled={loading || !input.trim() || connectionId == null}
-            className="workspace-primary-action px-5 py-2.5"
-          >
-            Send
-          </button>
+      {/* INITIAL STATE / INPUT BAR WRAPPER */}
+      <div className={`flex w-full transition-all duration-700 ease-in-out ${isInitialState ? 'flex-1 items-center justify-center' : 'p-6 pt-0 bg-background'}`}>
+        <div className={`w-full ${isInitialState ? 'max-w-2xl px-6' : 'max-w-full'}`}>
+          {isInitialState && (
+            <div className="text-center mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <h1 className="text-2xl font-bold text-fg mb-2 tracking-tight">What do you want to know?</h1>
+              <p className="text-sm text-fg-subtle">Ask a read-only question in plain English, and AskData will query the database for you.</p>
+            </div>
+          )}
+          <div className="relative flex items-center bg-surface border border-border rounded-xl p-1.5 shadow-sm transition-all focus-within:border-fg/40 focus-within:ring-1 focus-within:ring-fg/20">
+            <input
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              placeholder="E.g., what is the avg sales rate this quarter?"
+              aria-label="Ask a question about your data"
+              className="flex-1 bg-transparent px-4 py-3 text-[14px] text-fg placeholder:text-fg-subtle focus:outline-none"
+            />
+            <button
+              onClick={() => sendMessage()}
+              disabled={loading || !input.trim() || connectionId == null}
+              className="shrink-0 flex items-center justify-center w-10 h-10 rounded-lg bg-fg text-background hover:opacity-90 transition-all disabled:opacity-30 disabled:hover:opacity-30"
+              title="Ask"
+            >
+              {loading ? (
+                <div className="w-4 h-4 border-2 border-background border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 12h14M12 5l7 7-7 7" /></svg>
+              )}
+            </button>
+          </div>
         </div>
+      </div>
       </div>
     </div>
   );

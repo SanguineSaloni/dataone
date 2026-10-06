@@ -122,18 +122,17 @@ function QueryWorkspaceInner() {
     <div className="workspace-page flex h-full flex-col">
       {/* ── Header with mode toggle ─────────────────────────────── */}
       <WorkspaceHeader
-        eyebrow="AI & Automation"
         title="Query Workspace"
         description="Ask in plain English or work directly in SQL. Your connection and in-progress work stay intact when you switch modes."
-        className="shrink-0 border-b border-border bg-glass-bg-strong px-4 py-4 backdrop-blur-xl md:px-6"
+        className="shrink-0 border-b border-border bg-background px-4 py-4 md:px-6 z-10"
         actions={
           <SegmentedControl
             label="Query workspace mode"
             value={mode}
             onChange={handleModeChange}
             options={[
-              { value: "ask", label: "Ask", indicator: bgAskComplete },
-              { value: "sql", label: "SQL", indicator: bgSqlComplete },
+              { value: "ask", label: "Ask Genie", indicator: bgAskComplete },
+              { value: "sql", label: "SQL Editor", indicator: bgSqlComplete },
             ]}
           />
         }

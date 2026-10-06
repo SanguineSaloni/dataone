@@ -8,6 +8,7 @@ class AskDataAskRequest(BaseModel):
     connection_id: int
     question: str = Field(..., min_length=1)
     session_id: Optional[str] = None
+    table_name: Optional[str] = None
 
 
 class AskDataAskResponse(BaseModel):

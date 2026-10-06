@@ -2,7 +2,11 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8011";
 
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem("dp_token");
+  try {
+    return localStorage.getItem("dp_token");
+  } catch (e) {
+    return null;
+  }
 }
 
 function authHeaders(includeContentType = true): Record<string, string> {
@@ -83,7 +87,11 @@ function handle401() {
         console.error("unauthorized handler failed", err);
       }
     }
-    localStorage.removeItem("dp_token");
+    try {
+      localStorage.removeItem("dp_token");
+    } catch (e) {
+      // Ignore
+    }
     window.location.href = "/signin";
   }
 }
