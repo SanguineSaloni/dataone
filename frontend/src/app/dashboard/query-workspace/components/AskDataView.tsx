@@ -234,36 +234,30 @@ export default function AskDataView({
     inputRef.current?.focus();
   };
 
+  const isInitialState = turns.length <= 1;
+
   return (
-    <div className="flex h-full flex-col bg-[#0b0c10]">
+    <div className="flex h-full flex-col bg-background relative overflow-hidden text-fg">
       {/* HEADER */}
-      <div className="flex items-center justify-between gap-4 border-b border-white/[0.06] bg-[#111318] px-6 py-4 shadow-sm z-10 relative">
-        <div>
-          <h2 className="flex items-center gap-2 text-[15px] font-bold text-white/90 tracking-wide">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-white/5 text-[15px]" aria-hidden="true">✨</span>
-            NL2SQL Genie
-          </h2>
-          <p className="ml-10 mt-1 text-[12px] text-white/40 font-medium">Conversational query generation grounded in Unity Catalog.</p>
+      <div className="flex items-center justify-between gap-4 border-b border-border bg-surface-overlay px-6 py-4 shadow-sm z-10 relative">
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background">
+            <svg className="w-4 h-4 text-fg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+          </div>
+          <div>
+            <h2 className="text-[14px] font-semibold text-fg tracking-tight">AskData</h2>
+            <p className="text-[11px] text-fg-subtle font-medium">Grounded conversational SQL</p>
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          {sessionId && (
-            <button
-              type="button"
-              onClick={startNewChat}
-              className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-[12px] font-semibold text-white/60 hover:text-white hover:bg-white/10 transition-all shadow-sm"
-            >
-              + New Chat
-            </button>
-          )}
-          
-          <div className="flex items-center gap-2 bg-black/20 p-1 rounded-xl border border-white/[0.04]">
+          <div className="flex items-center gap-2 bg-background p-1.5 rounded-lg border border-border">
             <ConnectionPicker connections={connections} value={connectionId} onChange={setConnectionId} />
           
           {/* Catalog Picker */}
           <select
             value={srcCat}
             onChange={(e) => { setSrcCat(e.target.value); setSrcSch(""); setSrcTbl(""); }}
-            className="bg-[#111318] border border-transparent hover:border-white/10 rounded-lg px-3 py-1.5 text-[12px] text-white/70 focus:outline-none focus:border-white/20 transition-colors appearance-none cursor-pointer"
+            className="bg-transparent hover:bg-surface-elevated rounded-md px-2 py-1 text-[12px] text-fg focus:outline-none transition-colors appearance-none cursor-pointer"
             title="Catalog"
           >
             <option value="">Catalog…</option>
@@ -274,7 +268,7 @@ export default function AskDataView({
             value={srcSch}
             onChange={(e) => { setSrcSch(e.target.value); setSrcTbl(""); }}
             disabled={!srcCat}
-            className="bg-[#111318] border border-transparent hover:border-white/10 rounded-lg px-3 py-1.5 text-[12px] text-white/70 focus:outline-none focus:border-white/20 transition-colors disabled:opacity-30 appearance-none cursor-pointer"
+            className="bg-transparent hover:bg-surface-elevated rounded-md px-2 py-1 text-[12px] text-fg focus:outline-none transition-colors disabled:opacity-30 appearance-none cursor-pointer"
             title="Schema"
           >
             <option value="">Schema…</option>
@@ -285,86 +279,88 @@ export default function AskDataView({
             value={srcTbl}
             onChange={(e) => setSrcTbl(e.target.value)}
             disabled={!srcSch}
-            className="bg-[#111318] border border-transparent hover:border-white/10 rounded-lg px-3 py-1.5 text-[12px] text-white/70 focus:outline-none focus:border-white/20 transition-colors disabled:opacity-30 appearance-none cursor-pointer"
+            className="bg-transparent hover:bg-surface-elevated rounded-md px-2 py-1 text-[12px] text-fg focus:outline-none transition-colors disabled:opacity-30 appearance-none cursor-pointer"
             title="Table"
           >
             <option value="">Table (Optional)…</option>
             {srcTbls.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
           </div>
+          {sessionId && (
+            <button
+              onClick={startNewChat}
+              className="flex items-center justify-center p-2 rounded-md border border-border bg-surface hover:bg-surface-elevated transition-colors text-fg-subtle hover:text-fg"
+              title="New Chat"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+            </button>
+          )}
         </div>
       </div>
 
       {/* CHAT AREA */}
-      <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4 relative">
-        {turns.map((turn, i) => (
-          <div key={i}>
-            <ChatBubble turn={turn} connectionId={connectionId} onEditInSql={onEditInSql} />
-            {turn.response?.plan_id != null && (
-              <div className="flex justify-start mb-6 animate-in fade-in duration-300">
-                <div className="max-w-[85%] w-full">
-                  <SchemaDesignPlanCard planId={turn.response.plan_id} />
+      {!isInitialState && (
+        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 relative bg-background">
+          {turns.slice(1).map((turn, i) => (
+            <div key={i}>
+              <ChatBubble turn={turn} connectionId={connectionId} onEditInSql={onEditInSql} />
+              {turn.response?.plan_id != null && (
+                <div className="flex justify-start mb-6 animate-in fade-in duration-300">
+                  <div className="max-w-[85%] w-full">
+                    <SchemaDesignPlanCard planId={turn.response.plan_id} />
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        ))}
-        {loading && (
-          <div className="flex justify-start mb-6 animate-in fade-in duration-300">
-            <div className="bg-[#111318] border border-white/[0.06] rounded-2xl px-5 py-4 flex items-center gap-3 shadow-xl">
-              <div className="flex gap-1.5">
-                <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                <div className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-              </div>
-              <span className="text-[12px] font-medium text-white/50 tracking-wide">Genie is thinking…</span>
+              )}
             </div>
-          </div>
-        )}
-        <div ref={endRef} />
-      </div>
-
-      {/* SUGGESTIONS */}
-      {turns.length <= 1 && (
-        <div className="px-6 pb-4 flex flex-wrap gap-2.5">
-          {SUGGESTIONS.map((s, i) => (
-            <button
-              key={i}
-              onClick={() => sendMessage(s)}
-              className="rounded-full border border-white/10 bg-[#111318] px-4 py-2 text-[12px] font-medium text-white/50 transition-all hover:border-white/20 hover:bg-white/5 hover:text-white/90 hover:-translate-y-0.5 shadow-sm"
-            >
-              {s}
-            </button>
           ))}
+          {loading && (
+            <div className="flex justify-start mb-6 animate-in fade-in duration-300">
+              <div className="bg-surface-overlay border border-border rounded-xl px-5 py-3 flex items-center gap-3 shadow-sm">
+                <div className="flex gap-1.5">
+                  <div className="w-1.5 h-1.5 bg-fg rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <div className="w-1.5 h-1.5 bg-fg rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <div className="w-1.5 h-1.5 bg-fg rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                </div>
+                <span className="text-[12px] font-medium text-fg-subtle tracking-wide">Analyzing data...</span>
+              </div>
+            </div>
+          )}
+          <div ref={endRef} className="h-4" />
         </div>
       )}
 
-      {/* INPUT BAR */}
-      <div className="p-6 pt-0">
-        <div className="relative flex items-center bg-[#111318] border border-white/[0.08] rounded-2xl p-2 shadow-lg transition-all focus-within:border-white/20 focus-within:shadow-[0_0_15px_rgba(255,255,255,0.05)]">
-          <input
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-            placeholder="Ask a read-only question in english... (e.g. what is the avg sales rate this quarter?)"
-            aria-label="Ask a question about your data"
-            className="flex-1 bg-transparent px-4 py-3 text-[14px] text-white/90 placeholder:text-white/30 focus:outline-none"
-          />
-          <button
-            onClick={() => sendMessage()}
-            disabled={loading || !input.trim() || connectionId == null}
-            className="shrink-0 flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-[13px] tracking-wide transition-all disabled:opacity-40"
-            style={{
-              background: loading || !input.trim() || connectionId == null
-                ? "rgba(255,255,255,0.05)"
-                : "linear-gradient(135deg,#6366f1,#8b5cf6)",
-              color: loading || !input.trim() || connectionId == null ? "rgba(255,255,255,0.3)" : "white",
-              boxShadow: loading || !input.trim() || connectionId == null ? "none" : "0 4px 15px -3px rgba(99, 102, 241, 0.4)",
-            }}
-          >
-            {loading ? "Asking..." : "Ask Genie"}
-          </button>
+      {/* INITIAL STATE / INPUT BAR WRAPPER */}
+      <div className={`flex w-full transition-all duration-700 ease-in-out ${isInitialState ? 'flex-1 items-center justify-center' : 'p-6 pt-0 bg-background'}`}>
+        <div className={`w-full ${isInitialState ? 'max-w-2xl px-6' : 'max-w-full'}`}>
+          {isInitialState && (
+            <div className="text-center mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <h1 className="text-2xl font-bold text-fg mb-2 tracking-tight">What do you want to know?</h1>
+              <p className="text-sm text-fg-subtle">Ask a read-only question in plain English, and AskData will query the database for you.</p>
+            </div>
+          )}
+          <div className="relative flex items-center bg-surface border border-border rounded-xl p-1.5 shadow-sm transition-all focus-within:border-fg/40 focus-within:ring-1 focus-within:ring-fg/20">
+            <input
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              placeholder="E.g., what is the avg sales rate this quarter?"
+              aria-label="Ask a question about your data"
+              className="flex-1 bg-transparent px-4 py-3 text-[14px] text-fg placeholder:text-fg-subtle focus:outline-none"
+            />
+            <button
+              onClick={() => sendMessage()}
+              disabled={loading || !input.trim() || connectionId == null}
+              className="shrink-0 flex items-center justify-center w-10 h-10 rounded-lg bg-fg text-background hover:opacity-90 transition-all disabled:opacity-30 disabled:hover:opacity-30"
+              title="Ask"
+            >
+              {loading ? (
+                <div className="w-4 h-4 border-2 border-background border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 12h14M12 5l7 7-7 7" /></svg>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>
