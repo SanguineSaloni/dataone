@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { api, ApiError } from "@/lib/api";
 import ChatBubble from "../../askdata/components/ChatBubble";
 import ConnectionPicker from "../../askdata/components/ConnectionPicker";
@@ -108,7 +108,46 @@ export default function AskDataView({
   const inputRef = useRef<HTMLInputElement>(null);
   const restoreAttemptedRef = useRef(false);
 
+  // Schema state
+  const [tables, setTables] = useState<any[]>([]);
+  const [srcCat, setSrcCat] = useState("");
+  const [srcSch, setSrcSch] = useState("");
+  const [srcTbl, setSrcTbl] = useState("");
+
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [turns]);
+
+  // Load schema
+  useEffect(() => {
+    if (!connectionId) return;
+    setTables([]);
+    setSrcCat("");
+    setSrcSch("");
+    setSrcTbl("");
+    api.get<{ schema: Record<string, any[]> }>(`/api/v1/connectors/${connectionId}/schema`)
+      .then((res) => {
+        let uid = 1;
+        setTables(Object.entries(res.schema ?? {}).map(([name, cols]) => ({
+          id: uid++, table_name: name,
+        })));
+      })
+      .catch(() => {});
+  }, [connectionId]);
+
+  const struct = useMemo(() => {
+    const s: Record<string, Record<string, string[]>> = {};
+    tables.forEach(t => {
+      const p = t.table_name.split(".");
+      const [cat, sch, tbl] = p.length >= 3 ? [p[0], p[1], p.slice(2).join(".")] : p.length === 2 ? ["default", p[0], p[1]] : ["default", "default", t.table_name];
+      if (!s[cat]) s[cat] = {};
+      if (!s[cat][sch]) s[cat][sch] = [];
+      s[cat][sch].push(tbl);
+    });
+    return s;
+  }, [tables]);
+
+  const cats = Object.keys(struct).sort();
+  const srcSchs = srcCat ? Object.keys(struct[srcCat] || {}).sort() : [];
+  const srcTbls = srcSch ? (struct[srcCat]?.[srcSch] || []).sort() : [];
 
   // Restore the last conversation in this browser tab (B05): this
   // component remounts fresh whenever the user navigates to a different
@@ -160,11 +199,16 @@ export default function AskDataView({
     setInput("");
     setLoading(true);
     try {
-      const data = await api.post<AskDataAskResponse>("/api/v1/askdata/ask", {
+      const payload: any = {
         connection_id: connectionId,
         question,
         session_id: sessionId,
-      });
+      };
+      if (srcCat && srcSch && srcTbl) {
+        payload.table_name = `${srcCat}.${srcSch}.${srcTbl}`;
+      }
+      
+      const data = await api.post<AskDataAskResponse>("/api/v1/askdata/ask", payload);
       setSessionId(data.session_id);
       writeStoredSession({ sessionId: data.session_id, connectionId });
       setTurns((p) => [...p, {
@@ -211,6 +255,39 @@ export default function AskDataView({
             </button>
           )}
           <ConnectionPicker connections={connections} value={connectionId} onChange={setConnectionId} />
+          
+          {/* Catalog Picker */}
+          <select
+            value={srcCat}
+            onChange={(e) => { setSrcCat(e.target.value); setSrcSch(""); setSrcTbl(""); }}
+            className="rounded-lg border border-border-strong bg-surface-overlay px-3 py-1.5 text-xs text-fg-subtle focus:border-accent/50 focus:outline-none"
+            title="Catalog"
+          >
+            <option value="">Catalog</option>
+            {cats.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          {/* Schema Picker */}
+          <select
+            value={srcSch}
+            onChange={(e) => { setSrcSch(e.target.value); setSrcTbl(""); }}
+            disabled={!srcCat}
+            className="rounded-lg border border-border-strong bg-surface-overlay px-3 py-1.5 text-xs text-fg-subtle focus:border-accent/50 focus:outline-none disabled:opacity-50"
+            title="Schema"
+          >
+            <option value="">Schema</option>
+            {srcSchs.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+          {/* Table Picker */}
+          <select
+            value={srcTbl}
+            onChange={(e) => setSrcTbl(e.target.value)}
+            disabled={!srcSch}
+            className="rounded-lg border border-border-strong bg-surface-overlay px-3 py-1.5 text-xs text-fg-subtle focus:border-accent/50 focus:outline-none disabled:opacity-50"
+            title="Table"
+          >
+            <option value="">Table (Optional)</option>
+            {srcTbls.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
         </div>
       </div>
 
