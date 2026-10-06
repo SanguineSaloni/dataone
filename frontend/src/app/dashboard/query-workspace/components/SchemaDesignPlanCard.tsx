@@ -176,9 +176,9 @@ export default function SchemaDesignPlanCard({ planId }: { planId: number }) {
                 {t.sources.map((s) => `${s.table}.${s.column}`).join(" + ")} → {t.target_table}.{t.target_column}
               </span>{" "}
               {t.transformation ? (
-                <span className="text-blue-300 font-mono">[{String(t.transformation.kind)}]</span>
+                <span className="text-fg font-mono">[{String(t.transformation.kind)}]</span>
               ) : (
-                <span className="text-amber-400">needs manual authoring</span>
+                <span className="text-fg-subtle">needs manual authoring</span>
               )}
               {t.note && <span className="text-fg-subtle"> — {t.note}</span>}
             </li>
@@ -196,7 +196,7 @@ export default function SchemaDesignPlanCard({ planId }: { planId: number }) {
                   <span className="text-amber-400">— already exists: ALTER-based migration proposed</span>
                 )}
               </div>
-              <pre className="mt-0.5 text-[10px] font-mono text-blue-300 bg-background/60 rounded p-2 overflow-x-auto whitespace-pre-wrap">
+              <pre className="mt-0.5 text-[10px] font-mono text-fg-muted bg-surface-elevated border border-border rounded p-2 overflow-x-auto whitespace-pre-wrap">
                 {d.statements.join("\n")}
               </pre>
             </div>
@@ -245,7 +245,7 @@ export default function SchemaDesignPlanCard({ planId }: { planId: number }) {
           <button
             onClick={() => setConfirming(true)}
             disabled={!reviewable || acting}
-            className="px-3 py-1.5 text-[11px] font-semibold rounded-lg bg-white text-white disabled:opacity-40"
+            className="px-3 py-1.5 text-[11px] font-semibold rounded-lg bg-fg text-background disabled:opacity-40"
           >
             Approve &amp; Create
           </button>

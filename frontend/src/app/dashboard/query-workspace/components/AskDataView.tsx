@@ -237,66 +237,74 @@ export default function AskDataView({
   const isInitialState = turns.length <= 1;
 
   return (
-    <div className="flex h-full flex-col bg-background relative overflow-hidden text-fg">
-      {/* HEADER */}
-      <div className="flex items-center justify-between gap-4 border-b border-border bg-surface-overlay px-6 py-4 shadow-sm z-10 relative">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background">
-            <svg className="w-4 h-4 text-fg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+    <div className="flex h-full flex-col bg-[#050505] p-2 sm:p-4 text-fg relative">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white/[0.03] via-transparent to-transparent pointer-events-none" />
+
+      {/* CURVED CHAT WINDOW */}
+      <div className="flex-1 flex flex-col bg-background rounded-t-[2.5rem] rounded-b-3xl border border-white/[0.05] shadow-[0_0_40px_rgba(0,0,0,0.5)] overflow-hidden relative isolate">
+        
+        {/* Animated Glow Effect */}
+        <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_60px_rgba(255,255,255,0.02)] animate-pulse" style={{ animationDuration: '4s' }} />
+
+        {/* INTEGRATED HEADER */}
+        <div className="flex items-center justify-between gap-4 border-b border-border/40 bg-background/60 backdrop-blur-xl px-8 py-5 z-10 relative">
+          <div className="flex items-center gap-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/5 to-transparent shadow-sm">
+              <svg className="w-5 h-5 text-fg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            </div>
+            <div>
+              <h2 className="text-[16px] font-semibold text-fg tracking-tight">AskData</h2>
+              <p className="text-[12px] text-fg-subtle font-medium mt-0.5">Conversational database intelligence</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-[14px] font-semibold text-fg tracking-tight">AskData</h2>
-            <p className="text-[11px] text-fg-subtle font-medium">Grounded conversational SQL</p>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 bg-surface-overlay/50 p-1.5 rounded-xl border border-border/50 backdrop-blur-md">
+              <ConnectionPicker connections={connections} value={connectionId} onChange={setConnectionId} />
+            
+              {/* Catalog Picker */}
+              <select
+                value={srcCat}
+                onChange={(e) => { setSrcCat(e.target.value); setSrcSch(""); setSrcTbl(""); }}
+                className="bg-transparent hover:bg-surface rounded-lg px-3 py-1.5 text-[12px] text-fg focus:outline-none transition-colors appearance-none cursor-pointer"
+                title="Catalog"
+              >
+                <option value="">Catalog…</option>
+                {cats.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              {/* Schema Picker */}
+              <select
+                value={srcSch}
+                onChange={(e) => { setSrcSch(e.target.value); setSrcTbl(""); }}
+                disabled={!srcCat}
+                className="bg-transparent hover:bg-surface rounded-lg px-3 py-1.5 text-[12px] text-fg focus:outline-none transition-colors disabled:opacity-30 appearance-none cursor-pointer"
+                title="Schema"
+              >
+                <option value="">Schema…</option>
+                {srcSchs.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+              {/* Table Picker */}
+              <select
+                value={srcTbl}
+                onChange={(e) => setSrcTbl(e.target.value)}
+                disabled={!srcSch}
+                className="bg-transparent hover:bg-surface rounded-lg px-3 py-1.5 text-[12px] text-fg focus:outline-none transition-colors disabled:opacity-30 appearance-none cursor-pointer"
+                title="Table"
+              >
+                <option value="">Table (Optional)…</option>
+                {srcTbls.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            {sessionId && (
+              <button
+                onClick={startNewChat}
+                className="flex items-center justify-center w-9 h-9 rounded-xl border border-border/50 bg-surface-overlay/50 hover:bg-surface transition-colors text-fg-subtle hover:text-fg backdrop-blur-md"
+                title="New Chat"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+              </button>
+            )}
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 bg-background p-1.5 rounded-lg border border-border">
-            <ConnectionPicker connections={connections} value={connectionId} onChange={setConnectionId} />
-          
-          {/* Catalog Picker */}
-          <select
-            value={srcCat}
-            onChange={(e) => { setSrcCat(e.target.value); setSrcSch(""); setSrcTbl(""); }}
-            className="bg-transparent hover:bg-surface-elevated rounded-md px-2 py-1 text-[12px] text-fg focus:outline-none transition-colors appearance-none cursor-pointer"
-            title="Catalog"
-          >
-            <option value="">Catalog…</option>
-            {cats.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-          {/* Schema Picker */}
-          <select
-            value={srcSch}
-            onChange={(e) => { setSrcSch(e.target.value); setSrcTbl(""); }}
-            disabled={!srcCat}
-            className="bg-transparent hover:bg-surface-elevated rounded-md px-2 py-1 text-[12px] text-fg focus:outline-none transition-colors disabled:opacity-30 appearance-none cursor-pointer"
-            title="Schema"
-          >
-            <option value="">Schema…</option>
-            {srcSchs.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-          {/* Table Picker */}
-          <select
-            value={srcTbl}
-            onChange={(e) => setSrcTbl(e.target.value)}
-            disabled={!srcSch}
-            className="bg-transparent hover:bg-surface-elevated rounded-md px-2 py-1 text-[12px] text-fg focus:outline-none transition-colors disabled:opacity-30 appearance-none cursor-pointer"
-            title="Table"
-          >
-            <option value="">Table (Optional)…</option>
-            {srcTbls.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
-          </div>
-          {sessionId && (
-            <button
-              onClick={startNewChat}
-              className="flex items-center justify-center p-2 rounded-md border border-border bg-surface hover:bg-surface-elevated transition-colors text-fg-subtle hover:text-fg"
-              title="New Chat"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-            </button>
-          )}
-        </div>
-      </div>
 
       {/* CHAT AREA */}
       {!isInitialState && (
@@ -362,6 +370,7 @@ export default function AskDataView({
             </button>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
