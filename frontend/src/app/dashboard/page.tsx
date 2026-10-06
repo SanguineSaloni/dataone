@@ -36,11 +36,18 @@ function getIcon(name: string) {
 
 function KpiCircle({ kpi }: { kpi: any }) {
   const isPercent = String(kpi.label).includes('%') || String(kpi.label).includes('Score');
-  let percentValue = 75;
-  if (isPercent && !isNaN(Number(kpi.value))) {
-    percentValue = Number(kpi.value);
-  } else if (!isNaN(Number(kpi.value)) && Number(kpi.value) > 0 && Number(kpi.value) <= 100) {
-    percentValue = Number(kpi.value); // Fallback mapping
+  let percentValue = 0;
+  
+  if (!isNaN(Number(kpi.value))) {
+    const v = Number(kpi.value);
+    if (v <= 0) {
+      percentValue = 0;
+    } else if (isPercent) {
+      percentValue = Math.min(100, v);
+    } else {
+      // For raw numbers, cap the visual ring at 100.
+      percentValue = Math.min(100, v);
+    }
   }
 
   const dash = (percentValue / 100) * 283;
