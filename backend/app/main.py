@@ -57,6 +57,7 @@ from app.models.schema_catalog import CatalogTable, CatalogColumn, CatalogForeig
 from app.models.user import User  # noqa: F401
 from app.models.autopilot import AutopilotRun, AutopilotLog  # noqa: F401
 
+from app.models.pipeline import Pipeline, PipelineRun, PipelineRunStep, RetryPolicy, Schedule  # noqa: F401
 from app.models.mapping import (  # noqa: F401
     Mapping, MappingVersion, FieldMapping, AISuggestion,
 )
