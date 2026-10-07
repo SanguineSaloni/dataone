@@ -21,7 +21,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
-from app.api.routers import connectors, schema, agent, query, askdata, mapper, pipelines, llm
+from app.api.routers import connectors, schema, agent, query, askdata, llm
 from app.api.routers import tasks as tasks_router
 from app.api.routers import audit as audit_router
 from app.api.routers import auth as auth_router
@@ -31,22 +31,15 @@ from app.api.routers import mappings as mappings_router
 from app.api.routers import schema_catalog as schema_catalog_router
 from app.api.routers import search as search_router
 from app.api.routers import dashboard as dashboard_router
-from app.api.routers import semantic as semantic_router
 from app.api.routers import query_studio as query_studio_router
 from app.api.routers import viz as viz_router
 from app.api.routers import viz_ai as viz_ai_router
 from app.api.routers import roles as roles_router
 from app.api.routers import users_admin as users_admin_router
 from app.api.routers import policies as policies_router
-from app.api.routers import authz as authz_router
 from app.api.routers import agentic_dba as agentic_dba_router
-from app.api.routers import integrations as integrations_router
 from app.api.routers import notifications as notifications_router
-from app.api.routers import risks as risks_router
-from app.api.routers import dq as dq_router
-from app.api.routers import impact as impact_router
 from app.api.routers import governance as governance_router
-from app.api.routers import schema_comparison as schema_comparison_router
 from app.api.routers import workspace_layout as workspace_layout_router
 from app.api.routers import demo_data as demo_data_router
 from app.api.routers import transformation as transformation_router
@@ -432,32 +425,23 @@ app.include_router(llm.router, prefix="/api/v1/llm", tags=["LLM"])
 app.include_router(query.router, prefix="/api/v1/query", tags=["Query (Legacy NL2SQL)"])
 app.include_router(query_studio_router.router, prefix="/api/v1/query-studio", tags=["Query Studio"])
 app.include_router(askdata.router, prefix="/api/v1/askdata", tags=["AskData Bot"])
-app.include_router(mapper.router, prefix="/api/v1/mapper", tags=["Schema Mapper"])
 app.include_router(mappings_router.router, prefix="/api/v1/mappings", tags=["Schema Mapper — Mappings"])
 app.include_router(schema_catalog_router.router, prefix="/api/v1/catalog", tags=["Schema Catalog"])
 app.include_router(search_router.router, prefix="/api/v1/search", tags=["Global Search"])
 app.include_router(tasks_router.router, prefix="/api/v1/tasks", tags=["Tasks"])
-app.include_router(pipelines.router, prefix="/api/v1/pipelines", tags=["Pipelines"])
 app.include_router(audit_router.router, prefix="/api/v1/audit", tags=["Audit Trail"])
 app.include_router(auth_router.router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(databricks_auth.router, prefix="/api/v1", tags=["Databricks Auth"])
 app.include_router(autopilot_router.router, prefix="/api/v1/autopilot", tags=["AI Autopilot"])
 app.include_router(dashboard_router.router, prefix="/api/v1/dashboard", tags=["Dashboard"])
-app.include_router(semantic_router.router, prefix="/api/v1/semantic", tags=["Semantic / Metrics"])
 app.include_router(viz_router.router, prefix="/api/v1/viz", tags=["Visualize"])
 app.include_router(viz_ai_router.router, prefix="/api/v1/viz", tags=["Visualize AI"])
 app.include_router(roles_router.router, prefix="/api/v1/roles", tags=["Security — Roles"])
 app.include_router(users_admin_router.router, prefix="/api/v1/users", tags=["Security — Users"])
 app.include_router(policies_router.router, prefix="/api/v1/policies", tags=["Security — Policies"])
-app.include_router(authz_router.router, prefix="/api/v1/authz", tags=["Security — AuthZ"])
 app.include_router(agentic_dba_router.router, prefix="/api/v1/agentic-dba", tags=["Agentic DBA Copilot"])
-app.include_router(integrations_router.router, prefix="/api/v1/integrations", tags=["Integrations (ACI)"])
 app.include_router(notifications_router.router, prefix="/api/v1/notifications", tags=["Notifications"])
-app.include_router(risks_router.router, prefix="/api/v1/risks", tags=["Risk & Compliance Center"])
-app.include_router(dq_router.router, prefix="/api/v1/dq", tags=["Data Quality Observatory"])
-app.include_router(impact_router.router, prefix="/api/v1/impact", tags=["Impact Analysis"])
 app.include_router(governance_router.router, prefix="/api/v1/governance", tags=["Governance Intelligence Center"])
-app.include_router(schema_comparison_router.router, prefix="/api/v1/schema-comparison", tags=["Schema Comparison"])
 app.include_router(workspace_layout_router.router, prefix="/api/v1/workspace-layout", tags=["Dockable Workspace Shell"])
 app.include_router(demo_data_router.router, prefix="/api/v1/demo-data", tags=["Demo Data"])
 app.include_router(databricks_ingest_router.router, prefix="/api/v1/databricks/ingest", tags=["Databricks Ingestion"])
