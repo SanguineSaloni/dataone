@@ -2,20 +2,22 @@ command: ['npm', 'run', 'start']
 env:
   # [DBX-VALUEFROM] Resource IDs/paths are injected by Databricks Apps at
   # runtime. They are not hardcoded into browser code and need no production PAT.
+  # TEMPORARY: Hardcoded for testing - should use valueFrom in production
   - name: DATABRICKS_WAREHOUSE_ID
-    valueFrom: sql-warehouse
+    value: fafc14eabc92df75
   - name: DATABRICKS_VOLUME_FILES
-    valueFrom: files
+    value: workspace.dataone_bronze.dataone_landing
   - name: DATABRICKS_JOB_ID
-    valueFrom: job
+    value: "123456789"
   - name: DATABRICKS_GENIE_SPACE_ID
-    valueFrom: genie-space
+    value: "01234567-89ab-cdef-0123-456789abcdef"
   # [DBX-FEDERATION-BINDINGS] The values resolve to Unity Catalog connection
   # names. Credentials stay inside Unity Catalog and never reach the browser.
+  # TEMPORARY: Hardcoded for testing - should use valueFrom in production
   - name: DATABRICKS_SOURCE_CONNECTION
-    valueFrom: source-connection
+    value: dataone_mysql_dataone_source_ba4f108677
   - name: DATABRICKS_TARGET_CONNECTION
-    valueFrom: target-connection
+    value: dataone_postgresql_dataone_target_62619fd3c7
   - name: DATAONE_SOURCE_ENGINE
     value: mysql
   - name: DATAONE_SOURCE_FOREIGN_CATALOG
@@ -35,7 +37,8 @@ env:
     value: karanduddekunta2715@gmail.com
   # [DBX-AWS-POSTGRES] This secret contains the AWS PostgreSQL connection URL
   # used only by the Node backend for DataOne operational state.
-  - name: DATAONE_DATABASE_URL
-    valueFrom: state-db-url
+  # TEMPORARY: Removed for testing - operational store disabled
+  # - name: DATAONE_DATABASE_URL
+  #   valueFrom: state-db-url
   - name: DATAONE_REQUIRE_OPERATIONAL_STORE
     value: 'false'
