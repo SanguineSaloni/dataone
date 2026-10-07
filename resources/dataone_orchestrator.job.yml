@@ -1,0 +1,96 @@
+resources:
+  jobs:
+    dataone_orchestrator:
+      name: dataone-orchestrator
+      description: Profile a governed source, run DataOne cleaning and quality, and publish analytics outputs.
+      max_concurrent_runs: 1
+      queue:
+        enabled: true
+      run_as:
+        # [DBX-JOB-RUN-AS] The shared ETL Job is owned by the bundle deployer,
+        # not by either Databricks App service principal. Apps only receive
+        # CAN_MANAGE_RUN through their bound Job resource.
+        user_name: ${workspace.current_user.userName}
+      parameters:
+        - name: project_name
+          default: DataOne Project
+        - name: run_id
+          default: manual-run
+        - name: source_mode
+          default: uc_table
+        - name: source_path
+          default: ''
+        - name: source_format
+          default: csv
+        - name: json_mode
+          default: lines
+        - name: source_table
+          default: workspace.default.bronze_customer_churn
+        - name: output_table
+          default: dataone_project
+        - name: target_engine
+          default: postgresql
+      tasks:
+        # [DBX-JOB-PROFILE] Serverless Spark profiles either the bound UC table
+        # or a file staged in the bound UC Volume.
+        - task_key: profile_source
+          notebook_task:
+            notebook_path: ../src/jobs/profile_source.py
+            source: WORKSPACE
+            base_parameters:
+              project_name: '{{job.parameters.project_name}}'
+              run_id: '{{job.parameters.run_id}}'
+              source_mode: '{{job.parameters.source_mode}}'
+              source_path: '{{job.parameters.source_path}}'
+              source_format: '{{job.parameters.source_format}}'
+              json_mode: '{{job.parameters.json_mode}}'
+              source_table: '{{job.parameters.source_table}}'
+          timeout_seconds: 900
+        # [DBX-PIPELINE] Pipelines are intentionally invoked through this bound
+        # Job task; they are not a supported direct Databricks App binding.
+        - task_key: quality_pipeline
+          depends_on:
+            - task_key: profile_source
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.dataone_quality.id}
+            full_refresh: false
+          timeout_seconds: 1800
+        # [DBX-PROJECT-GOLD] This final Job task publishes the checked records
+        # into the project-named managed Delta table in Unity Catalog. The
+        # notebook independently validates that output_table is derived from
+        # project_name before it can overwrite that exact table.
+        - task_key: publish_project_gold
+          depends_on:
+            - task_key: quality_pipeline
+          notebook_task:
+            notebook_path: ../src/jobs/publish_project_gold.py
+            source: WORKSPACE
+            base_parameters:
+              project_name: '{{job.parameters.project_name}}'
+              run_id: '{{job.parameters.run_id}}'
+              output_table: '{{job.parameters.output_table}}'
+          timeout_seconds: 900
+        # [DBX-TARGET-EXPORT] Federation is read-only. This separate Job task
+        # performs the selected PostgreSQL or MySQL write after governed Gold succeeds.
+        # Its fixed secret references come from the bundle, never the browser.
+        - task_key: publish_external_database
+          depends_on:
+            - task_key: publish_project_gold
+          notebook_task:
+            notebook_path: ../src/jobs/publish_external_database.py
+            source: WORKSPACE
+            base_parameters:
+              enabled: ${var.external_target_enabled}
+              project_name: '{{job.parameters.project_name}}'
+              run_id: '{{job.parameters.run_id}}'
+              output_table: '{{job.parameters.output_table}}'
+              target_engine: '{{job.parameters.target_engine}}'
+              target_schema: public
+              secret_scope: ${var.target_export_secret_scope}
+              postgresql_jdbc_url_key: ${var.target_export_jdbc_url_key}
+              postgresql_user_key: ${var.target_export_user_key}
+              postgresql_password_key: ${var.target_export_password_key}
+              mysql_jdbc_url_key: ${var.mysql_target_export_jdbc_url_key}
+              mysql_user_key: ${var.mysql_target_export_user_key}
+              mysql_password_key: ${var.mysql_target_export_password_key}
+          timeout_seconds: 1800

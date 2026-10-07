@@ -1,0 +1,526 @@
+{
+  "version": 2,
+  "config": {
+    "sample_questions": [
+      {
+        "id": "10000000000000000000000000000001",
+        "question": ["What is the latest quality score for each DataOne project?"]
+      },
+      {
+        "id": "10000000000000000000000000000002",
+        "question": ["For the latest run of demo, which columns have the lowest quality scores?"]
+      },
+      {
+        "id": "10000000000000000000000000000003",
+        "question": ["Which cleaning transformations changed the most cells?"]
+      },
+      {
+        "id": "10000000000000000000000000000004",
+        "question": ["Show schema mapping confidence for the latest demo run."]
+      },
+      {
+        "id": "10000000000000000000000000000005",
+        "question": ["Compare quality and transformation rates across source formats."]
+      },
+      {
+        "id": "10000000000000000000000000000006",
+        "question": ["How many rows are in the latest dataset?"]
+      }
+    ]
+  },
+  "data_sources": {
+    "tables": [
+      {
+        "identifier": "workspace.dataone_gold.quality_by_column",
+        "column_configs": [
+          {
+            "column_name": "cell_count",
+            "description": ["Number of evaluated cells for this source column in one DataOne run."]
+          },
+          {
+            "column_name": "column_name",
+            "description": ["Original source column or field name."],
+            "synonyms": ["column", "field", "source field"],
+            "enable_format_assistance": true,
+            "enable_entity_matching": true
+          },
+          {
+            "column_name": "issue_count",
+            "description": ["Number of cells with any detected quality issue for this column and run."]
+          },
+          {
+            "column_name": "missing_count",
+            "description": ["Number of null, blank, or otherwise missing cells for this column and run."]
+          },
+          {
+            "column_name": "project_name",
+            "synonyms": ["project", "data product"],
+            "enable_format_assistance": true,
+            "enable_entity_matching": true
+          },
+          {
+            "column_name": "quality_score",
+            "description": [
+              "Column Data Quality Index on a 0 to 100 scale: 100 times (cell_count minus issue_count) divided by cell_count, rounded to one decimal place."
+            ],
+            "synonyms": ["column quality", "field quality", "data quality score"]
+          },
+          {
+            "column_name": "run_id",
+            "description": ["Unique DataOne pipeline-run identifier used with project_name to join run-level views."]
+          },
+          {
+            "column_name": "source_type",
+            "description": ["Spark data type observed for the source column."],
+            "synonyms": ["column type", "field type", "data type"],
+            "enable_format_assistance": true,
+            "enable_entity_matching": true
+          },
+          {
+            "column_name": "transformed_count",
+            "description": ["Number of cells changed by DataOne cleaning for this column and run."]
+          }
+        ]
+      },
+      {
+        "identifier": "workspace.dataone_gold.quality_issue_distribution",
+        "column_configs": [
+          {
+            "column_name": "issue_count",
+            "description": ["Number of cells classified with this quality outcome in one DataOne run."]
+          },
+          {
+            "column_name": "project_name",
+            "synonyms": ["project", "data product"],
+            "enable_format_assistance": true,
+            "enable_entity_matching": true
+          },
+          {
+            "column_name": "quality_issue",
+            "description": [
+              "Cell-level quality classification. The value valid is not an issue; missing, invalid_date, invalid_number, and invalid_email are issues."
+            ],
+            "synonyms": ["issue type", "quality problem", "validation outcome"],
+            "enable_format_assistance": true,
+            "enable_entity_matching": true
+          },
+          {
+            "column_name": "run_id",
+            "description": ["Unique DataOne pipeline-run identifier used with project_name to join run-level views."]
+          }
+        ]
+      },
+      {
+        "identifier": "workspace.dataone_gold.quality_summary",
+        "column_configs": [
+          {
+            "column_name": "cell_count",
+            "description": ["Total evaluated cells across all rows and columns in one DataOne run."]
+          },
+          {
+            "column_name": "column_count",
+            "description": ["Number of source columns profiled in one DataOne run."]
+          },
+          {
+            "column_name": "issue_cells",
+            "description": ["Total cells with a detected quality issue in one DataOne run."],
+            "synonyms": ["bad cells", "invalid cells", "issue count"]
+          },
+          {
+            "column_name": "project_name",
+            "synonyms": ["project", "data product"],
+            "enable_format_assistance": true,
+            "enable_entity_matching": true
+          },
+          {
+            "column_name": "quality_score",
+            "description": [
+              "Run-level Data Quality Index on a 0 to 100 scale: 100 times valid_cells divided by cell_count, rounded to one decimal place."
+            ],
+            "synonyms": ["data quality index", "DQI", "data quality score", "health score"]
+          },
+          {
+            "column_name": "row_count",
+            "description": ["Number of source records profiled in one DataOne run."]
+          },
+          {
+            "column_name": "run_id",
+            "description": ["Unique DataOne pipeline-run identifier used with project_name to join run-level views."]
+          },
+          {
+            "column_name": "source_identifier",
+            "description": ["Unity Catalog table name or governed Volume path processed by the run."],
+            "synonyms": ["source", "source path", "source table"]
+          },
+          {
+            "column_name": "source_mode",
+            "description": [
+              "Ingestion mode: volume_file for CSV, JSON, or Parquet uploads; uc_table for a Unity Catalog source."
+            ],
+            "synonyms": ["source type", "ingestion mode"],
+            "enable_format_assistance": true,
+            "enable_entity_matching": true
+          },
+          {
+            "column_name": "transformed_cells",
+            "description": ["Total cells changed by DataOne cleaning in one run."],
+            "synonyms": ["cleaned cells", "changed cells"]
+          },
+          {
+            "column_name": "updated_at",
+            "description": [
+              "Timestamp when the run-level quality result was last materialized. Use this to identify the latest completed quality result."
+            ]
+          },
+          {
+            "column_name": "valid_cells",
+            "description": ["Total cells without a detected quality issue in one DataOne run."]
+          }
+        ]
+      },
+      {
+        "identifier": "workspace.dataone_gold.schema_mapping",
+        "column_configs": [
+          {
+            "column_name": "mapping_confidence",
+            "description": [
+              "Deterministic source-to-target mapping confidence stored from 0 to 1. Multiply by 100 when presenting a percentage."
+            ],
+            "synonyms": ["mapping score", "schema match confidence"]
+          },
+          {
+            "column_name": "ordinal",
+            "description": ["One-based source-column position within the profiled schema."]
+          },
+          {
+            "column_name": "profiled_at",
+            "description": ["Timestamp when this schema mapping recommendation was produced."]
+          },
+          {
+            "column_name": "project_name",
+            "synonyms": ["project", "data product"],
+            "enable_format_assistance": true,
+            "enable_entity_matching": true
+          },
+          {
+            "column_name": "run_id",
+            "description": ["Unique DataOne pipeline-run identifier used with project_name to join run-level views."]
+          },
+          {
+            "column_name": "source_column",
+            "description": ["Original column name in the selected source."],
+            "synonyms": ["source field", "input column"],
+            "enable_format_assistance": true,
+            "enable_entity_matching": true
+          },
+          {
+            "column_name": "source_type",
+            "description": ["Data type observed in the source schema."],
+            "synonyms": ["source data type"]
+          },
+          {
+            "column_name": "target_column",
+            "description": ["Recommended normalized target column name."],
+            "synonyms": ["target field", "output column"]
+          },
+          {
+            "column_name": "target_type",
+            "description": ["Recommended target data type after schema mapping."],
+            "synonyms": ["target data type"]
+          }
+        ]
+      },
+      {
+        "identifier": "workspace.dataone_gold.transformation_summary",
+        "column_configs": [
+          {
+            "column_name": "changed_cells",
+            "description": ["Number of cells actually changed by this cleaning transformation in one run."],
+            "synonyms": ["cleaned cells", "transformed cells"]
+          },
+          {
+            "column_name": "evaluated_cells",
+            "description": ["Number of cells checked for this cleaning transformation in one run."]
+          },
+          {
+            "column_name": "project_name",
+            "synonyms": ["project", "data product"],
+            "enable_format_assistance": true,
+            "enable_entity_matching": true
+          },
+          {
+            "column_name": "run_id",
+            "description": ["Unique DataOne pipeline-run identifier used with project_name to join run-level views."]
+          },
+          {
+            "column_name": "transformation",
+            "description": ["Name of the DataOne cleaning rule applied."],
+            "synonyms": ["cleaning rule", "transformation type", "cleaning operation"],
+            "enable_format_assistance": true,
+            "enable_entity_matching": true
+          }
+        ]
+      },
+      {
+        "identifier": "workspace.dataone_ops.project_runs",
+        "column_configs": [
+          {
+            "column_name": "column_count",
+            "description": ["Number of source columns observed when the run was started."]
+          },
+          {
+            "column_name": "project_name",
+            "synonyms": ["project", "data product"],
+            "enable_format_assistance": true,
+            "enable_entity_matching": true
+          },
+          {
+            "column_name": "row_count",
+            "description": ["Number of source records observed when the run was started."]
+          },
+          {
+            "column_name": "run_id",
+            "description": ["Unique DataOne pipeline-run identifier used with project_name to join run-level views."]
+          },
+          {
+            "column_name": "source_format",
+            "description": ["Source format: csv, json, parquet, or unity_catalog."],
+            "synonyms": ["format", "file format"],
+            "enable_format_assistance": true,
+            "enable_entity_matching": true
+          },
+          {
+            "column_name": "source_identifier",
+            "description": ["Unity Catalog table name or governed Volume path selected for the run."],
+            "synonyms": ["source", "source path", "source table"]
+          },
+          {
+            "column_name": "source_mode",
+            "description": ["Ingestion mode: volume_file or uc_table."],
+            "synonyms": ["source type", "ingestion mode"],
+            "enable_format_assistance": true,
+            "enable_entity_matching": true
+          },
+          {
+            "column_name": "started_at",
+            "description": ["Timestamp when the DataOne run was registered."]
+          },
+          {
+            "column_name": "status",
+            "description": ["Run state recorded by the orchestration workflow."],
+            "synonyms": ["run status", "pipeline status"],
+            "enable_format_assistance": true,
+            "enable_entity_matching": true
+          }
+        ]
+      }
+    ]
+  },
+  "instructions": {
+    "example_question_sqls": [
+      {
+        "id": "30000000000000000000000000000001",
+        "question": ["What is the latest quality score for each DataOne project?"],
+        "sql": [
+          "WITH ranked AS (\n  SELECT\n    quality_summary.project_name,\n    quality_summary.run_id,\n    quality_summary.row_count,\n    quality_summary.column_count,\n    quality_summary.issue_cells,\n    quality_summary.transformed_cells,\n    quality_summary.quality_score,\n    quality_summary.updated_at,\n    ROW_NUMBER() OVER (PARTITION BY quality_summary.project_name ORDER BY quality_summary.updated_at DESC, quality_summary.run_id DESC) AS recency_rank\n  FROM workspace.dataone_gold.quality_summary AS quality_summary\n)\nSELECT\n  ranked.project_name,\n  ranked.run_id,\n  ranked.row_count,\n  ranked.column_count,\n  ranked.issue_cells,\n  ranked.transformed_cells,\n  ranked.quality_score,\n  ranked.updated_at\nFROM ranked\nWHERE ranked.recency_rank = 1\nORDER BY ranked.updated_at DESC, ranked.project_name\nLIMIT 50"
+        ]
+      },
+      {
+        "id": "30000000000000000000000000000002",
+        "question": ["For the latest run of demo, which columns have the lowest quality scores?"],
+        "sql": [
+          "WITH latest_run AS (\n  SELECT quality_summary.run_id\n  FROM workspace.dataone_gold.quality_summary AS quality_summary\n  WHERE quality_summary.project_name = 'demo'\n  ORDER BY quality_summary.updated_at DESC, quality_summary.run_id DESC\n  LIMIT 1\n)\nSELECT\n  quality_by_column.column_name,\n  quality_by_column.source_type,\n  quality_by_column.cell_count,\n  quality_by_column.missing_count,\n  quality_by_column.issue_count,\n  quality_by_column.transformed_count,\n  quality_by_column.quality_score\nFROM workspace.dataone_gold.quality_by_column AS quality_by_column\nINNER JOIN latest_run\n  ON quality_by_column.run_id = latest_run.run_id\nWHERE quality_by_column.project_name = 'demo'\nORDER BY quality_by_column.quality_score ASC, quality_by_column.issue_count DESC, quality_by_column.column_name\nLIMIT 10"
+        ]
+      },
+      {
+        "id": "30000000000000000000000000000003",
+        "question": ["Which cleaning transformations changed the most cells?"],
+        "sql": [
+          "SELECT\n  transformation_summary.transformation,\n  SUM(transformation_summary.evaluated_cells) AS evaluated_cells,\n  SUM(transformation_summary.changed_cells) AS changed_cells,\n  ROUND(100.0 * SUM(transformation_summary.changed_cells) / NULLIF(SUM(transformation_summary.evaluated_cells), 0), 2) AS changed_rate_pct\nFROM workspace.dataone_gold.transformation_summary AS transformation_summary\nGROUP BY transformation_summary.transformation\nORDER BY changed_cells DESC, transformation_summary.transformation\nLIMIT 20"
+        ]
+      },
+      {
+        "id": "30000000000000000000000000000004",
+        "question": ["Show schema mapping confidence for the latest demo run."],
+        "sql": [
+          "WITH latest_run AS (\n  SELECT quality_summary.run_id\n  FROM workspace.dataone_gold.quality_summary AS quality_summary\n  WHERE quality_summary.project_name = 'demo'\n  ORDER BY quality_summary.updated_at DESC, quality_summary.run_id DESC\n  LIMIT 1\n)\nSELECT\n  schema_mapping.ordinal,\n  schema_mapping.source_column,\n  schema_mapping.target_column,\n  schema_mapping.source_type,\n  schema_mapping.target_type,\n  ROUND(100.0 * schema_mapping.mapping_confidence, 1) AS mapping_confidence_pct,\n  CASE\n    WHEN schema_mapping.mapping_confidence >= 0.95 AND schema_mapping.source_type = schema_mapping.target_type THEN 'AUTO_MAPPED'\n    ELSE 'REVIEW_REQUIRED'\n  END AS review_status\nFROM workspace.dataone_gold.schema_mapping AS schema_mapping\nINNER JOIN latest_run\n  ON schema_mapping.run_id = latest_run.run_id\nWHERE schema_mapping.project_name = 'demo'\nORDER BY schema_mapping.mapping_confidence ASC, schema_mapping.ordinal\nLIMIT 100"
+        ]
+      },
+      {
+        "id": "30000000000000000000000000000005",
+        "question": ["Compare quality and transformation rates across source formats."],
+        "sql": [
+          "SELECT\n  project_runs.source_format,\n  COUNT(DISTINCT project_runs.run_id) AS run_count,\n  ROUND(AVG(quality_summary.quality_score), 2) AS average_run_quality_score,\n  ROUND(100.0 * SUM(quality_summary.issue_cells) / NULLIF(SUM(quality_summary.cell_count), 0), 2) AS weighted_issue_pct,\n  ROUND(100.0 * SUM(quality_summary.transformed_cells) / NULLIF(SUM(quality_summary.cell_count), 0), 2) AS weighted_transformed_pct,\n  MAX(quality_summary.updated_at) AS latest_quality_at\nFROM workspace.dataone_ops.project_runs AS project_runs\nINNER JOIN workspace.dataone_gold.quality_summary AS quality_summary\n  ON project_runs.project_name = quality_summary.project_name\n AND project_runs.run_id = quality_summary.run_id\nGROUP BY project_runs.source_format\nORDER BY average_run_quality_score ASC, project_runs.source_format\nLIMIT 20"
+        ]
+      },
+      {
+        "id": "30000000000000000000000000000006",
+        "question": ["How many rows are in the latest dataset?"],
+        "sql": [
+          "SELECT\n  quality_summary.project_name,\n  quality_summary.run_id,\n  quality_summary.source_identifier,\n  quality_summary.row_count,\n  quality_summary.updated_at\nFROM workspace.dataone_gold.quality_summary AS quality_summary\nORDER BY quality_summary.updated_at DESC, quality_summary.run_id DESC\nLIMIT 1"
+        ]
+      }
+    ],
+    "join_specs": [
+      {
+        "id": "40000000000000000000000000000001",
+        "left": {
+          "identifier": "workspace.dataone_gold.quality_summary",
+          "alias": "quality_summary"
+        },
+        "right": {
+          "identifier": "workspace.dataone_gold.quality_by_column",
+          "alias": "quality_by_column"
+        },
+        "sql": [
+          "`quality_summary`.`project_name` = `quality_by_column`.`project_name` AND `quality_summary`.`run_id` = `quality_by_column`.`run_id`",
+          "--rt=FROM_RELATIONSHIP_TYPE_ONE_TO_MANY--"
+        ]
+      },
+      {
+        "id": "40000000000000000000000000000002",
+        "left": {
+          "identifier": "workspace.dataone_gold.quality_summary",
+          "alias": "quality_summary"
+        },
+        "right": {
+          "identifier": "workspace.dataone_gold.quality_issue_distribution",
+          "alias": "quality_issue_distribution"
+        },
+        "sql": [
+          "`quality_summary`.`project_name` = `quality_issue_distribution`.`project_name` AND `quality_summary`.`run_id` = `quality_issue_distribution`.`run_id`",
+          "--rt=FROM_RELATIONSHIP_TYPE_ONE_TO_MANY--"
+        ]
+      },
+      {
+        "id": "40000000000000000000000000000003",
+        "left": {
+          "identifier": "workspace.dataone_gold.quality_summary",
+          "alias": "quality_summary"
+        },
+        "right": {
+          "identifier": "workspace.dataone_gold.schema_mapping",
+          "alias": "schema_mapping"
+        },
+        "sql": [
+          "`quality_summary`.`project_name` = `schema_mapping`.`project_name` AND `quality_summary`.`run_id` = `schema_mapping`.`run_id`",
+          "--rt=FROM_RELATIONSHIP_TYPE_ONE_TO_MANY--"
+        ]
+      },
+      {
+        "id": "40000000000000000000000000000004",
+        "left": {
+          "identifier": "workspace.dataone_gold.quality_summary",
+          "alias": "quality_summary"
+        },
+        "right": {
+          "identifier": "workspace.dataone_gold.transformation_summary",
+          "alias": "transformation_summary"
+        },
+        "sql": [
+          "`quality_summary`.`project_name` = `transformation_summary`.`project_name` AND `quality_summary`.`run_id` = `transformation_summary`.`run_id`",
+          "--rt=FROM_RELATIONSHIP_TYPE_ONE_TO_MANY--"
+        ]
+      },
+      {
+        "id": "40000000000000000000000000000005",
+        "left": {
+          "identifier": "workspace.dataone_ops.project_runs",
+          "alias": "project_runs"
+        },
+        "right": {
+          "identifier": "workspace.dataone_gold.quality_summary",
+          "alias": "quality_summary"
+        },
+        "sql": [
+          "`project_runs`.`project_name` = `quality_summary`.`project_name` AND `project_runs`.`run_id` = `quality_summary`.`run_id`",
+          "--rt=FROM_RELATIONSHIP_TYPE_ONE_TO_ONE--"
+        ]
+      }
+    ],
+    "text_instructions": [
+      {
+        "id": "20000000000000000000000000000001",
+        "content": [
+          "* Use workspace.dataone_gold.quality_summary for run-level quality totals. Data Quality Index, DQI, health score, and quality score all mean quality_summary.quality_score on a 0 to 100 scale.\n* For a dataset row total, record count, or row count, select quality_summary.row_count from exactly one run. If the DataOne app supplies a run_id context, filter by that exact run_id. Otherwise select the latest run by updated_at descending and run_id descending. Never SUM row_count across runs.\n* For latest completed quality results, order quality_summary.updated_at descending and use run_id descending as a deterministic tie-breaker. For latest per project, use ROW_NUMBER partitioned by project_name.\n* Use quality_by_column for column or field quality. Lower quality_score is worse. issue_count is the count of cells with any issue; missing_count is the missing-value subset.\n* Use quality_issue_distribution for issue categories. Exclude quality_issue = 'valid' when the user asks only about problems or failures.\n* Use transformation_summary for cleaning. changed_cells is the number actually modified and evaluated_cells is the number checked. Never describe evaluated cells as changed cells.\n* Use schema_mapping for source-to-target recommendations. mapping_confidence is stored from 0 to 1; multiply by 100 for a percentage. Treat confidence at least 0.95 with matching source_type and target_type as AUTO_MAPPED; otherwise REVIEW_REQUIRED.\n* Use project_runs only when source_format, orchestration status, or started_at is needed. Join it to quality_summary on both project_name and run_id before comparing quality across formats.\n* For weighted issue rate, calculate 100 * SUM(issue_cells) / SUM(cell_count). For weighted transformed rate, calculate 100 * SUM(transformed_cells) / SUM(cell_count). Do not average row-level percentages for a weighted rate.\n* Do not claim record quarantine counts or expose cleaned row content: cleaned_records is intentionally not a Genie data source. State that row-level quarantine analysis is outside this governed AskData scope.\n* When returning a table, use clear aliases, deterministic ordering, and a LIMIT of 100 or less unless the user explicitly asks for more."
+        ]
+      }
+    ]
+  },
+  "benchmarks": {
+    "questions": [
+      {
+        "id": "50000000000000000000000000000001",
+        "question": ["What is the latest quality score for each DataOne project?"],
+        "answer": [
+          {
+            "format": "SQL",
+            "content": [
+              "WITH ranked AS (\n  SELECT quality_summary.project_name, quality_summary.run_id, quality_summary.quality_score, quality_summary.updated_at, ROW_NUMBER() OVER (PARTITION BY quality_summary.project_name ORDER BY quality_summary.updated_at DESC, quality_summary.run_id DESC) AS recency_rank\n  FROM workspace.dataone_gold.quality_summary AS quality_summary\n)\nSELECT ranked.project_name, ranked.run_id, ranked.quality_score, ranked.updated_at\nFROM ranked\nWHERE ranked.recency_rank = 1\nORDER BY ranked.updated_at DESC, ranked.project_name\nLIMIT 50"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "50000000000000000000000000000002",
+        "question": ["For the latest run of demo, which columns have the lowest quality scores?"],
+        "answer": [
+          {
+            "format": "SQL",
+            "content": [
+              "WITH latest_run AS (\n  SELECT quality_summary.run_id FROM workspace.dataone_gold.quality_summary AS quality_summary WHERE quality_summary.project_name = 'demo' ORDER BY quality_summary.updated_at DESC, quality_summary.run_id DESC LIMIT 1\n)\nSELECT quality_by_column.column_name, quality_by_column.issue_count, quality_by_column.quality_score\nFROM workspace.dataone_gold.quality_by_column AS quality_by_column\nINNER JOIN latest_run ON quality_by_column.run_id = latest_run.run_id\nWHERE quality_by_column.project_name = 'demo'\nORDER BY quality_by_column.quality_score ASC, quality_by_column.issue_count DESC, quality_by_column.column_name\nLIMIT 10"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "50000000000000000000000000000003",
+        "question": ["Which cleaning transformations changed the most cells?"],
+        "answer": [
+          {
+            "format": "SQL",
+            "content": [
+              "SELECT transformation_summary.transformation, SUM(transformation_summary.changed_cells) AS changed_cells\nFROM workspace.dataone_gold.transformation_summary AS transformation_summary\nGROUP BY transformation_summary.transformation\nORDER BY changed_cells DESC, transformation_summary.transformation\nLIMIT 20"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "50000000000000000000000000000004",
+        "question": ["Show schema mapping confidence for the latest demo run."],
+        "answer": [
+          {
+            "format": "SQL",
+            "content": [
+              "WITH latest_run AS (\n  SELECT quality_summary.run_id FROM workspace.dataone_gold.quality_summary AS quality_summary WHERE quality_summary.project_name = 'demo' ORDER BY quality_summary.updated_at DESC, quality_summary.run_id DESC LIMIT 1\n)\nSELECT schema_mapping.source_column, schema_mapping.target_column, ROUND(100.0 * schema_mapping.mapping_confidence, 1) AS mapping_confidence_pct\nFROM workspace.dataone_gold.schema_mapping AS schema_mapping\nINNER JOIN latest_run ON schema_mapping.run_id = latest_run.run_id\nWHERE schema_mapping.project_name = 'demo'\nORDER BY schema_mapping.mapping_confidence ASC, schema_mapping.ordinal\nLIMIT 100"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "50000000000000000000000000000005",
+        "question": ["Compare quality and transformation rates across source formats."],
+        "answer": [
+          {
+            "format": "SQL",
+            "content": [
+              "SELECT project_runs.source_format, COUNT(DISTINCT project_runs.run_id) AS run_count, ROUND(AVG(quality_summary.quality_score), 2) AS average_run_quality_score, ROUND(100.0 * SUM(quality_summary.issue_cells) / NULLIF(SUM(quality_summary.cell_count), 0), 2) AS weighted_issue_pct, ROUND(100.0 * SUM(quality_summary.transformed_cells) / NULLIF(SUM(quality_summary.cell_count), 0), 2) AS weighted_transformed_pct\nFROM workspace.dataone_ops.project_runs AS project_runs\nINNER JOIN workspace.dataone_gold.quality_summary AS quality_summary ON project_runs.project_name = quality_summary.project_name AND project_runs.run_id = quality_summary.run_id\nGROUP BY project_runs.source_format\nORDER BY average_run_quality_score ASC, project_runs.source_format\nLIMIT 20"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "50000000000000000000000000000006",
+        "question": ["How many rows are in the latest dataset?"],
+        "answer": [
+          {
+            "format": "SQL",
+            "content": [
+              "SELECT quality_summary.project_name, quality_summary.run_id, quality_summary.source_identifier, quality_summary.row_count, quality_summary.updated_at\nFROM workspace.dataone_gold.quality_summary AS quality_summary\nORDER BY quality_summary.updated_at DESC, quality_summary.run_id DESC\nLIMIT 1"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

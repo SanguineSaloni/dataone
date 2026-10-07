@@ -1,0 +1,179 @@
+bundle:
+  name: dataone-secure
+
+include:
+  - resources/*.yml
+
+variables:
+  sql_warehouse_id:
+    description: SQL Warehouse ID
+  files_id:
+    description: Permission to write to volumes
+  source_connection_name:
+    description: Existing Unity Catalog connection used by the source foreign catalog
+  target_connection_name:
+    description: Existing Unity Catalog connection describing the external target
+  state_database_secret_scope:
+    description: Secret scope containing the AWS PostgreSQL URL for DataOne app state
+  state_database_secret_key:
+    description: Secret key containing the AWS PostgreSQL connection URL
+  external_target_enabled:
+    description: Whether the final Job task exports Gold rows to PostgreSQL or MySQL
+    default: 'false'
+  target_export_secret_scope:
+    description: Secret scope containing the external PostgreSQL JDBC settings
+    default: dataone-target
+  target_export_jdbc_url_key:
+    description: Secret key containing the PostgreSQL JDBC URL
+    default: jdbc-url
+  target_export_user_key:
+    description: Secret key containing the PostgreSQL username
+    default: username
+  target_export_password_key:
+    description: Secret key containing the PostgreSQL password
+    default: password
+  mysql_target_export_jdbc_url_key:
+    description: Secret key containing the MySQL JDBC URL
+    default: mysql-jdbc-url
+  mysql_target_export_user_key:
+    description: Secret key containing the MySQL username
+    default: mysql-username
+  mysql_target_export_password_key:
+    description: Secret key containing the MySQL password
+    default: mysql-password
+
+resources:
+  apps:
+    app:
+      name: 'veltirs-dataone'
+      description: 'Veltirs DataOne governed ingestion, quality, schema mapping, visualization and AskData app'
+      source_code_path: ./
+      # [DBX-USER-AUTHORIZATION] Only connection administrators use these
+      # forwarded-user scopes when they register a new AWS database source. All
+      # normal app reads and workflow execution remain resource-bound.
+      user_api_scopes:
+        - catalog.connections
+        - catalog.catalogs
+
+      # Start the app automatically on deploy.
+      lifecycle:
+        started: true
+
+      # [DBX-SERVICE-PRINCIPAL] AppKit Files, Analytics, Jobs API calls, and
+      # Genie execute as this app's Databricks-managed service principal. The
+      # shared Job and Pipeline use the bundle deployer as their durable run-as
+      # identity, so replacing the UI app cannot orphan ETL ownership.
+
+      # The resources which this app has access to.
+      resources:
+        # [DBX-BINDING-WAREHOUSE] Grants CAN_USE and injects the warehouse ID.
+        - name: sql-warehouse
+          sql_warehouse:
+            id: ${var.sql_warehouse_id}
+            permission: CAN_USE
+        # [DBX-BINDING-VOLUME] Governed landing zone used by AppKit Files.
+        - name: files
+          uc_securable:
+            securable_full_name: ${var.files_id}
+            securable_type: VOLUME
+            permission: WRITE_VOLUME
+        # [DBX-BINDING-JOB] The UI can trigger this one Job, not arbitrary IDs.
+        - name: job
+          job:
+            id: ${resources.jobs.dataone_orchestrator.id}
+            permission: CAN_MANAGE_RUN
+        # [DBX-BINDING-FEDERATION] Existing UC connections are selected at
+        # installation. USE_CONNECTION does not expose their credentials.
+        - name: source-connection
+          uc_securable:
+            securable_full_name: ${var.source_connection_name}
+            securable_type: CONNECTION
+            permission: USE_CONNECTION
+        - name: target-connection
+          uc_securable:
+            securable_full_name: ${var.target_connection_name}
+            securable_type: CONNECTION
+            permission: USE_CONNECTION
+        # [DBX-BINDING-AWS-POSTGRES] Only the state database URL is injected
+        # into the app backend. Keep this scope dedicated to DataOne.
+        - name: state-db-url
+          secret:
+            scope: ${var.state_database_secret_scope}
+            key: ${var.state_database_secret_key}
+            permission: READ
+        - name: project-runs
+          uc_securable:
+            securable_full_name: workspace.dataone_ops.project_runs
+            securable_type: TABLE
+            permission: SELECT
+        - name: quality-summary
+          uc_securable:
+            securable_full_name: workspace.dataone_gold.quality_summary
+            securable_type: TABLE
+            permission: SELECT
+        - name: quality-by-column
+          uc_securable:
+            securable_full_name: workspace.dataone_gold.quality_by_column
+            securable_type: TABLE
+            permission: SELECT
+        - name: quality-issue-distribution
+          uc_securable:
+            securable_full_name: workspace.dataone_gold.quality_issue_distribution
+            securable_type: TABLE
+            permission: SELECT
+        - name: transformation-summary
+          uc_securable:
+            securable_full_name: workspace.dataone_gold.transformation_summary
+            securable_type: TABLE
+            permission: SELECT
+        - name: schema-mapping
+          uc_securable:
+            securable_full_name: workspace.dataone_gold.schema_mapping
+            securable_type: TABLE
+            permission: SELECT
+        - name: cleaned-records
+          uc_securable:
+            securable_full_name: workspace.dataone_gold.cleaned_records
+            securable_type: TABLE
+            permission: SELECT
+        - name: commerce-performance
+          uc_securable:
+            securable_full_name: workspace.dataone_gold.commerce_performance
+            securable_type: TABLE
+            permission: SELECT
+        # [DBX-BINDING-GENIE] Dedicated governed NL2SQL agent.
+        - name: genie-space
+          genie_space:
+            name: DataOne AskData
+            space_id: ${resources.genie_spaces.dataone_askdata.id}
+            permission: CAN_RUN
+
+targets:
+  current:
+    default: true
+    workspace:
+      host: https://dbc-1670f1c2-1198.cloud.databricks.com
+
+    variables:
+      sql_warehouse_id: fafc14eabc92df75
+      files_id: workspace.dataone_bronze.dataone_landing
+      source_connection_name: dataone_mysql_dataone_source_ba4f108677
+      target_connection_name: dataone_postgresql_dataone_target_62619fd3c7
+      state_database_secret_scope: dataone-state
+      state_database_secret_key: database-url
+      # The final Job task publishes verified Gold rows to AWS PostgreSQL. The
+      # dataone-target scope must contain jdbc-url, username, and password.
+      external_target_enabled: 'true'
+
+  legacy:
+    workspace:
+      host: https://dbc-372f266b-0d3f.cloud.databricks.com
+
+    variables:
+      sql_warehouse_id: 9e49916eb1909e5b
+      files_id: workspace.dataone_bronze.dataone_landing
+      source_connection_name: dataone_mysql_connection
+      target_connection_name: dataone_postgres_connection
+      state_database_secret_scope: dataone-state
+      state_database_secret_key: database-url
+      external_target_enabled: 'true'

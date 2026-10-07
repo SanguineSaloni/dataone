@@ -1,0 +1,32 @@
+resources:
+  schemas:
+    dataone_bronze:
+      catalog_name: workspace
+      name: dataone_bronze
+      comment: DataOne governed landing and Bronze ingestion layer.
+    dataone_silver:
+      catalog_name: workspace
+      name: dataone_silver
+      comment: DataOne validated and standardized transformation layer.
+    dataone_gold:
+      catalog_name: workspace
+      name: dataone_gold
+      comment: DataOne governed quality, mapping, and analytics outputs.
+    dataone_ops:
+      catalog_name: workspace
+      name: dataone_ops
+      comment: DataOne run metadata and schema profiling state.
+
+  volumes:
+    dataone_landing:
+      catalog_name: workspace
+      schema_name: ${resources.schemas.dataone_bronze.name}
+      name: dataone_landing
+      volume_type: MANAGED
+      comment: Governed landing volume for DataOne CSV, JSON, Parquet, and SQLite inputs.
+
+  secret_scopes:
+    dataone_state:
+      name: dataone-state
+    dataone_target:
+      name: dataone-target

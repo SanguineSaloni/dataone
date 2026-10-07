@@ -1,0 +1,41 @@
+command: ['npm', 'run', 'start']
+env:
+  # [DBX-VALUEFROM] Resource IDs/paths are injected by Databricks Apps at
+  # runtime. They are not hardcoded into browser code and need no production PAT.
+  - name: DATABRICKS_WAREHOUSE_ID
+    valueFrom: sql-warehouse
+  - name: DATABRICKS_VOLUME_FILES
+    valueFrom: files
+  - name: DATABRICKS_JOB_ID
+    valueFrom: job
+  - name: DATABRICKS_GENIE_SPACE_ID
+    valueFrom: genie-space
+  # [DBX-FEDERATION-BINDINGS] The values resolve to Unity Catalog connection
+  # names. Credentials stay inside Unity Catalog and never reach the browser.
+  - name: DATABRICKS_SOURCE_CONNECTION
+    valueFrom: source-connection
+  - name: DATABRICKS_TARGET_CONNECTION
+    valueFrom: target-connection
+  - name: DATAONE_SOURCE_ENGINE
+    value: mysql
+  - name: DATAONE_SOURCE_FOREIGN_CATALOG
+    value: dataone_mysql_dataone_source_ba4f108677
+  - name: DATAONE_SOURCE_DEFAULT_SCHEMA
+    value: dataone_source
+  - name: DATAONE_TARGET_ENGINE
+    value: postgresql
+  - name: DATAONE_TARGET_FOREIGN_CATALOG
+    value: dataone_postgresql_dataone_target_62619fd3c7
+  - name: DATAONE_TARGET_DEFAULT_SCHEMA
+    value: public
+  # [DBX-CONNECTION-ADMIN] Only these signed-in Databricks users may submit
+  # external database credentials and create/update governed UC connections.
+  # Marketplace installers must replace this with their connection administrator.
+  - name: DATAONE_CONNECTION_ADMIN_EMAILS
+    value: karanduddekunta2715@gmail.com
+  # [DBX-AWS-POSTGRES] This secret contains the AWS PostgreSQL connection URL
+  # used only by the Node backend for DataOne operational state.
+  - name: DATAONE_DATABASE_URL
+    valueFrom: state-db-url
+  - name: DATAONE_REQUIRE_OPERATIONAL_STORE
+    value: 'true'

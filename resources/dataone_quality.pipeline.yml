@@ -1,0 +1,30 @@
+resources:
+  pipelines:
+    # [DBX-LAKEFLOW-PIPELINE] Declarative transformations publish governed Gold
+    # materialized views consumed by AppKit Analytics and the Genie Agent.
+    dataone_quality:
+      name: dataone-quality-pipeline
+      catalog: workspace
+      schema: dataone_gold
+      serverless: true
+      continuous: false
+      development: false
+      photon: true
+      channel: CURRENT
+      run_as:
+        # [DBX-PIPELINE-RUN-AS] The Pipeline uses the bundle deployer as the
+        # durable workload identity so replacing the UI App cannot orphan ETL.
+        user_name: ${workspace.current_user.userName}
+      libraries:
+        - glob:
+            include: ../src/pipelines/dataone/transformations/**
+      root_path: ../src/pipelines/dataone
+      configuration:
+        dataone.catalog: workspace
+        dataone.bronze_schema: dataone_bronze
+        dataone.ops_schema: dataone_ops
+      permissions:
+        - level: CAN_VIEW
+          group_name: users
+        - level: CAN_RUN
+          user_name: ${workspace.current_user.userName}

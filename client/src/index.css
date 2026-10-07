@@ -1,0 +1,4363 @@
+@import '@databricks/appkit-ui/styles.css';
+
+:root,
+.dark {
+  color-scheme: dark;
+  --radius: 0.75rem;
+  --background: oklch(0.125 0.025 264);
+  --foreground: oklch(0.97 0.01 270);
+  --card: oklch(0.17 0.028 263);
+  --card-foreground: oklch(0.97 0.01 270);
+  --popover: oklch(0.18 0.03 263);
+  --popover-foreground: oklch(0.97 0.01 270);
+  --primary: oklch(0.66 0.23 291);
+  --primary-foreground: oklch(0.99 0.005 270);
+  --secondary: oklch(0.24 0.044 267);
+  --secondary-foreground: oklch(0.94 0.014 270);
+  --muted: oklch(0.21 0.03 264);
+  --muted-foreground: oklch(0.72 0.027 266);
+  --accent: oklch(0.26 0.075 284);
+  --accent-foreground: oklch(0.98 0.008 270);
+  --destructive: oklch(0.66 0.2 25);
+  --destructive-foreground: oklch(0.99 0.005 270);
+  --success: oklch(0.71 0.16 158);
+  --success-foreground: oklch(0.15 0.028 160);
+  --warning: oklch(0.79 0.16 82);
+  --warning-foreground: oklch(0.18 0.032 73);
+  --border: oklch(0.5 0.05 266 / 36%);
+  --input: oklch(0.43 0.05 266 / 46%);
+  --ring: oklch(0.66 0.23 291);
+  --chart-cat-1: oklch(0.69 0.2 290);
+  --chart-cat-2: oklch(0.72 0.16 160);
+  --chart-cat-3: oklch(0.76 0.15 223);
+  --chart-cat-4: oklch(0.8 0.17 82);
+  --chart-cat-5: oklch(0.68 0.19 19);
+  --chart-cat-6: oklch(0.72 0.17 330);
+  --chart-cat-7: oklch(0.68 0.14 246);
+  --chart-cat-8: oklch(0.78 0.14 128);
+  --chart-seq-1: oklch(0.3 0.07 284);
+  --chart-seq-2: oklch(0.36 0.09 286);
+  --chart-seq-3: oklch(0.42 0.12 287);
+  --chart-seq-4: oklch(0.49 0.15 288);
+  --chart-seq-5: oklch(0.56 0.18 289);
+  --chart-seq-6: oklch(0.63 0.2 290);
+  --chart-seq-7: oklch(0.7 0.18 292);
+  --chart-seq-8: oklch(0.78 0.14 294);
+  --chart-div-1: oklch(0.55 0.19 25);
+  --chart-div-2: oklch(0.62 0.16 34);
+  --chart-div-3: oklch(0.7 0.11 47);
+  --chart-div-4: oklch(0.76 0.05 67);
+  --chart-div-5: oklch(0.74 0.05 176);
+  --chart-div-6: oklch(0.68 0.1 169);
+  --chart-div-7: oklch(0.62 0.14 160);
+  --chart-div-8: oklch(0.55 0.17 151);
+  --sidebar: var(--card);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  background: var(--background);
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.dataone-app {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 16% 5%, color-mix(in oklch, var(--primary) 20%, transparent), transparent 28rem),
+    radial-gradient(circle at 94% 16%, color-mix(in oklch, var(--accent) 45%, transparent), transparent 34rem),
+    linear-gradient(145deg, var(--background), color-mix(in oklch, var(--background) 88%, var(--primary)));
+}
+
+.dataone-app::before {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  content: '';
+  opacity: 0.2;
+  background-image: radial-gradient(
+    circle,
+    color-mix(in oklch, var(--foreground) 28%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 26px 26px;
+  mask-image: linear-gradient(to bottom, transparent, black 18%, transparent 78%);
+}
+
+.dataone-app > * {
+  position: relative;
+  z-index: 1;
+}
+
+.dataone-topbar {
+  display: flex;
+  min-height: 76px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1rem clamp(1rem, 3vw, 3rem);
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in oklch, var(--background) 88%, transparent);
+  backdrop-filter: blur(18px);
+}
+
+.dataone-brand {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: clamp(1.2rem, 2vw, 1.75rem);
+  font-weight: 760;
+  letter-spacing: -0.035em;
+}
+
+.dataone-brand-divider {
+  display: block;
+  width: 1px;
+  height: 1.7rem;
+  background: var(--muted-foreground);
+}
+
+.dataone-topbar-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  margin-left: auto;
+}
+
+.dataone-topbar svg,
+.dataone-eyebrow svg,
+.dataone-identity-badge svg,
+.dataone-environment-badge svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.dataone-environment-badge,
+.dataone-identity-badge {
+  min-height: 1.9rem;
+  gap: 0.4rem;
+  padding-inline: 0.72rem;
+  white-space: nowrap;
+}
+
+.dataone-environment-badge svg {
+  color: var(--success);
+  fill: color-mix(in oklch, var(--success) 24%, transparent);
+}
+
+.dataone-setup {
+  position: relative;
+  width: min(1520px, 100%);
+  min-height: calc(100vh - 76px);
+  margin: 0 auto;
+  padding: clamp(2.5rem, 5vw, 5rem) clamp(1rem, 3vw, 3rem) 3rem;
+}
+
+.dataone-orbit {
+  position: absolute;
+  z-index: -1;
+  border: 1px solid color-mix(in oklch, var(--primary) 40%, transparent);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.dataone-orbit--one {
+  top: -24rem;
+  right: -25rem;
+  width: 58rem;
+  height: 58rem;
+  box-shadow: 0 0 9rem color-mix(in oklch, var(--primary) 14%, transparent);
+}
+
+.dataone-orbit--two {
+  bottom: -29rem;
+  left: -31rem;
+  width: 66rem;
+  height: 66rem;
+  border-color: color-mix(in oklch, var(--chart-cat-3) 35%, transparent);
+}
+
+.dataone-setup-hero {
+  width: min(1000px, 100%);
+  margin: 0 auto clamp(2rem, 4vw, 3.75rem);
+  text-align: center;
+}
+
+.dataone-eyebrow {
+  gap: 0.45rem;
+  border-color: color-mix(in oklch, var(--primary) 55%, var(--border));
+  color: color-mix(in oklch, var(--primary) 58%, var(--foreground));
+  font-size: 0.72rem;
+  font-weight: 720;
+  letter-spacing: 0.16em;
+}
+
+.dataone-setup-hero h1 {
+  max-width: 960px;
+  margin: 1.25rem auto 0.8rem;
+  font-size: clamp(2.5rem, 5.6vw, 5.25rem);
+  line-height: 0.98;
+  letter-spacing: -0.06em;
+}
+
+.dataone-setup-hero h1 span {
+  color: color-mix(in oklch, var(--primary) 72%, var(--foreground));
+}
+
+.dataone-setup-hero p {
+  max-width: 850px;
+  margin: 0 auto;
+  color: var(--muted-foreground);
+  font-size: clamp(1rem, 1.4vw, 1.2rem);
+  line-height: 1.7;
+}
+
+.dataone-setup-grid {
+  display: grid;
+  grid-template-columns: minmax(250px, 0.78fr) minmax(390px, 1.45fr) minmax(280px, 0.9fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.dataone-panel {
+  border-color: var(--border);
+  background: color-mix(in oklch, var(--card) 92%, transparent);
+  box-shadow: 0 22px 70px color-mix(in oklch, var(--background) 74%, transparent);
+  backdrop-filter: blur(18px);
+}
+
+.dataone-panel [data-slot='card-header'] {
+  gap: 0.45rem;
+}
+.dataone-panel [data-slot='card-title'] {
+  font-size: 1.25rem;
+  letter-spacing: -0.025em;
+}
+.dataone-panel [data-slot='card-description'] {
+  line-height: 1.55;
+}
+
+.dataone-card-kicker {
+  margin-bottom: 0.25rem;
+  color: color-mix(in oklch, var(--primary) 70%, var(--foreground));
+  font-size: 0.72rem;
+  font-weight: 780;
+  letter-spacing: 0.16em;
+}
+
+.dataone-project-card input,
+.dataone-table-source input {
+  min-height: 3rem;
+  margin-top: 0.55rem;
+  background: color-mix(in oklch, var(--background) 76%, transparent);
+  font-size: 1rem;
+}
+
+.dataone-field-note {
+  margin-top: 0.7rem;
+  color: var(--muted-foreground);
+  font-size: 0.77rem;
+  line-height: 1.45;
+}
+
+.dataone-source-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.dataone-source-tabs button {
+  min-height: 2.8rem;
+}
+
+.dataone-dropzone {
+  display: flex;
+  min-height: 260px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 1.5rem;
+  border: 1px dashed color-mix(in oklch, var(--primary) 75%, var(--border));
+  border-radius: calc(var(--radius) + 0.3rem);
+  background: color-mix(in oklch, var(--primary) 5%, var(--background));
+  text-align: center;
+  transition: 180ms ease;
+}
+
+.dataone-dropzone.is-dragging {
+  border-style: solid;
+  background: color-mix(in oklch, var(--primary) 15%, var(--background));
+  box-shadow: inset 0 0 0 1px var(--primary);
+  transform: translateY(-2px);
+}
+
+.dataone-dropzone.has-file {
+  border-style: solid;
+  border-color: color-mix(in oklch, var(--success) 64%, var(--border));
+  background: color-mix(in oklch, var(--success) 7%, var(--background));
+}
+
+.dataone-dropzone strong {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 1.05rem;
+  white-space: nowrap;
+}
+
+.dataone-dropzone > span {
+  color: var(--muted-foreground);
+  font-size: 0.82rem;
+}
+
+.dataone-file-icons {
+  display: flex;
+  gap: 0.55rem;
+  color: color-mix(in oklch, var(--primary) 68%, var(--foreground));
+}
+
+.dataone-file-icons svg {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.dataone-table-source {
+  display: flex;
+  min-height: 260px;
+  justify-content: center;
+  flex-direction: column;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 0.2rem);
+  background: color-mix(in oklch, var(--background) 70%, transparent);
+}
+
+.dataone-input-with-icon {
+  position: relative;
+}
+
+.dataone-input-with-icon > svg {
+  position: absolute;
+  top: 1.42rem;
+  left: 0.8rem;
+  z-index: 2;
+  width: 1rem;
+  height: 1rem;
+  color: var(--muted-foreground);
+}
+
+.dataone-input-with-icon input {
+  padding-left: 2.35rem;
+}
+
+.dataone-inline-info,
+.dataone-execution-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  margin-top: 1rem;
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.dataone-inline-info svg,
+.dataone-execution-note svg {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  margin-top: 0.12rem;
+  color: var(--success);
+}
+
+.dataone-target-value {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 1rem;
+  border: 1px solid color-mix(in oklch, var(--primary) 42%, var(--border));
+  border-radius: var(--radius);
+  background: color-mix(in oklch, var(--primary) 8%, var(--background));
+}
+
+.dataone-target-value > svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: color-mix(in oklch, var(--primary) 70%, var(--foreground));
+}
+
+.dataone-target-value div {
+  min-width: 0;
+}
+.dataone-target-value span,
+.dataone-target-value strong {
+  display: block;
+}
+.dataone-target-value span {
+  margin-bottom: 0.2rem;
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+}
+.dataone-target-value strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.dataone-check-list {
+  display: grid;
+  gap: 0.8rem;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  color: var(--muted-foreground);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  list-style: none;
+}
+
+.dataone-check-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+}
+.dataone-check-list svg {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  margin-top: 0.12rem;
+  padding: 0.12rem;
+  border-radius: 50%;
+  background: color-mix(in oklch, var(--success) 18%, transparent);
+  color: var(--success);
+}
+
+.dataone-inline-alert {
+  margin-top: 1rem;
+}
+
+.dataone-launch-strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin: 1.5rem auto 0;
+  text-align: center;
+}
+
+.dataone-launch-strip > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+
+.dataone-launch-strip > div svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  color: var(--success);
+}
+.dataone-launch-strip > p {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+
+.dataone-start-button {
+  min-width: min(100%, 360px);
+  min-height: 3.4rem;
+  gap: 0.7rem;
+  border: 1px solid color-mix(in oklch, var(--primary) 68%, var(--foreground));
+  background: linear-gradient(110deg, color-mix(in oklch, var(--primary) 72%, var(--chart-cat-3)), var(--primary));
+  box-shadow: 0 16px 48px color-mix(in oklch, var(--primary) 32%, transparent);
+  font-size: 1rem;
+  font-weight: 760;
+}
+
+.dataone-start-button svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.dataone-latest {
+  display: grid;
+  gap: 1rem;
+  margin: clamp(2rem, 4vw, 3.5rem) auto 0;
+  padding-top: clamp(1.5rem, 3vw, 2.5rem);
+  border-top: 1px solid var(--border);
+}
+
+.dataone-latest-heading h2 {
+  margin: 0.8rem 0 0.35rem;
+  font-size: clamp(1.55rem, 2.5vw, 2.2rem);
+  letter-spacing: -0.04em;
+}
+
+.dataone-latest-heading p {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.dataone-latest-card [data-slot='card-content'] {
+  display: grid;
+  grid-template-columns: minmax(230px, 1.5fr) repeat(3, minmax(110px, 0.65fr)) minmax(160px, 0.8fr) auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 1.15rem 1.25rem;
+}
+
+.dataone-latest-primary,
+.dataone-latest-metric,
+.dataone-latest-status {
+  min-width: 0;
+}
+
+.dataone-latest-primary > span,
+.dataone-latest-primary > strong,
+.dataone-latest-primary > small,
+.dataone-latest-metric > span,
+.dataone-latest-metric > strong,
+.dataone-latest-status > small {
+  display: block;
+}
+
+.dataone-latest-primary > span,
+.dataone-latest-metric > span {
+  margin-bottom: 0.2rem;
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+}
+
+.dataone-latest-primary > strong,
+.dataone-latest-metric > strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.dataone-latest-primary > small,
+.dataone-latest-status > small {
+  margin-top: 0.25rem;
+  overflow: hidden;
+  color: var(--muted-foreground);
+  font-size: 0.65rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dataone-latest-status {
+  display: grid;
+  justify-items: start;
+}
+
+.dataone-latest-card button {
+  gap: 0.45rem;
+  white-space: nowrap;
+}
+
+.dataone-latest-card button svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.dataone-workspace {
+  width: min(1600px, 100%);
+  margin: 0 auto;
+  padding: clamp(1.25rem, 3vw, 3rem);
+}
+
+.dataone-workflow-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+  padding: 1rem 0 1.5rem;
+}
+
+.dataone-workflow-heading h1 {
+  margin: 0.7rem 0 0.3rem;
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+.dataone-workflow-heading > div:first-child > p {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.9rem;
+}
+
+.dataone-workflow-heading p svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.dataone-run-summary {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.dataone-run-summary > div span,
+.dataone-run-summary > div strong {
+  display: block;
+  text-align: right;
+}
+.dataone-run-summary > div span,
+.dataone-run-summary > span {
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+}
+
+.dataone-stepper {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(8, minmax(100px, 1fr));
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 0.25rem);
+  background: color-mix(in oklch, var(--background) 88%, transparent);
+  box-shadow: 0 14px 34px color-mix(in oklch, var(--background) 62%, transparent);
+  backdrop-filter: blur(18px);
+}
+
+.dataone-step {
+  display: flex;
+  min-width: 100px;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: var(--radius);
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.dataone-step-icon {
+  display: grid;
+  width: 1.85rem;
+  height: 1.85rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 0.55rem;
+  background: var(--muted);
+}
+
+.dataone-step-icon svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+.dataone-step.is-complete {
+  color: var(--foreground);
+}
+.dataone-step.is-complete .dataone-step-icon {
+  border-color: color-mix(in oklch, var(--success) 55%, var(--border));
+  background: color-mix(in oklch, var(--success) 18%, var(--card));
+  color: var(--success);
+}
+.dataone-step.is-active {
+  background: color-mix(in oklch, var(--primary) 12%, transparent);
+  color: var(--foreground);
+}
+.dataone-step.is-active .dataone-step-icon {
+  border-color: var(--primary);
+  color: color-mix(in oklch, var(--primary) 62%, var(--foreground));
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 13%, transparent);
+}
+
+.dataone-processing {
+  display: grid;
+  min-height: 60vh;
+  place-items: center;
+  padding: 3rem 0;
+}
+.dataone-processing > * {
+  width: min(920px, 100%);
+}
+.dataone-processing-card [data-slot='card-content'] {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding: clamp(2rem, 5vw, 4rem);
+  text-align: center;
+}
+.dataone-processing-card h2 {
+  max-width: 760px;
+  margin: 0.4rem 0 0;
+  font-size: clamp(1.6rem, 3vw, 2.6rem);
+  line-height: 1.12;
+  letter-spacing: -0.045em;
+}
+.dataone-processing-card > div > p {
+  max-width: 700px;
+  margin: 0;
+  color: var(--muted-foreground);
+  line-height: 1.65;
+}
+.dataone-processing-orb {
+  display: grid;
+  width: 5rem;
+  height: 5rem;
+  place-items: center;
+  border: 1px solid color-mix(in oklch, var(--primary) 62%, var(--border));
+  border-radius: 1.5rem;
+  background: color-mix(in oklch, var(--primary) 13%, var(--card));
+  color: var(--primary);
+  box-shadow: 0 0 4rem color-mix(in oklch, var(--primary) 24%, transparent);
+}
+.dataone-processing-orb svg {
+  width: 2rem;
+  height: 2rem;
+  animation: dataone-spin 1.15s linear infinite;
+}
+@keyframes dataone-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.dataone-progress-block {
+  width: min(620px, 100%);
+  margin: 1rem 0;
+}
+.dataone-progress-block > div {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.55rem;
+  font-size: 0.8rem;
+}
+.dataone-progress-block span {
+  color: var(--muted-foreground);
+}
+
+.dataone-task-grid {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+.dataone-task-status {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in oklch, var(--background) 72%, transparent);
+  text-align: left;
+}
+.dataone-task-status span,
+.dataone-task-status small {
+  display: block;
+}
+.dataone-task-status span {
+  font-size: 0.82rem;
+  font-weight: 680;
+}
+.dataone-task-status small {
+  margin-top: 0.2rem;
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+}
+
+.dataone-processing-card code,
+.dataone-empty code,
+.dataone-metric-definition code {
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  background: color-mix(in oklch, var(--background) 80%, transparent);
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+}
+
+.dataone-run-error {
+  padding: 1.25rem;
+}
+.dataone-alert-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+.dataone-results {
+  display: grid;
+  gap: 1.25rem;
+  padding-top: 1.25rem;
+}
+
+.dataone-section {
+  scroll-margin-top: 105px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 0.45rem);
+  background: color-mix(in oklch, var(--card) 86%, transparent);
+  box-shadow: 0 22px 75px color-mix(in oklch, var(--background) 76%, transparent);
+  backdrop-filter: blur(18px);
+}
+.dataone-section-heading {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  gap: 0.9rem;
+  align-items: center;
+  padding: clamp(1.2rem, 2.4vw, 2rem);
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(100deg, color-mix(in oklch, var(--primary) 8%, transparent), transparent 52%);
+}
+.dataone-section-number {
+  color: color-mix(in oklch, var(--primary) 65%, var(--foreground));
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+.dataone-section-icon,
+.dataone-kpi-icon {
+  display: grid;
+  width: 2.45rem;
+  height: 2.45rem;
+  place-items: center;
+  border: 1px solid color-mix(in oklch, var(--primary) 52%, var(--border));
+  border-radius: 0.78rem;
+  background: color-mix(in oklch, var(--primary) 12%, var(--card));
+  color: color-mix(in oklch, var(--primary) 60%, var(--foreground));
+}
+.dataone-section-icon svg,
+.dataone-kpi-icon svg {
+  width: 1.18rem;
+  height: 1.18rem;
+}
+.dataone-section-heading h2 {
+  margin: 0;
+  font-size: clamp(1.25rem, 2.25vw, 2rem);
+  line-height: 1.15;
+  letter-spacing: -0.035em;
+}
+.dataone-section-heading p {
+  margin: 0.3rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+.dataone-section-body {
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1rem, 2.3vw, 1.75rem);
+}
+
+.dataone-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+.dataone-kpi-card {
+  box-shadow: none;
+}
+.dataone-kpi-card [data-slot='card-header'] {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 0.7rem;
+  align-items: center;
+}
+.dataone-kpi-card [data-slot='card-description'] {
+  font-size: 0.75rem;
+  font-weight: 620;
+}
+.dataone-kpi-card [data-slot='card-title'] {
+  grid-column: 1 / -1;
+  margin-top: 0.7rem;
+  font-size: clamp(2rem, 3.1vw, 3rem);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.dataone-kpi-card [data-slot='card-content'] > p {
+  min-height: 2.3rem;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+.dataone-kpi-card [role='progressbar'] {
+  margin-top: 0.85rem;
+}
+.dataone-kpi-provenance {
+  display: grid;
+  gap: 0.18rem;
+  margin-top: 0.9rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  color: var(--muted-foreground);
+  font-size: 0.63rem;
+  line-height: 1.35;
+}
+
+.dataone-overview-band {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--border);
+}
+.dataone-overview-band > div {
+  min-width: 0;
+  padding: 0.9rem 1rem;
+  background: color-mix(in oklch, var(--background) 75%, var(--card));
+}
+.dataone-overview-band span,
+.dataone-overview-band strong {
+  display: block;
+}
+.dataone-overview-band > div > span {
+  margin-bottom: 0.22rem;
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+}
+.dataone-overview-band strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.dataone-mapper-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+.dataone-map-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in oklch, var(--background) 72%, transparent);
+}
+.dataone-map-row > div:not(.dataone-map-connector) {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0 0.5rem;
+  align-items: center;
+  min-width: 0;
+}
+.dataone-map-row > div > svg {
+  grid-row: 1 / 3;
+  width: 1rem;
+  height: 1rem;
+  color: color-mix(in oklch, var(--primary) 60%, var(--foreground));
+}
+.dataone-map-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.8rem;
+  font-weight: 680;
+  white-space: nowrap;
+}
+.dataone-map-row small {
+  color: var(--muted-foreground);
+  font-size: 0.64rem;
+}
+.dataone-map-connector {
+  display: flex;
+  align-items: center;
+  color: var(--muted-foreground);
+}
+.dataone-map-connector svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.dataone-table-shell {
+  max-width: 100%;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in oklch, var(--background) 68%, transparent);
+}
+.dataone-table-shell table {
+  min-width: 760px;
+}
+.dataone-table-shell th {
+  height: 2.8rem;
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+}
+.dataone-table-shell td {
+  vertical-align: middle;
+  font-size: 0.76rem;
+}
+.dataone-cell-meta {
+  display: block;
+  margin-top: 0.16rem;
+  color: var(--muted-foreground);
+  font-size: 0.64rem;
+}
+.dataone-table-footnote {
+  margin: -0.35rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+}
+
+.dataone-tone {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dataone-tone--good {
+  border-color: color-mix(in oklch, var(--success) 62%, var(--border));
+  background: color-mix(in oklch, var(--success) 12%, transparent);
+  color: var(--success);
+}
+.dataone-tone--warning {
+  border-color: color-mix(in oklch, var(--warning) 58%, var(--border));
+  background: color-mix(in oklch, var(--warning) 11%, transparent);
+  color: var(--warning);
+}
+.dataone-tone--bad {
+  border-color: color-mix(in oklch, var(--destructive) 58%, var(--border));
+  background: color-mix(in oklch, var(--destructive) 11%, transparent);
+  color: color-mix(in oklch, var(--destructive) 72%, var(--foreground));
+}
+.dataone-tone--neutral {
+  color: var(--muted-foreground);
+}
+
+.dataone-two-column {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.dataone-chart-card {
+  min-width: 0;
+  box-shadow: none;
+}
+.dataone-chart-card [data-slot='card-content'] {
+  min-height: 390px;
+}
+.dataone-chart-builder {
+  min-width: 0;
+  box-shadow: none;
+}
+.dataone-chart-builder-heading,
+.dataone-chart-preview-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.dataone-chart-builder-heading > div:first-child,
+.dataone-chart-preview-heading > div:first-child {
+  display: grid;
+  min-width: 0;
+  gap: 0.45rem;
+}
+.dataone-chart-builder-heading [data-slot='badge'] {
+  width: fit-content;
+}
+.dataone-chart-builder-content {
+  display: grid;
+  gap: 1rem;
+}
+.dataone-chart-builder-controls {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in oklch, var(--background) 65%, transparent);
+}
+.dataone-chart-control {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 0.45rem;
+}
+.dataone-chart-control--title {
+  grid-column: 1 / -1;
+}
+.dataone-chart-filter-panel {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 0.8rem;
+  margin-top: 0.15rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+.dataone-chart-filter-heading,
+.dataone-chart-filter-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+.dataone-chart-filter-heading h3,
+.dataone-chart-filter-heading p,
+.dataone-chart-filter-empty {
+  margin: 0;
+}
+.dataone-chart-filter-heading h3 {
+  font-size: 0.82rem;
+}
+.dataone-chart-filter-heading p,
+.dataone-chart-filter-empty {
+  margin-top: 0.2rem;
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+  line-height: 1.5;
+}
+.dataone-chart-filter-list {
+  display: grid;
+  gap: 0.65rem;
+}
+.dataone-chart-filter-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.35fr) minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  align-items: end;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in oklch, var(--card) 74%, var(--background));
+}
+.dataone-chart-filter-row > button {
+  margin-bottom: 0.05rem;
+}
+.dataone-chart-control > label {
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.dataone-chart-control > small,
+.dataone-chart-builder-source,
+.dataone-chart-builder-loading p {
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+  line-height: 1.5;
+}
+.dataone-chart-control > button {
+  width: 100%;
+  min-width: 0;
+}
+.dataone-chart-title-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.6rem;
+}
+.dataone-chart-title-control button {
+  white-space: nowrap;
+}
+.dataone-chart-preview {
+  min-width: 0;
+  overflow: hidden;
+  border-color: color-mix(in oklch, var(--primary) 24%, var(--border));
+  background: color-mix(in oklch, var(--card) 84%, var(--background));
+  box-shadow: none;
+}
+.dataone-chart-preview [data-slot='card-content'] {
+  min-height: 444px;
+}
+.dataone-chart-builder-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+.dataone-chart-builder-loading {
+  display: grid;
+  gap: 0.75rem;
+}
+.dataone-chart-builder-source {
+  display: block;
+}
+.dataone-action-list {
+  display: grid;
+  gap: 0.55rem;
+}
+.dataone-action-list > div {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  align-items: center;
+  padding: 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in oklch, var(--background) 70%, transparent);
+}
+.dataone-action-list strong,
+.dataone-action-list small {
+  display: block;
+}
+.dataone-action-list strong {
+  font-size: 0.78rem;
+}
+.dataone-action-list small {
+  margin-top: 0.2rem;
+  color: var(--muted-foreground);
+  font-size: 0.65rem;
+}
+.dataone-action-icon,
+.dataone-ledger-icon {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: 0.6rem;
+  background: color-mix(in oklch, var(--primary) 12%, var(--muted));
+  color: color-mix(in oklch, var(--primary) 62%, var(--foreground));
+}
+.dataone-action-icon svg,
+.dataone-ledger-icon svg {
+  width: 0.92rem;
+  height: 0.92rem;
+}
+.dataone-json-cell {
+  max-width: 460px;
+}
+.dataone-json-cell code {
+  display: block;
+  overflow: hidden;
+  color: var(--muted-foreground);
+  font-size: 0.66rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dataone-topology {
+  display: grid;
+  gap: 0.6rem;
+}
+.dataone-topology-edge {
+  display: grid;
+  grid-template-columns: minmax(190px, 1fr) minmax(160px, 0.8fr) minmax(190px, 1fr) auto;
+  gap: 0.7rem;
+  align-items: center;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in oklch, var(--background) 70%, transparent);
+}
+.dataone-node {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.72rem;
+  border: 1px solid color-mix(in oklch, var(--primary) 35%, var(--border));
+  border-radius: 0.6rem;
+  background: color-mix(in oklch, var(--primary) 7%, var(--card));
+}
+.dataone-node svg {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  color: color-mix(in oklch, var(--primary) 62%, var(--foreground));
+}
+.dataone-node span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.76rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.dataone-edge-label {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.1rem 0.4rem;
+  align-items: center;
+  min-width: 0;
+  color: var(--muted-foreground);
+}
+.dataone-edge-label small,
+.dataone-edge-label strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dataone-edge-label small {
+  font-size: 0.61rem;
+}
+.dataone-edge-label strong {
+  font-size: 0.7rem;
+}
+.dataone-edge-label svg {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  width: 1rem;
+  height: 1rem;
+  color: var(--primary);
+}
+
+.dataone-impact-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+.dataone-mini-metric {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in oklch, var(--background) 68%, transparent);
+}
+.dataone-mini-metric > span {
+  color: color-mix(in oklch, var(--primary) 58%, var(--foreground));
+}
+.dataone-mini-metric svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+.dataone-mini-metric small,
+.dataone-mini-metric strong {
+  display: block;
+}
+.dataone-mini-metric small {
+  color: var(--muted-foreground);
+  font-size: 0.65rem;
+}
+.dataone-mini-metric strong {
+  margin-top: 0.16rem;
+  font-size: 1rem;
+}
+
+.dataone-metric-definition-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+.dataone-metric-definition {
+  box-shadow: none;
+}
+.dataone-metric-definition [data-slot='card-title'] {
+  font-size: clamp(1.8rem, 3vw, 2.8rem);
+  font-variant-numeric: tabular-nums;
+}
+.dataone-metric-definition p {
+  min-height: 3rem;
+  margin: 0 0 0.9rem;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.dataone-genie-disclosure,
+.dataone-governance-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in oklch, var(--background) 70%, transparent);
+}
+.dataone-genie-disclosure > div {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+.dataone-genie-disclosure svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+.dataone-genie-disclosure p {
+  max-width: 620px;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  line-height: 1.45;
+  text-align: right;
+}
+.dataone-genie-frame {
+  display: flex;
+  height: min(760px, 78vh);
+  min-height: 620px;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid color-mix(in oklch, var(--primary) 42%, var(--border));
+  border-radius: calc(var(--radius) + 0.25rem);
+  background: var(--background);
+}
+.dataone-genie-toolbar {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in oklch, var(--card) 88%, var(--primary) 2%);
+}
+.dataone-genie-toolbar > div {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.dataone-genie-toolbar > div:first-child {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.dataone-genie-toolbar strong {
+  font-size: 0.88rem;
+}
+.dataone-genie-toolbar span {
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+}
+.dataone-genie-toolbar svg,
+.dataone-genie-answer-note svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+.dataone-genie-messages {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 1.1rem;
+  overflow-y: auto;
+  padding: 1.1rem;
+  scroll-behavior: smooth;
+}
+.dataone-genie-message-group {
+  display: grid;
+  gap: 0.45rem;
+}
+.dataone-genie-message > div:last-child {
+  max-width: min(88%, 920px);
+}
+.dataone-genie-history-button {
+  align-self: center;
+}
+.dataone-genie-loading {
+  display: grid;
+  gap: 0.7rem;
+  padding: 1rem;
+}
+.dataone-genie-loading > :nth-child(2) {
+  justify-self: end;
+}
+.dataone-genie-loading p {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  text-align: center;
+}
+.dataone-genie-stream-status,
+.dataone-genie-inline-status {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: fit-content;
+  max-width: 680px;
+  margin-left: 2.75rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--muted);
+}
+.dataone-genie-stream-status strong,
+.dataone-genie-stream-status small {
+  display: block;
+}
+.dataone-genie-stream-status strong {
+  font-size: 0.78rem;
+}
+.dataone-genie-stream-status small,
+.dataone-genie-inline-status {
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+}
+.dataone-genie-pulse {
+  width: 0.55rem;
+  height: 0.55rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--primary);
+  box-shadow: 0 0 0 0 color-mix(in oklch, var(--primary) 45%, transparent);
+  animation: dataone-pulse 1.6s ease-out infinite;
+}
+.dataone-genie-answer-note {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: min(88%, 920px);
+  margin: 0 0 0 2.75rem;
+  color: var(--muted-foreground);
+  font-size: 0.64rem;
+  line-height: 1.4;
+}
+.dataone-genie-zero-results {
+  min-height: 180px;
+  max-width: min(88%, 920px);
+  margin-left: 2.75rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in oklch, var(--muted) 60%, transparent);
+}
+.dataone-genie-input {
+  flex: 0 0 auto;
+  background: color-mix(in oklch, var(--card) 92%, transparent);
+}
+.dataone-genie-empty {
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+}
+.dataone-genie-prompts {
+  display: flex;
+  max-width: 720px;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.dataone-genie-prompts button {
+  height: auto;
+  min-height: 2.25rem;
+  white-space: normal;
+}
+.dataone-ai-note {
+  border-color: color-mix(in oklch, var(--warning) 48%, var(--border));
+  background: color-mix(in oklch, var(--warning) 7%, var(--card));
+}
+
+.dataone-demo-badge {
+  border-color: color-mix(in oklch, var(--warning) 58%, var(--border));
+  color: color-mix(in oklch, var(--warning) 72%, var(--foreground));
+  background: color-mix(in oklch, var(--warning) 9%, var(--card));
+}
+
+.dataone-environment-badge.dataone-demo-badge svg {
+  color: var(--warning);
+  fill: color-mix(in oklch, var(--warning) 20%, transparent);
+}
+
+.dataone-demo-banner {
+  width: min(920px, calc(100% - 2rem));
+  margin: 0 auto 1.4rem;
+  border-color: color-mix(in oklch, var(--warning) 55%, var(--border));
+  background: color-mix(in oklch, var(--warning) 7%, var(--card));
+}
+
+.dataone-demo-banner > svg {
+  color: var(--warning);
+}
+
+.dataone-file-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.65rem;
+}
+
+.dataone-file-actions button {
+  gap: 0.45rem;
+}
+
+.dataone-file-actions button svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.dataone-demo-disclosure {
+  border-color: color-mix(in oklch, var(--warning) 45%, var(--border));
+  background: color-mix(in oklch, var(--warning) 5%, var(--background));
+}
+
+.dataone-demo-conversation {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.dataone-demo-user-message {
+  width: min(76%, 760px);
+  justify-self: end;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--muted);
+}
+
+.dataone-demo-user-message span {
+  color: var(--muted-foreground);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.dataone-demo-user-message p,
+.dataone-demo-answer p {
+  margin: 0.25rem 0 0;
+  line-height: 1.55;
+}
+
+.dataone-demo-answer {
+  width: min(88%, 920px);
+}
+
+.dataone-demo-answer [data-slot='card-header'] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-direction: row;
+  gap: 1rem;
+}
+
+.dataone-demo-answer [data-slot='card-header'] > div {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.dataone-demo-answer [data-slot='card-header'] svg {
+  width: 1rem;
+  height: 1rem;
+  color: var(--warning);
+}
+
+.dataone-demo-answer [data-slot='card-title'] {
+  font-size: 0.9rem;
+}
+
+.dataone-demo-generated-sql {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 1rem;
+  padding: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--background);
+}
+
+.dataone-demo-generated-sql strong {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.dataone-demo-generated-sql svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.dataone-demo-generated-sql pre {
+  overflow-x: auto;
+  margin: 0;
+  color: var(--foreground);
+  font-size: 0.72rem;
+  line-height: 1.6;
+  white-space: pre;
+}
+
+.dataone-demo-answer .dataone-genie-answer-note {
+  max-width: none;
+  margin: 0.75rem 0 0;
+}
+
+@keyframes dataone-pulse {
+  70% {
+    box-shadow: 0 0 0 0.5rem transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+.dataone-governance-banner > div {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+.dataone-governance-banner > div > svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--success);
+}
+.dataone-governance-banner span,
+.dataone-governance-banner strong {
+  display: block;
+}
+.dataone-governance-banner span {
+  color: var(--muted-foreground);
+  font-size: 0.74rem;
+}
+.dataone-governance-banner strong {
+  margin-bottom: 0.16rem;
+  color: var(--foreground);
+  font-size: 0.84rem;
+}
+
+.dataone-execution-ledger {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+.dataone-execution-ledger > div {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  align-items: center;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in oklch, var(--background) 68%, transparent);
+}
+.dataone-execution-ledger strong,
+.dataone-execution-ledger small {
+  display: block;
+}
+.dataone-execution-ledger strong {
+  font-size: 0.78rem;
+}
+.dataone-execution-ledger small {
+  margin-top: 0.16rem;
+  color: var(--muted-foreground);
+  font-size: 0.64rem;
+}
+
+.dataone-query-loading {
+  display: grid;
+  gap: 0.75rem;
+}
+.dataone-query-loading p {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+.dataone-empty {
+  min-height: 230px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in oklch, var(--background) 58%, transparent);
+}
+
+@media (max-width: 1180px) {
+  .dataone-setup-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dataone-target-card {
+    grid-column: 1 / -1;
+  }
+  .dataone-target-card [data-slot='card-content'] {
+    display: grid;
+    grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.2fr);
+    gap: 1.25rem;
+  }
+  .dataone-check-list {
+    margin-top: 0;
+  }
+  .dataone-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dataone-stepper {
+    grid-template-columns: repeat(8, 132px);
+  }
+  .dataone-latest-card [data-slot='card-content'] {
+    grid-template-columns: minmax(220px, 1.4fr) repeat(3, minmax(100px, 0.65fr));
+  }
+  .dataone-latest-status,
+  .dataone-latest-card button {
+    justify-self: start;
+  }
+}
+
+@media (max-width: 880px) {
+  .dataone-workflow-heading,
+  .dataone-genie-disclosure,
+  .dataone-governance-banner {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .dataone-topbar {
+    align-items: center;
+    flex-direction: row;
+  }
+  .dataone-topbar-meta {
+    width: auto;
+    justify-content: flex-end;
+    overflow-x: visible;
+  }
+  .dataone-setup-grid,
+  .dataone-two-column,
+  .dataone-mapper-summary,
+  .dataone-metric-definition-grid,
+  .dataone-execution-ledger {
+    grid-template-columns: 1fr;
+  }
+  .dataone-target-card {
+    grid-column: auto;
+  }
+  .dataone-target-card [data-slot='card-content'] {
+    display: block;
+  }
+  .dataone-check-list {
+    margin-top: 1.25rem;
+  }
+  .dataone-run-summary {
+    justify-content: flex-start;
+  }
+  .dataone-run-summary > div span,
+  .dataone-run-summary > div strong {
+    text-align: left;
+  }
+  .dataone-task-grid,
+  .dataone-overview-band,
+  .dataone-impact-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dataone-genie-disclosure p {
+    text-align: left;
+  }
+  .dataone-genie-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .dataone-topology-edge {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+  .dataone-topology-edge > .dataone-tone {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+  .dataone-latest-card [data-slot='card-content'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dataone-latest-primary {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 600px) {
+  .dataone-topbar {
+    min-height: 68px;
+  }
+  .dataone-brand {
+    font-size: 1.18rem;
+  }
+  .dataone-environment-badge {
+    display: none;
+  }
+  .dataone-setup {
+    min-height: calc(100vh - 68px);
+    padding-top: 2rem;
+  }
+  .dataone-setup-hero h1 {
+    font-size: 2.6rem;
+  }
+  .dataone-source-tabs,
+  .dataone-kpi-grid,
+  .dataone-task-grid,
+  .dataone-overview-band,
+  .dataone-impact-grid {
+    grid-template-columns: 1fr;
+  }
+  .dataone-section-heading {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .dataone-section-heading > div:last-child {
+    grid-column: 1 / -1;
+  }
+  .dataone-map-row {
+    grid-template-columns: 1fr;
+  }
+  .dataone-map-connector {
+    justify-content: center;
+    transform: rotate(90deg);
+  }
+  .dataone-topology-edge {
+    grid-template-columns: 1fr;
+  }
+  .dataone-edge-label {
+    width: fit-content;
+    margin: 0 auto;
+    transform: rotate(90deg);
+  }
+  .dataone-topology-edge > .dataone-tone {
+    grid-column: auto;
+  }
+  .dataone-genie-disclosure > div,
+  .dataone-governance-banner > div {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .dataone-genie-frame {
+    height: 720px;
+    min-height: 560px;
+  }
+  .dataone-genie-toolbar > div:last-child {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .dataone-genie-messages {
+    padding-inline: 0.75rem;
+  }
+  .dataone-genie-message > div:last-child {
+    max-width: calc(100% - 2.75rem);
+  }
+  .dataone-genie-answer-note,
+  .dataone-genie-zero-results {
+    max-width: calc(100% - 2.75rem);
+  }
+  .dataone-alert-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .dataone-latest-card [data-slot='card-content'] {
+    grid-template-columns: 1fr;
+  }
+  .dataone-latest-primary {
+    grid-column: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* DataOne reference UI                                                        */
+/* The rules below deliberately mirror the supplied charcoal operations UI.   */
+/* -------------------------------------------------------------------------- */
+
+:root,
+.dark {
+  --radius: 0.6rem;
+  --background: #070b0e;
+  --foreground: #f5f7f8;
+  --card: #11161a;
+  --card-foreground: #f5f7f8;
+  --popover: #11161a;
+  --popover-foreground: #f5f7f8;
+  --primary: #f7f8f9;
+  --primary-foreground: #080b0e;
+  --secondary: #20272e;
+  --secondary-foreground: #f4f6f8;
+  --muted: #171d22;
+  --muted-foreground: #aeb7c0;
+  --accent: #2a333b;
+  --accent-foreground: #ffffff;
+  --destructive: #ef5b5b;
+  --destructive-foreground: #ffffff;
+  --success: #42ca78;
+  --success-foreground: #07130c;
+  --warning: #f5b82e;
+  --warning-foreground: #1d1402;
+  --border: #303941;
+  --input: #38434c;
+  --ring: #9eabb7;
+  --chart-cat-1: #4fc482;
+  --chart-cat-2: #7c9dff;
+  --chart-cat-3: #f5b82e;
+  --chart-cat-4: #ff8a4c;
+  --chart-cat-5: #a88ef8;
+  --chart-cat-6: #58b8c4;
+  --chart-cat-7: #db708c;
+  --chart-cat-8: #9ac460;
+  --chart-seq-1: #1c3026;
+  --chart-seq-2: #214330;
+  --chart-seq-3: #28543a;
+  --chart-seq-4: #2f6845;
+  --chart-seq-5: #367d51;
+  --chart-seq-6: #3d945e;
+  --chart-seq-7: #44ad6b;
+  --chart-seq-8: #4fc482;
+}
+
+.dataone-app {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 52% -20%, rgb(45 56 64 / 34%), transparent 36rem),
+    linear-gradient(145deg, #070a0c 0%, #0b1014 55%, #070a0d 100%);
+}
+
+.dataone-app::before {
+  opacity: 0.08;
+  background-size: 30px 30px;
+}
+
+.dataone-topbar {
+  min-height: 74px;
+  padding: 1rem clamp(1.5rem, 3vw, 3rem);
+  background: rgb(7 11 14 / 88%);
+}
+
+.dataone-brand {
+  font-size: clamp(1.2rem, 2vw, 1.75rem);
+  letter-spacing: -0.025em;
+}
+
+.dataone-welcome {
+  width: min(1520px, 100%);
+  padding-top: clamp(2rem, 4vw, 4.25rem);
+}
+
+.dataone-welcome-heading {
+  max-width: 940px;
+  margin: 0 auto 2rem;
+  text-align: center;
+}
+
+.dataone-welcome-heading .dataone-eyebrow {
+  margin-bottom: 1.25rem;
+}
+
+.dataone-welcome-heading h1 {
+  margin: 0;
+  font-size: clamp(2.35rem, 4vw, 4.1rem);
+  line-height: 1.04;
+  letter-spacing: -0.045em;
+}
+
+.dataone-welcome-heading p {
+  max-width: 860px;
+  margin: 0.9rem auto 0;
+  color: var(--muted-foreground);
+  font-size: clamp(1rem, 1.4vw, 1.25rem);
+}
+
+.dataone-project-inline {
+  display: flex;
+  width: min(760px, 100%);
+  align-items: flex-end;
+  justify-content: center;
+  gap: 1rem;
+  margin: 0 auto 1.4rem;
+}
+
+.dataone-project-inline > div {
+  flex: 1;
+}
+
+.dataone-project-inline label {
+  display: block;
+  margin-bottom: 0.45rem;
+  color: #d4dbe1;
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.dataone-project-inline input {
+  height: 44px;
+  background: #11171b;
+}
+
+.dataone-project-inline > span {
+  display: flex;
+  max-width: 250px;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.65rem;
+  color: var(--muted-foreground);
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.dataone-project-inline svg {
+  width: 1rem;
+  flex: 0 0 auto;
+  color: var(--success);
+}
+
+.dataone-module-preview {
+  display: grid;
+  gap: 0.85rem;
+  margin: 0 auto 1.4rem;
+  padding: 1rem;
+  border: 1px solid #303941;
+  border-radius: 0.65rem;
+  background: rgb(13 18 22 / 78%);
+}
+
+.dataone-module-preview > div:first-child {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.dataone-module-preview > div:first-child > span {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+
+.dataone-module-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.55rem;
+}
+
+.dataone-module-preview-grid > div {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid #354049;
+  border-radius: 0.45rem;
+  color: #e4e9ed;
+  background: #11171b;
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.dataone-module-preview-grid svg {
+  width: 1rem;
+  flex: 0 0 auto;
+  color: var(--success);
+}
+
+.dataone-welcome-options {
+  display: grid;
+  grid-template-columns: minmax(340px, 0.72fr) 60px minmax(620px, 1.28fr);
+  align-items: stretch;
+  gap: 1.25rem;
+}
+
+.dataone-option-card {
+  overflow: hidden;
+  border-color: #323b42;
+  background: linear-gradient(150deg, rgb(20 26 31 / 96%), rgb(11 16 20 / 96%));
+  box-shadow: 0 22px 70px rgb(0 0 0 / 26%);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.dataone-option-card.is-selected {
+  border-color: #687680;
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 5%),
+    0 22px 70px rgb(0 0 0 / 34%);
+}
+
+.dataone-option-card [data-slot='card-header'] {
+  padding: 1.45rem 1.55rem 0.65rem;
+}
+
+.dataone-option-card [data-slot='card-content'] {
+  padding: 0.75rem 1.55rem 1.55rem;
+}
+
+.dataone-option-card [data-slot='card-title'] {
+  font-size: clamp(1.35rem, 2vw, 1.7rem);
+}
+
+.dataone-option-label {
+  display: flex;
+  min-height: 1.7rem;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--muted-foreground);
+  font-size: 0.82rem;
+}
+
+.dataone-option-label [data-slot='badge'] {
+  color: var(--success);
+}
+
+.dataone-upload-option .dataone-dropzone {
+  min-height: 372px;
+  justify-content: center;
+  border-color: #56616a;
+  border-radius: 0.55rem;
+  background: rgb(8 12 15 / 34%);
+}
+
+.dataone-upload-option .dataone-dropzone strong {
+  font-size: 1.25rem;
+}
+
+.dataone-upload-option .dataone-dropzone > span {
+  color: #c4cbd1;
+}
+
+.dataone-upload-option .dataone-dropzone button {
+  min-width: 190px;
+  color: #080b0e;
+  background: #f8f9fa;
+}
+
+.dataone-upload-option .dataone-dropzone small {
+  margin-top: 1.1rem;
+  color: #9ca7af;
+  font-size: 0.74rem;
+}
+
+.dataone-file-icons {
+  color: #abb4bc;
+}
+
+.dataone-welcome-or {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dataone-welcome-or::before {
+  position: absolute;
+  width: 1px;
+  height: 100%;
+  background: #2d363e;
+  content: '';
+}
+
+.dataone-welcome-or span {
+  z-index: 1;
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border: 1px solid #364049;
+  border-radius: 50%;
+  color: #cfd5da;
+  background: #0c1115;
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.dataone-connection-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.dataone-connection-card {
+  display: grid;
+  align-content: start;
+  gap: 0.55rem;
+  padding: 1.1rem;
+  border: 1px solid #303941;
+  border-radius: 0.55rem;
+  background: rgb(17 23 27 / 68%);
+}
+
+.dataone-connection-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.55rem;
+}
+
+.dataone-connection-title > svg {
+  width: 1.25rem;
+  color: #cfd7dd;
+}
+
+.dataone-connection-title > div {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.dataone-connection-title strong {
+  font-size: 1rem;
+}
+
+.dataone-connection-title span,
+.dataone-connection-card label {
+  color: var(--muted-foreground);
+  font-size: 0.73rem;
+}
+
+.dataone-connection-card input,
+.dataone-static-field {
+  min-height: 41px;
+  border: 1px solid #354049;
+  border-radius: 0.45rem;
+  color: #eef1f3;
+  background: #11171b;
+}
+
+.dataone-static-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.78rem;
+}
+
+.dataone-static-field svg {
+  width: 0.9rem;
+}
+
+.dataone-connection-card button {
+  width: fit-content;
+  padding-inline: 0;
+  color: #c7d0d7;
+}
+
+.dataone-aws-mysql-setup {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.dataone-aws-heading,
+.dataone-aws-heading > div,
+.dataone-aws-heading > span {
+  display: flex;
+  align-items: center;
+}
+
+.dataone-aws-heading {
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.dataone-aws-heading > div,
+.dataone-aws-heading > span {
+  gap: 0.4rem;
+}
+
+.dataone-aws-heading > span,
+.dataone-aws-mysql-setup > small {
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+}
+
+.dataone-aws-heading svg {
+  width: 0.85rem;
+}
+
+.dataone-aws-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.dataone-aws-fields--endpoint {
+  grid-template-columns: minmax(0, 1fr) 92px;
+}
+
+.dataone-aws-fields > div,
+.dataone-aws-mysql-setup > div:has(> label) {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.dataone-aws-password {
+  position: relative;
+}
+
+.dataone-aws-password input {
+  padding-right: 2.8rem;
+}
+
+.dataone-aws-password button {
+  position: absolute;
+  top: 50%;
+  right: 0.2rem;
+  width: 2.2rem;
+  transform: translateY(-50%);
+}
+
+.dataone-aws-table-list {
+  display: grid;
+  max-height: 220px;
+  gap: 0.45rem;
+  overflow: auto;
+}
+
+.dataone-aws-table-list button {
+  display: grid;
+  width: 100%;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.65rem 0.7rem;
+  border: 1px solid #354049;
+  border-radius: 0.45rem;
+  color: #e8ecef;
+  background: #11171b;
+  text-align: left;
+}
+
+.dataone-aws-table-list button:hover:not(:disabled),
+.dataone-aws-table-list button.is-selected {
+  border-color: #5ba4e6;
+  background: rgb(49 108 159 / 18%);
+}
+
+.dataone-aws-table-list button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.dataone-aws-table-list button > svg {
+  width: 1rem;
+}
+
+.dataone-aws-table-list button > span {
+  display: grid;
+  min-width: 0;
+  gap: 0.1rem;
+}
+
+.dataone-aws-table-list button strong,
+.dataone-aws-table-list button small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dataone-aws-table-list button small {
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+}
+
+.dataone-selected-dataset {
+  display: grid;
+  gap: 0.12rem;
+  padding: 0.7rem 0.75rem;
+  border: 1px solid #354049;
+  border-radius: 0.45rem;
+  background: #11171b;
+}
+
+.dataone-selected-dataset > span,
+.dataone-selected-dataset > small {
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+}
+
+.dataone-selected-dataset strong {
+  color: #eef1f3;
+  font-size: 0.82rem;
+}
+
+.dataone-connection-state {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.35rem;
+  color: #93a099;
+  font-size: 0.71rem;
+}
+
+.dataone-connection-state span,
+.dataone-session-state > span,
+.dataone-live-dot {
+  width: 0.58rem;
+  height: 0.58rem;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 0 5px rgb(66 202 120 / 11%);
+}
+
+.dataone-marketplace-note {
+  display: flex;
+  max-width: 1080px;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin: 1rem auto 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid #303940;
+  border-radius: 0.55rem;
+  color: #aeb8c0;
+  background: rgb(16 22 27 / 72%);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.dataone-marketplace-note > svg {
+  width: 1rem;
+  flex: 0 0 auto;
+  margin-top: 0.12rem;
+  color: #d2d8dd;
+}
+
+.dataone-marketplace-note > div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.dataone-marketplace-note strong {
+  color: #eef1f3;
+}
+
+.dataone-welcome .dataone-launch-strip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(330px, 500px) minmax(0, 1fr);
+  align-items: center;
+  margin-top: 1.4rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.dataone-welcome .dataone-launch-strip > div {
+  justify-self: end;
+  padding-right: 1rem;
+  color: #8f9aa3;
+  font-size: 0.7rem;
+}
+
+.dataone-welcome .dataone-launch-strip > p {
+  margin: 0;
+  padding-left: 1rem;
+  text-align: left;
+}
+
+.dataone-start-button {
+  width: 100%;
+  min-height: 54px;
+  color: #080b0e;
+  background: #f7f8f9;
+  font-weight: 780;
+}
+
+.dataone-welcome .dataone-latest {
+  margin-top: 4.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid #242c32;
+}
+
+/* Results application shell */
+
+.dataone-results-shell {
+  display: grid;
+  min-height: 100vh;
+  grid-template-columns: 294px minmax(0, 1fr);
+  background: #070b0e;
+}
+
+.dataone-sidebar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  height: 100vh;
+  min-width: 0;
+  flex-direction: column;
+  border-right: 1px solid #313a42;
+  background: linear-gradient(180deg, #0b1014, #080d10);
+}
+
+.dataone-sidebar-header {
+  display: flex;
+  min-height: 88px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.4rem;
+  border-bottom: 1px solid #2d363d;
+}
+
+.dataone-sidebar-header .dataone-brand {
+  gap: 0.75rem;
+  font-size: 1.35rem;
+}
+
+.dataone-sidebar-header .dataone-brand-divider {
+  height: 1.55rem;
+}
+
+.dataone-sidebar-close,
+.dataone-mobile-menu {
+  display: none;
+}
+
+.dataone-sidebar-nav {
+  display: grid;
+  gap: 0.28rem;
+  padding: 1.15rem 0.75rem;
+}
+
+.dataone-sidebar-nav button {
+  position: relative;
+  display: grid;
+  width: 100%;
+  min-height: 54px;
+  grid-template-columns: 29px minmax(0, 1fr);
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.65rem 0.8rem;
+  border: 0;
+  border-radius: 0.45rem;
+  color: #c8d0d6;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dataone-sidebar-nav button::before {
+  position: absolute;
+  top: 7px;
+  bottom: 7px;
+  left: -0.75rem;
+  width: 4px;
+  border-radius: 0 3px 3px 0;
+  background: #f8f9fa;
+  content: '';
+  opacity: 0;
+}
+
+.dataone-sidebar-nav button:hover {
+  color: #ffffff;
+  background: #171e23;
+}
+
+.dataone-sidebar-nav button.is-active {
+  color: #ffffff;
+  background: linear-gradient(90deg, #242b31, #1c2328);
+  font-weight: 700;
+}
+
+.dataone-sidebar-nav button.is-active::before {
+  opacity: 1;
+}
+
+.dataone-sidebar-nav svg {
+  width: 1.25rem;
+  justify-self: center;
+}
+
+.dataone-sidebar-nav span {
+  font-size: 0.82rem;
+  line-height: 1.25;
+}
+
+.dataone-sidebar-footer {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+  margin: auto 1rem 0;
+  padding: 1.25rem 0.2rem 1.5rem;
+  border-top: 1px solid #2c353c;
+}
+
+.dataone-user-avatar {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border-radius: 50%;
+  color: #f0f2f4;
+  background: #353e46;
+  font-weight: 750;
+}
+
+.dataone-sidebar-footer > div:nth-child(2) {
+  display: grid;
+  min-width: 0;
+  gap: 0.15rem;
+}
+
+.dataone-sidebar-footer strong,
+.dataone-sidebar-footer span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dataone-sidebar-footer > div:nth-child(2) strong {
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.dataone-sidebar-footer > div:nth-child(2) span,
+.dataone-workspace-label span,
+.dataone-session-state {
+  color: #9ca7af;
+  font-size: 0.7rem;
+}
+
+.dataone-workspace-label,
+.dataone-session-state {
+  grid-column: 1 / -1;
+}
+
+.dataone-workspace-label {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.8rem 0.25rem 0;
+  border-top: 1px solid #222a30;
+}
+
+.dataone-workspace-label strong {
+  font-size: 0.8rem;
+}
+
+.dataone-session-state {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  line-height: 1.35;
+}
+
+.dataone-session-state > span {
+  flex: 0 0 auto;
+}
+
+.dataone-results-main {
+  min-width: 0;
+  padding: 1rem;
+}
+
+.dataone-results-toolbar {
+  display: grid;
+  min-height: 92px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  border: 1px solid #303941;
+  border-radius: 0.55rem;
+  background: rgb(14 20 24 / 88%);
+}
+
+.dataone-source-status {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.45rem;
+}
+
+.dataone-source-status > .dataone-live-dot {
+  width: 16px;
+  height: 16px;
+  justify-self: center;
+  box-shadow: 0 0 0 9px rgb(66 202 120 / 13%);
+}
+
+.dataone-source-status > div {
+  display: grid;
+  min-width: 0;
+  gap: 0.22rem;
+}
+
+.dataone-source-status strong {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+  overflow: hidden;
+  font-size: 0.92rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dataone-source-status strong svg {
+  width: 0.95rem;
+  flex: 0 0 auto;
+  color: #95a1aa;
+}
+
+.dataone-source-status > div > span {
+  overflow: hidden;
+  color: #98a3ab;
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dataone-toolbar-actions {
+  display: flex;
+  gap: 0.65rem;
+}
+
+.dataone-toolbar-actions button {
+  min-height: 44px;
+}
+
+.dataone-toolbar-actions svg,
+.dataone-date-filter svg {
+  width: 1rem;
+}
+
+.dataone-page-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 2.25rem 1.1rem 1.25rem;
+}
+
+.dataone-page-heading h1 {
+  margin: 0;
+  font-size: clamp(2rem, 3.2vw, 3rem);
+  line-height: 1.05;
+  letter-spacing: -0.045em;
+}
+
+.dataone-page-heading > div > p:last-child {
+  max-width: 780px;
+  margin: 0.45rem 0 0;
+  color: #aeb7be;
+  font-size: 0.95rem;
+}
+
+.dataone-page-kicker {
+  margin: 0 0 0.45rem;
+  color: #6f7c85;
+  font-size: 0.65rem;
+  font-weight: 750;
+  letter-spacing: 0.14em;
+}
+
+.dataone-date-filter {
+  min-height: 42px;
+  gap: 0.65rem;
+  padding-inline: 1rem;
+}
+
+.dataone-results-main .dataone-results {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dataone-results-main .dataone-section {
+  padding: 0 0 1.5rem;
+  border-top: 0;
+}
+
+.dataone-results-main .dataone-section-heading {
+  display: none;
+}
+
+.dataone-results-main .dataone-section-number {
+  display: none;
+}
+
+.dataone-results-main .dataone-section-heading > div:last-child {
+  display: none;
+}
+
+.dataone-results-main .dataone-section-icon {
+  width: 34px;
+  height: 34px;
+}
+
+.dataone-results-main .dataone-section-body {
+  display: grid;
+  gap: 1rem;
+}
+
+.dataone-results-main .dataone-panel,
+.dataone-results-main .dataone-table-shell,
+.dataone-results-main .dataone-overview-band,
+.dataone-results-main .dataone-governance-banner,
+.dataone-results-main .dataone-genie-disclosure,
+.dataone-results-main .dataone-genie-frame,
+.dataone-results-main .dataone-topology-edge,
+.dataone-results-main .dataone-mini-metric,
+.dataone-results-main .dataone-execution-ledger > div {
+  border-color: #303941;
+  background: linear-gradient(145deg, rgb(18 24 29 / 94%), rgb(13 18 22 / 94%));
+}
+
+.dataone-results-main .dataone-kpi-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dataone-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.dataone-overview-card {
+  min-height: 290px;
+}
+
+.dataone-overview-card [data-slot='card-header'] {
+  padding-bottom: 0.25rem;
+}
+
+.dataone-overview-card [data-slot='card-title'] {
+  font-size: 1.12rem;
+}
+
+.dataone-ring-card-content {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.78fr) minmax(190px, 1.22fr);
+  align-items: center;
+  gap: clamp(1rem, 2.4vw, 2rem);
+}
+
+.dataone-metric-ring {
+  display: grid;
+  width: min(188px, 100%);
+  aspect-ratio: 1;
+  place-items: center;
+  justify-self: center;
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 12%),
+    0 14px 28px rgb(0 0 0 / 28%);
+}
+
+.dataone-metric-ring > div {
+  display: grid;
+  width: 78%;
+  aspect-ratio: 1;
+  place-content: center;
+  border-radius: 50%;
+  background: #11171b;
+  text-align: center;
+}
+
+.dataone-metric-ring strong,
+.dataone-metric-ring span {
+  display: block;
+}
+
+.dataone-metric-ring strong {
+  font-size: clamp(1.8rem, 3vw, 2.75rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.dataone-metric-ring span {
+  margin-top: 0.45rem;
+  color: #c3cbd2;
+  font-size: 0.76rem;
+  text-transform: capitalize;
+}
+
+.dataone-overview-stat-list,
+.dataone-insight-list,
+.dataone-governance-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.dataone-overview-stat-list > div {
+  display: grid;
+  grid-template-columns: 12px 58px minmax(0, 1fr);
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 38px;
+  border-bottom: 1px solid #252e35;
+}
+
+.dataone-overview-stat-list > div > span {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: #85919b;
+}
+
+.dataone-overview-stat-list > div > span.is-success {
+  background: var(--success);
+}
+
+.dataone-overview-stat-list > div > span.is-warning {
+  background: var(--warning);
+}
+
+.dataone-overview-stat-list strong {
+  font-size: 0.94rem;
+}
+
+.dataone-overview-stat-list small {
+  color: #b5bec5;
+  font-size: 0.75rem;
+}
+
+.dataone-overview-stat-list button,
+.dataone-insight-list button,
+.dataone-governance-list button {
+  justify-self: end;
+  margin-top: 0.15rem;
+  color: #cbd3d9;
+}
+
+.dataone-overview-stat-list button svg,
+.dataone-insight-list button svg,
+.dataone-governance-list button svg {
+  width: 0.9rem;
+}
+
+.dataone-insight-list > div {
+  display: grid;
+  min-height: 51px;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid #2d373f;
+  border-radius: 0.45rem;
+  background: #171d22;
+}
+
+.dataone-insight-list > div strong {
+  display: grid;
+  height: 34px;
+  place-items: center;
+  border-radius: 0.35rem;
+  color: #f1f4f6;
+  background: #2b343d;
+  font-size: 1.05rem;
+}
+
+.dataone-insight-list > div span {
+  color: #c5cdd3;
+  font-size: 0.79rem;
+}
+
+.dataone-insight-list > div.has-warning strong {
+  color: #ffd166;
+}
+
+.dataone-governance-list > div {
+  display: grid;
+  min-height: 48px;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 0.7rem;
+  border-bottom: 1px solid #273038;
+}
+
+.dataone-governance-list > div > svg {
+  width: 1.15rem;
+  color: var(--success);
+}
+
+.dataone-governance-list > div.has-warning > svg {
+  color: var(--warning);
+}
+
+.dataone-governance-list > div > span {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.dataone-governance-list strong {
+  font-size: 0.78rem;
+}
+
+.dataone-governance-list small {
+  color: #9ca7af;
+  font-size: 0.68rem;
+}
+
+.dataone-results-main .dataone-kpi-card {
+  min-height: 210px;
+}
+
+.dataone-results-main .dataone-kpi-card [data-slot='card-title'] {
+  font-size: clamp(2rem, 4vw, 3.2rem);
+}
+
+.dataone-results-main .dataone-kpi-card [role='progressbar'] {
+  height: 8px;
+}
+
+.dataone-results-main .dataone-mapper-summary {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dataone-mapper-toolbar {
+  display: flex;
+  min-height: 58px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid #303941;
+  border-radius: 0.5rem;
+  background: #0e1418;
+}
+
+.dataone-mapper-toolbar > div {
+  display: grid;
+  gap: 0.12rem;
+  margin-right: auto;
+}
+
+.dataone-mapper-toolbar > div span {
+  color: #9ba6ae;
+  font-size: 0.66rem;
+}
+
+.dataone-mapper-toolbar > div strong {
+  font-size: 0.77rem;
+}
+
+.dataone-suggestion-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #c9d0d5;
+  font-size: 0.73rem;
+  cursor: pointer;
+}
+
+.dataone-suggestion-toggle input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.dataone-suggestion-toggle > span {
+  position: relative;
+  width: 38px;
+  height: 21px;
+  border-radius: 999px;
+  background: #3a4650;
+  transition: background 150ms ease;
+}
+
+.dataone-suggestion-toggle > span::after {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #f4f6f7;
+  content: '';
+  transition: transform 150ms ease;
+}
+
+.dataone-suggestion-toggle input:checked + span {
+  background: #4e687d;
+}
+
+.dataone-suggestion-toggle input:checked + span::after {
+  transform: translateX(17px);
+}
+
+.dataone-suggestion-toggle input:focus-visible + span {
+  outline: 2px solid #9dacb8;
+  outline-offset: 2px;
+}
+
+.dataone-mapper-workbench {
+  display: grid;
+  min-height: 500px;
+  grid-template-columns: minmax(210px, 0.82fr) minmax(420px, 1.65fr) minmax(210px, 0.82fr);
+  gap: 0.75rem;
+}
+
+.dataone-schema-panel,
+.dataone-mapping-canvas,
+.dataone-mapper-preview {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #303941;
+  border-radius: 0.5rem;
+  background: linear-gradient(145deg, #11171b, #0d1317);
+}
+
+.dataone-schema-panel > header,
+.dataone-mapping-canvas > header {
+  display: grid;
+  min-height: 48px;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid #303941;
+}
+
+.dataone-schema-panel > header svg {
+  width: 1.05rem;
+  grid-row: 1 / span 2;
+  color: #e0e5e8;
+}
+
+.dataone-schema-panel > header strong,
+.dataone-mapping-canvas > header strong {
+  font-size: 0.79rem;
+}
+
+.dataone-schema-panel > header small {
+  overflow: hidden;
+  color: #93a0a8;
+  font-size: 0.62rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dataone-schema-search {
+  display: flex;
+  min-height: 38px;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.65rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid #354049;
+  border-radius: 0.4rem;
+  color: #8f9ba4;
+  font-size: 0.67rem;
+}
+
+.dataone-schema-search svg {
+  width: 0.85rem;
+}
+
+.dataone-schema-tree {
+  display: grid;
+  align-content: start;
+  padding: 0.2rem 0.65rem 0.8rem;
+}
+
+.dataone-schema-tree > strong {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.2rem;
+  font-size: 0.72rem;
+}
+
+.dataone-schema-tree > strong svg {
+  width: 0.8rem;
+}
+
+.dataone-schema-tree > div {
+  display: grid;
+  min-height: 34px;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.25rem 0.35rem 1rem;
+  border-left: 1px solid #303940;
+}
+
+.dataone-schema-tree > div > span {
+  width: 10px;
+  height: 10px;
+  border: 1px solid #71808b;
+  border-radius: 2px;
+}
+
+.dataone-schema-tree > div > span.is-checked {
+  border-color: var(--success);
+  background: var(--success);
+  box-shadow: inset 0 0 0 2px #14201a;
+}
+
+.dataone-schema-tree > div strong {
+  overflow: hidden;
+  color: #d7dde1;
+  font-size: 0.69rem;
+  font-weight: 520;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dataone-schema-tree > div small {
+  padding: 0.18rem 0.32rem;
+  border-radius: 0.25rem;
+  color: #a8b2ba;
+  background: #1d252b;
+  font-size: 0.54rem;
+}
+
+.dataone-mapping-canvas > header {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.dataone-mapping-canvas > div {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background-image: radial-gradient(circle, rgb(127 142 153 / 22%) 1px, transparent 1px);
+  background-size: 15px 15px;
+}
+
+.dataone-canvas-row {
+  display: grid;
+  min-height: 49px;
+  grid-template-columns: minmax(110px, 0.95fr) minmax(18px, 0.45fr) auto minmax(18px, 0.45fr) minmax(110px, 0.95fr);
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.dataone-canvas-field {
+  display: grid;
+  gap: 0.08rem;
+  padding: 0.52rem 0.6rem;
+  border: 1px solid #34414a;
+  border-radius: 0.38rem;
+  background: #202932;
+}
+
+.dataone-canvas-field strong {
+  overflow: hidden;
+  font-size: 0.68rem;
+  font-weight: 560;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dataone-canvas-field small {
+  color: #9ba7af;
+  font-size: 0.55rem;
+}
+
+.dataone-canvas-line {
+  height: 1px;
+  background: linear-gradient(90deg, #7b93a5, #b2c1cb);
+}
+
+.dataone-canvas-row [data-slot='badge'] {
+  border-color: rgb(79 196 130 / 68%);
+  color: #dff8e9;
+  background: rgb(35 99 61 / 44%);
+  font-size: 0.59rem;
+}
+
+.dataone-mapper-preview > header {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  gap: 1.3rem;
+  padding: 0 0.85rem;
+  border-bottom: 1px solid #303941;
+  color: #9faab2;
+  font-size: 0.71rem;
+}
+
+.dataone-mapper-preview > header strong {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  border-bottom: 2px solid #eef2f4;
+  color: #f0f3f5;
+}
+
+.dataone-mapper-preview > header [data-slot='badge'] {
+  margin-left: auto;
+}
+
+.dataone-mapper-preview > div {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.85fr);
+  gap: 0.75rem;
+  padding: 0.75rem;
+}
+
+.dataone-mapper-preview .dataone-table-shell {
+  max-height: 330px;
+}
+
+.dataone-generated-sql {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #303941;
+  border-radius: 0.45rem;
+  background: #090e11;
+}
+
+.dataone-generated-sql > header {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.55rem 0.7rem;
+  border-bottom: 1px solid #2f3941;
+  font-size: 0.7rem;
+}
+
+.dataone-generated-sql pre {
+  max-height: 280px;
+  margin: 0;
+  overflow: auto;
+  padding: 0.85rem;
+  color: #c9e3f2;
+  font-size: 0.65rem;
+  line-height: 1.65;
+}
+
+.dataone-mapper-boundary {
+  border-color: #354149;
+  background: #10171b;
+}
+
+.dataone-results-main .dataone-map-row {
+  border-color: #34404a;
+  background: #11171c;
+}
+
+.dataone-results-main .dataone-map-connector [data-slot='badge'] {
+  border-color: rgb(79 196 130 / 60%);
+  color: #ddf9e8;
+  background: rgb(45 118 76 / 27%);
+}
+
+.dataone-results-main .dataone-genie-frame {
+  min-height: 620px;
+}
+
+.dataone-demo-sample-picker {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+  padding: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in oklch, var(--background) 72%, transparent);
+}
+
+.dataone-demo-sample-picker > div:first-child {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.dataone-demo-sample-picker > div:first-child > strong {
+  font-size: 0.78rem;
+}
+
+.dataone-demo-sample-picker > div:first-child > span {
+  color: var(--muted-foreground);
+  font-size: 0.67rem;
+  line-height: 1.4;
+}
+
+.dataone-demo-sample-loading,
+.dataone-demo-sample-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.dataone-demo-sample-grid > button {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--foreground);
+  background: var(--card);
+  text-align: left;
+  cursor: pointer;
+}
+
+.dataone-demo-sample-grid > button:hover:not(:disabled),
+.dataone-demo-sample-grid > button.is-selected {
+  border-color: color-mix(in oklch, var(--success) 65%, var(--border));
+  background: color-mix(in oklch, var(--success) 7%, var(--card));
+}
+
+.dataone-demo-sample-grid > button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.dataone-demo-sample-grid > button > svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  color: var(--muted-foreground);
+}
+
+.dataone-demo-sample-grid > button > span {
+  display: grid;
+  min-width: 0;
+  gap: 0.12rem;
+}
+
+.dataone-demo-sample-grid strong,
+.dataone-demo-sample-grid small,
+.dataone-demo-sample-grid code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dataone-demo-sample-grid strong {
+  font-size: 0.7rem;
+}
+
+.dataone-demo-sample-grid small,
+.dataone-demo-sample-grid code {
+  color: var(--muted-foreground);
+  font-size: 0.58rem;
+}
+
+.dataone-demo-sample-empty,
+.dataone-demo-connections-empty {
+  min-height: 150px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+}
+
+.dataone-database-demo {
+  max-width: 1080px;
+  margin: 1rem auto 0;
+  border-color: color-mix(in oklch, var(--warning) 32%, var(--border));
+}
+
+.dataone-database-demo.is-selected {
+  border-color: color-mix(in oklch, var(--success) 66%, var(--border));
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--success) 20%, transparent);
+}
+
+.dataone-demo-connection-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+}
+
+.dataone-demo-connection-status svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.dataone-database-connector-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: start;
+  gap: 0.75rem;
+}
+
+.dataone-database-connector {
+  display: grid;
+  min-width: 0;
+  gap: 0.8rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in oklch, var(--background) 72%, transparent);
+}
+
+.dataone-database-connector-heading,
+.dataone-database-connector-heading > div,
+.dataone-database-connector-heading > div > span:last-child {
+  display: flex;
+  align-items: center;
+}
+
+.dataone-database-connector-heading {
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.dataone-database-connector-heading > div {
+  min-width: 0;
+  gap: 0.65rem;
+}
+
+.dataone-database-connector-heading > div > span:last-child {
+  min-width: 0;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.dataone-database-connector-heading strong,
+.dataone-database-connector-heading small {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dataone-database-connector-heading strong {
+  font-size: 0.86rem;
+}
+
+.dataone-database-connector-heading small,
+.dataone-database-field small {
+  color: var(--muted-foreground);
+  font-size: 0.63rem;
+  line-height: 1.45;
+}
+
+.dataone-database-connector-icon {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid color-mix(in oklch, var(--primary) 40%, var(--border));
+  border-radius: 0.6rem;
+  background: color-mix(in oklch, var(--primary) 9%, var(--card));
+  color: color-mix(in oklch, var(--primary) 62%, var(--foreground));
+}
+
+.dataone-database-connector-icon svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.dataone-database-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.dataone-database-fields--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dataone-database-field {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 0.35rem;
+}
+
+.dataone-database-field--wide {
+  grid-column: 1 / -1;
+}
+
+.dataone-database-field--host {
+  grid-column: span 1;
+}
+
+.dataone-database-field--port {
+  max-width: 9rem;
+}
+
+.dataone-database-field > label {
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.dataone-database-field > button,
+.dataone-database-field [data-slot='select-trigger'] {
+  width: 100%;
+}
+
+.dataone-password-field {
+  position: relative;
+}
+
+.dataone-password-field input {
+  padding-right: 2.7rem;
+}
+
+.dataone-password-field button {
+  position: absolute;
+  top: 50%;
+  right: 0.25rem;
+  width: 2rem;
+  height: 2rem;
+  transform: translateY(-50%);
+}
+
+.dataone-password-field button svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.dataone-database-checkbox {
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+}
+
+.dataone-database-checkbox input {
+  accent-color: var(--primary);
+}
+
+.dataone-database-localhost-note,
+.dataone-database-secret-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.64rem;
+  line-height: 1.5;
+}
+
+.dataone-database-localhost-note svg,
+.dataone-database-secret-note svg {
+  width: 0.85rem;
+  height: 0.85rem;
+  flex: 0 0 auto;
+  margin-top: 0.1rem;
+}
+
+.dataone-database-localhost-note {
+  color: color-mix(in oklch, var(--warning) 74%, var(--foreground));
+}
+
+.dataone-database-summary {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 0.15rem);
+  background: color-mix(in oklch, var(--card) 72%, var(--background));
+}
+
+.dataone-database-summary span {
+  color: var(--muted-foreground);
+  font-size: 0.61rem;
+}
+
+.dataone-database-summary code {
+  overflow: hidden;
+  color: var(--foreground);
+  font-size: 0.65rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dataone-database-validation ul {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0.35rem 0 0;
+  padding-left: 1rem;
+}
+
+.dataone-database-transfer-arrow {
+  display: grid;
+  min-width: 4.5rem;
+  align-content: center;
+  justify-items: center;
+  gap: 0.25rem;
+  padding-top: 4.25rem;
+  color: var(--warning);
+  text-align: center;
+}
+
+.dataone-database-transfer-arrow svg {
+  width: 1.25rem;
+}
+
+.dataone-database-transfer-arrow small {
+  font-size: 0.58rem;
+  font-weight: 750;
+}
+
+.dataone-demo-connections-loading,
+.dataone-demo-database-flow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: stretch;
+  gap: 0.75rem;
+}
+
+.dataone-demo-connections-loading {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dataone-demo-database-flow > div {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in oklch, var(--background) 72%, transparent);
+}
+
+.dataone-demo-database-flow > div > svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  flex: 0 0 auto;
+  color: var(--muted-foreground);
+}
+
+.dataone-demo-database-flow > div > span {
+  display: grid;
+  min-width: 0;
+  gap: 0.15rem;
+}
+
+.dataone-demo-database-flow small,
+.dataone-demo-database-flow code {
+  overflow: hidden;
+  color: var(--muted-foreground);
+  font-size: 0.65rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dataone-demo-database-flow strong {
+  font-size: 0.82rem;
+}
+
+.dataone-demo-export-step {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.2rem;
+  color: var(--warning);
+  font-size: 0.63rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.dataone-demo-export-step svg {
+  width: 1rem;
+}
+
+.dataone-demo-database-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.8rem;
+}
+
+.dataone-demo-database-actions > span {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+}
+
+.dataone-demo-database-actions svg {
+  width: 0.9rem;
+}
+
+.dataone-demo-export-note {
+  margin-top: 0.85rem;
+  border-color: color-mix(in oklch, var(--warning) 42%, var(--border));
+  background: color-mix(in oklch, var(--warning) 6%, var(--card));
+}
+
+.dataone-risk-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.dataone-risk-input-card [data-slot='card-content'] {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.dataone-risk-input-card [data-slot='card-content'] > div {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.dataone-risk-input-card span,
+.dataone-risk-input-card small,
+.dataone-risk-forecast-card small {
+  color: var(--muted-foreground);
+  font-size: 0.66rem;
+  line-height: 1.45;
+}
+
+.dataone-risk-input-card [data-slot='card-content'] > small {
+  grid-column: 1 / -1;
+}
+
+.dataone-risk-forecast-card [data-slot='card-header'] {
+  gap: 0.7rem;
+}
+
+.dataone-risk-forecast-card [data-slot='card-header'] [data-slot='badge'] {
+  width: fit-content;
+}
+
+.dataone-risk-forecast-card [data-slot='card-content'] {
+  display: grid;
+  align-items: start;
+  gap: 0.75rem;
+}
+
+.dataone-risk-forecast-card p {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+
+.dataone-forecast-value {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.dataone-forecast-value strong {
+  font-size: clamp(2.4rem, 5vw, 4rem);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.dataone-forecast-mark {
+  width: 1.1rem;
+  height: 3.2rem;
+  border: 1px solid var(--warning);
+  background: repeating-linear-gradient(
+    135deg,
+    color-mix(in oklch, var(--warning) 70%, transparent) 0 3px,
+    transparent 3px 7px
+  );
+}
+
+.dataone-risk-factors {
+  margin-top: 1rem;
+}
+
+.dataone-risk-factors [data-slot='card-content'] {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.dataone-risk-factors [data-slot='card-content'] > div {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.5fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+}
+
+.dataone-risk-factors [data-slot='card-content'] > div > span {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.dataone-risk-factors strong {
+  font-size: 0.76rem;
+}
+
+.dataone-risk-factors small,
+.dataone-query-meta {
+  color: var(--muted-foreground);
+  font-size: 0.64rem;
+}
+
+.dataone-query-meta {
+  line-height: 1.4;
+}
+
+.dataone-genie-prompts {
+  display: grid;
+  width: min(100%, 940px);
+  max-width: 940px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 0.65rem;
+}
+
+.dataone-question-group {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in oklch, var(--card) 84%, transparent);
+  text-align: left;
+}
+
+.dataone-question-group > strong {
+  color: var(--muted-foreground);
+  font-size: 0.63rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.dataone-question-group > div {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.dataone-question-group button {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.dataone-results[data-active-view='dashboard'] > .dataone-section:not(#overview),
+.dataone-results[data-active-view='mapper'] > .dataone-section:not(#schema-intelligence),
+.dataone-results[data-active-view='quality'] > .dataone-section:not(#quality-cleaning),
+.dataone-results[data-active-view='visualizations'] > .dataone-section:not(#visualizations),
+.dataone-results[data-active-view='prediction'] > .dataone-section:not(#prediction-risk),
+.dataone-results[data-active-view='askdata'] > .dataone-section:not(#askdata),
+.dataone-results[data-active-view='governance'] > .dataone-section:not(#semantics):not(#governance-audit),
+.dataone-results[data-active-view='audit'] > .dataone-section:not(#topology-impact):not(#governance-audit) {
+  display: none;
+}
+
+.dataone-sidebar-scrim {
+  display: none;
+}
+
+@media (max-width: 1180px) {
+  .dataone-chart-builder-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dataone-chart-filter-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dataone-chart-filter-row > button {
+    justify-self: end;
+  }
+
+  .dataone-welcome-options {
+    grid-template-columns: 1fr;
+  }
+
+  .dataone-welcome-or {
+    min-height: 42px;
+  }
+
+  .dataone-welcome-or::before {
+    width: 100%;
+    height: 1px;
+  }
+
+  .dataone-upload-option .dataone-dropzone {
+    min-height: 300px;
+  }
+
+  .dataone-results-shell {
+    grid-template-columns: 254px minmax(0, 1fr);
+  }
+
+  .dataone-mapper-workbench {
+    grid-template-columns: minmax(190px, 0.75fr) minmax(390px, 1.5fr) minmax(190px, 0.75fr);
+  }
+
+  .dataone-mapper-preview > div {
+    grid-template-columns: 1fr;
+  }
+
+  .dataone-toolbar-actions button:last-child {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .dataone-connection-grid,
+  .dataone-results-main .dataone-kpi-grid,
+  .dataone-dashboard-grid,
+  .dataone-risk-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dataone-demo-database-flow {
+    grid-template-columns: 1fr;
+  }
+
+  .dataone-database-connector-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dataone-database-transfer-arrow {
+    min-width: 0;
+    padding: 0.25rem 0;
+  }
+
+  .dataone-database-transfer-arrow svg {
+    transform: rotate(90deg);
+  }
+
+  .dataone-demo-export-step svg {
+    transform: rotate(90deg);
+  }
+
+  .dataone-project-inline {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .dataone-project-inline > span {
+    max-width: none;
+    padding-bottom: 0;
+  }
+
+  .dataone-welcome .dataone-launch-strip {
+    grid-template-columns: 1fr;
+    gap: 0.8rem;
+  }
+
+  .dataone-welcome .dataone-launch-strip > div,
+  .dataone-welcome .dataone-launch-strip > p {
+    justify-self: center;
+    padding: 0;
+    text-align: center;
+  }
+
+  .dataone-results-shell {
+    display: block;
+  }
+
+  .dataone-mapper-workbench {
+    grid-template-columns: 1fr;
+  }
+
+  .dataone-schema-panel {
+    max-height: 380px;
+    overflow: auto;
+  }
+
+  .dataone-sidebar {
+    position: fixed;
+    left: 0;
+    width: min(310px, 88vw);
+    transform: translateX(-105%);
+    transition: transform 180ms ease;
+  }
+
+  .dataone-sidebar.is-open {
+    transform: translateX(0);
+  }
+
+  .dataone-sidebar-close,
+  .dataone-mobile-menu {
+    display: inline-flex;
+  }
+
+  .dataone-sidebar-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: block;
+    border: 0;
+    background: rgb(0 0 0 / 66%);
+  }
+
+  .dataone-results-toolbar {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .dataone-source-status {
+    grid-template-columns: 24px minmax(0, 1fr);
+  }
+
+  .dataone-source-status > [data-slot='badge'] {
+    display: none;
+  }
+
+  .dataone-toolbar-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 620px) {
+  .dataone-chart-builder-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .dataone-chart-control--title {
+    grid-column: auto;
+  }
+
+  .dataone-chart-filter-panel {
+    grid-column: auto;
+  }
+
+  .dataone-chart-filter-heading,
+  .dataone-chart-filter-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .dataone-chart-filter-actions button {
+    width: 100%;
+  }
+
+  .dataone-chart-filter-row {
+    grid-template-columns: 1fr;
+  }
+
+  .dataone-chart-builder-heading,
+  .dataone-chart-preview-heading,
+  .dataone-chart-title-control {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .dataone-chart-builder-heading,
+  .dataone-chart-preview-heading {
+    flex-direction: column;
+  }
+
+  .dataone-chart-builder-meta {
+    justify-content: flex-start;
+  }
+
+  .dataone-welcome {
+    padding-inline: 0.8rem;
+  }
+
+  .dataone-option-card [data-slot='card-header'],
+  .dataone-option-card [data-slot='card-content'] {
+    padding-inline: 1rem;
+  }
+
+  .dataone-file-actions,
+  .dataone-file-actions button {
+    width: 100%;
+  }
+
+  .dataone-demo-sample-loading,
+  .dataone-demo-sample-grid,
+  .dataone-genie-prompts,
+  .dataone-risk-input-card [data-slot='card-content'] {
+    grid-template-columns: 1fr;
+  }
+
+  .dataone-demo-database-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .dataone-database-fields,
+  .dataone-database-fields--three {
+    grid-template-columns: 1fr;
+  }
+
+  .dataone-database-field--port {
+    max-width: none;
+  }
+
+  .dataone-risk-input-card [data-slot='card-content'] > small {
+    grid-column: auto;
+  }
+
+  .dataone-risk-factors [data-slot='card-content'] > div {
+    grid-template-columns: 1fr;
+  }
+
+  .dataone-demo-banner {
+    width: 100%;
+  }
+
+  .dataone-demo-user-message,
+  .dataone-demo-answer {
+    width: 100%;
+  }
+
+  .dataone-results-main {
+    padding: 0.65rem;
+  }
+
+  .dataone-results-toolbar {
+    min-height: 0;
+  }
+
+  .dataone-toolbar-actions {
+    justify-content: stretch;
+  }
+
+  .dataone-toolbar-actions button {
+    width: 100%;
+  }
+
+  .dataone-page-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    padding-inline: 0.35rem;
+  }
+
+  .dataone-results-main .dataone-mapper-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .dataone-ring-card-content {
+    grid-template-columns: 1fr;
+  }
+
+  .dataone-mapper-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .dataone-mapper-toolbar > div {
+    margin-right: 0;
+  }
+
+  .dataone-mapper-preview > header {
+    flex-wrap: wrap;
+    padding-block: 0.5rem;
+  }
+
+  .dataone-mapper-preview > header [data-slot='badge'] {
+    margin-left: 0;
+  }
+}

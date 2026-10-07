@@ -1,0 +1,8 @@
+resources:
+  genie_spaces:
+    dataone_askdata:
+      title: DataOne AskData
+      description: Governed natural-language analysis for DataOne run quality, column issues, cleaning transformations, schema mappings, and source-format comparisons.
+      warehouse_id: ${var.sql_warehouse_id}
+      file_path: ../config/genie/dataone-space.json
+      parent_path: /Workspace/Users/${workspace.current_user.userName}

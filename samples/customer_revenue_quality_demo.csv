@@ -1,0 +1,17 @@
+customer-id,first_name,last_name,email,created_at,country,category,quantity,unit_price,order_status,campaign-source
+C-1001,maya,PATEL,MAYA.PATEL@EXAMPLE.COM,2026-08-01,us,Analytics Pro,1,1299.00,DELIVERED,Paid Search
+C-1002,Liam,Singh," LIAM.SINGH@EXAMPLE.COM ",2026-08-02,India,Analytics Pro,2,1299.00,delivered,Partner
+C-1003,Olivia,Martin,olivia.martin@example.com,2026-08-03,USA,Analytics Pro,1,1299.00,PAYMENT FAILED,Paid Search
+C-1004," noah ",brown,noah.brown.example.com,2026-13-04,,Analytics Pro,1,1299.00,Payment Failed,Paid Search
+C-1005,Emma,Wilson,,2026-08-05,US,Analytics Pro,3,1299.00,DELIVERED,Partner
+C-1006,Aarav,Sharma,aarav.sharma@example.com,2026-08-06,in,Starter,5,199.00,Delivered,Organic
+C-1007,Sophia,Chen,SOPHIA.CHEN@EXAMPLE.COM,2026-08-07,USA,Starter,2,199.00,CANCELLED,Organic
+C-1008,Ethan,,ethan.davis@example.com,not-a-date,India,Analytics Pro,1,1299.00,Delivered,Paid Search
+C-1009,Isabella,Moore,isabella.moore@example.com,2026-08-09,US,Enterprise,1,4999.00,Payment Failed,Event
+C-1010,Lucas,Taylor,lucas.taylor@example.com,2026-08-10,,Starter,two,199.00,delivered,Organic
+C-1011,Amelia,Thomas,amelia.thomas@example.com,2026-08-11,india,Analytics Pro,1,"1,299.00",delivered,Partner
+C-1012,Oliver,Jackson,oliver.jackson@example.com,2026-08-12,United States,Starter,4,199.00,Delivered,Paid Search
+C-1013,Ava,White,ava.white@example.com,2026-08-13,US,Analytics Pro,1,1299.00,DELIVERED,Paid Search
+C-1014,Elijah,Harris,elijah.harris@example.com,2026-08-14,USA,Enterprise,1,4999.00,Cancelled,Event
+C-1015,Charlotte,Martin,charlotte @example.com,,India,Analytics Pro,2,1299.00,Delivered,
+C-1016,James,Lee,,2026-08-16,USA,Starter,1,,Payment Failed,Organic
