@@ -56,10 +56,7 @@ from app.models.drift_event import DriftEvent  # noqa: F401
 from app.models.schema_catalog import CatalogTable, CatalogColumn, CatalogForeignKey  # noqa: F401
 from app.models.user import User  # noqa: F401
 from app.models.autopilot import AutopilotRun, AutopilotLog  # noqa: F401
-from app.models.semantic import (  # noqa: F401
-    SemanticEntity, SemanticDimension, SemanticMeasure,
-    SemanticMetricDefinition, SemanticLineage,
-)
+
 from app.models.mapping import (  # noqa: F401
     Mapping, MappingVersion, FieldMapping, AISuggestion,
 )
