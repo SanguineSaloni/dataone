@@ -38,4 +38,4 @@ env:
   - name: DATAONE_DATABASE_URL
     valueFrom: state-db-url
   - name: DATAONE_REQUIRE_OPERATIONAL_STORE
-    value: 'true'
+    value: 'false'
