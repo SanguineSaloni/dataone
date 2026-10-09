@@ -88,6 +88,8 @@ class MappingResponse(BaseModel):
     created_by: str
     created_at: datetime
     updated_at: datetime
+    latest_run_id: Optional[int] = None
+    latest_run_state: Optional[str] = None
     edges: List[EdgeResponse] = Field(default_factory=list)
 
 

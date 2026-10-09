@@ -56,6 +56,13 @@ def _edge_response(edge: FieldMapping) -> EdgeResponse:
 
 
 def _mapping_response(m: Mapping) -> MappingResponse:
+    latest_run_id = None
+    latest_run_state = None
+    if getattr(m, "runs", None):
+        latest = sorted(m.runs, key=lambda x: x.id)[-1]
+        latest_run_id = latest.id
+        latest_run_state = latest.state
+
     return MappingResponse(
         id=m.id,
         name=m.name,
@@ -67,6 +74,8 @@ def _mapping_response(m: Mapping) -> MappingResponse:
         created_by=m.created_by,
         created_at=m.created_at,
         updated_at=m.updated_at,
+        latest_run_id=latest_run_id,
+        latest_run_state=latest_run_state,
         edges=[
             _edge_response(e) for e in (m.edges or []) if e.version_id is None
         ],

@@ -443,27 +443,52 @@ export default function SchemaMapperPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/[0.04]">
-                      {history.map(job => (
-                        <tr key={job.id} className="hover:bg-white/[0.02] transition-colors">
-                          <td className="px-4 py-3 font-mono text-white/60">#{job.id}</td>
-                          <td className="px-4 py-3 font-mono text-white/80">{job.name}</td>
-                          <td className="px-4 py-3">
-                            <span className="px-2 py-1 rounded-sm text-[9px] uppercase tracking-wider font-bold"
-                              style={{ 
-                                background: job.status === 'published' ? 'rgba(52,211,153,0.1)' : 'rgba(59,130,246,0.1)', 
-                                color: job.status === 'published' ? '#34d399' : '#60a5fa' 
-                              }}>
-                              {job.status}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-white/40">{new Date(job.created_at).toLocaleString()}</td>
-                          <td className="px-4 py-3 text-right">
-                            <button onClick={() => resumeJob(job)} className="px-3 py-1.5 rounded bg-white/10 hover:bg-white/20 text-white font-medium transition-colors">
-                              Resume
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                      {history.map(job => {
+                        let stageName = "Schema Mapping Stage";
+                        let stageColor = "#60a5fa";
+                        let stageBg = "rgba(59,130,246,0.1)";
+                        
+                        if (job.status === "published") {
+                           if (job.latest_run_id) {
+                              stageName = "Migration Stage";
+                              stageColor = "#34d399";
+                              stageBg = "rgba(52,211,153,0.1)";
+                           } else {
+                              stageName = "Transformation/Cleaning Stage";
+                              stageColor = "#a78bfa";
+                              stageBg = "rgba(167,139,250,0.1)";
+                           }
+                        }
+
+                        return (
+                          <tr key={job.id} className="hover:bg-white/[0.02] transition-colors">
+                            <td className="px-4 py-3 font-mono text-white/60">#{job.id}</td>
+                            <td className="px-4 py-3 font-mono text-white/80">{job.name}</td>
+                            <td className="px-4 py-3">
+                              <span className="px-2 py-1 rounded-sm text-[9px] uppercase tracking-wider font-bold"
+                                style={{ background: stageBg, color: stageColor }}>
+                                {stageName}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-white/40">{new Date(job.created_at).toLocaleString()}</td>
+                            <td className="px-4 py-3 text-right">
+                              {job.status === "draft" ? (
+                                <button onClick={() => resumeJob(job)} className="px-3 py-1.5 rounded bg-white/10 hover:bg-white/20 text-white font-medium transition-colors">
+                                  Resume
+                                </button>
+                              ) : job.latest_run_id ? (
+                                <button onClick={() => router.push(`/dashboard/migration-status?mappingId=${job.id}&runId=${job.latest_run_id}`)} className="px-3 py-1.5 rounded bg-white/10 hover:bg-white/20 text-white font-medium transition-colors">
+                                  Open
+                                </button>
+                              ) : (
+                                <button onClick={() => router.push(`/dashboard/transformation?mappingId=${job.id}`)} className="px-3 py-1.5 rounded bg-white/10 hover:bg-white/20 text-white font-medium transition-colors">
+                                  Open
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

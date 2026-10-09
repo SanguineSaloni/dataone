@@ -177,7 +177,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
             )}
             <button
-              onClick={() => { auth.logout(); router.replace("/signin"); }}
+              onClick={() => { auth.logout(); window.location.href = "/signin"; }}
               className={["flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-colors", collapsed ? "w-10 h-10 rounded-full" : "w-8 h-8 rounded-lg"].join(" ")}
               title="Log out"
             >
