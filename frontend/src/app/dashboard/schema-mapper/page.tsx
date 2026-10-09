@@ -134,6 +134,7 @@ export default function SchemaMapperPage() {
   const [mappingId, setMappingId] = useState<number | null>(null);
   const [migrationRun, setMigrationRun] = useState<any>(null);
   const [initialized, setInitialized] = useState(false);
+  const [history, setHistory] = useState<any[]>([]);
 
   useEffect(() => {
     // Always start fresh — clear any stale cached state from previous sessions.
@@ -141,7 +142,48 @@ export default function SchemaMapperPage() {
     setInitialized(true);
   }, []);
 
-  // Intentionally not persisting schema mapper state — always load fresh catalogs on visit.
+  useEffect(() => {
+    if (mode === "cfg") {
+      api.get<any>("/api/v1/mappings/").then(res => {
+        setHistory(res.items || []);
+      }).catch(err => console.error("Failed to fetch history", err));
+    }
+  }, [mode]);
+
+  const resumeJob = async (job: any) => {
+    const match = job.name.match(/Map (.*?) → (.*)/);
+    if (match) {
+      const srcParts = match[1].split(".");
+      if (srcParts.length === 3) {
+        setSrcCat(srcParts[0]); setSrcSch(srcParts[1]); setSrcTbl(srcParts[2]);
+      } else if (srcParts.length === 2) {
+        setSrcCat("default"); setSrcSch(srcParts[0]); setSrcTbl(srcParts[1]);
+      } else {
+        setSrcCat("default"); setSrcSch("default"); setSrcTbl(srcParts[0]);
+      }
+      const tgtParts = match[2].split(".");
+      if (tgtParts.length === 2) {
+        setTgtCat(tgtParts[0]); setTgtSch(tgtParts[1]);
+      } else {
+        setTgtCat("default"); setTgtSch(tgtParts[0]);
+      }
+    }
+    
+    setMappingId(job.id);
+    setMode("run");
+    setLoading(true);
+    setSuggestions([]);
+    try {
+      const r = await api.get<any>(`/api/v1/mappings/${job.id}/suggestions?limit=200`);
+      if (r.items?.length > 0) {
+        setSuggestions(r.items.sort((a: any, b: any) => b.confidence - a.confidence));
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (connId) { setSparkConnId(+connId); return; }
@@ -324,13 +366,13 @@ export default function SchemaMapperPage() {
 
         {/* ═══ CONFIGURATION MODE ═══════════════════════════════════════════ */}
         {mode === "cfg" && (
-          <div className="h-full flex flex-col gap-4">
-            <div className="text-center py-2">
+          <div className="h-full flex flex-col gap-4 overflow-y-auto pb-12 pr-2">
+            <div className="text-center py-2 flex-shrink-0">
               <h2 className="text-[22px] font-bold tracking-tight" style={{ color: "rgba(255,255,255,0.92)", letterSpacing: "-0.02em" }}>Configure Mapping</h2>
               <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.28)" }}>Define source and target — the engine will compute semantic similarity across all field pairs.</p>
             </div>
 
-            <div className="flex-1 flex gap-3 min-h-0">
+            <div className="flex gap-3 h-[450px] flex-shrink-0">
               {/* SOURCE */}
               <Panel label="Source" sub="From · read" icon="db">
                 <Field label="Catalog" value={srcCat} onChange={v => { setSrcCat(v); setSrcSch(""); setSrcTbl(""); }} options={cats} placeholder="Select catalog" />
@@ -383,6 +425,53 @@ export default function SchemaMapperPage() {
                   <EmptyHint icon="grid" text="Select a schema to preview target tables" />
                 )}
               </Panel>
+            </div>
+
+            {/* HISTORY SECTION */}
+            <div className="mt-4 flex-shrink-0">
+              <h3 className="text-[12px] font-semibold tracking-wide uppercase mb-3" style={{ color: "rgba(255,255,255,0.4)" }}>Recent Mapping Jobs</h3>
+              {history.length > 0 ? (
+                <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)" }}>
+                  <table className="w-full text-left text-[11px]">
+                    <thead style={{ background: "rgba(255,255,255,0.03)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                      <tr>
+                        <th className="px-4 py-3 font-semibold text-white/50">Job ID</th>
+                        <th className="px-4 py-3 font-semibold text-white/50">Name (Source → Target)</th>
+                        <th className="px-4 py-3 font-semibold text-white/50">Status</th>
+                        <th className="px-4 py-3 font-semibold text-white/50">Created At</th>
+                        <th className="px-4 py-3 font-semibold text-white/50 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/[0.04]">
+                      {history.map(job => (
+                        <tr key={job.id} className="hover:bg-white/[0.02] transition-colors">
+                          <td className="px-4 py-3 font-mono text-white/60">#{job.id}</td>
+                          <td className="px-4 py-3 font-mono text-white/80">{job.name}</td>
+                          <td className="px-4 py-3">
+                            <span className="px-2 py-1 rounded-sm text-[9px] uppercase tracking-wider font-bold"
+                              style={{ 
+                                background: job.status === 'published' ? 'rgba(52,211,153,0.1)' : 'rgba(59,130,246,0.1)', 
+                                color: job.status === 'published' ? '#34d399' : '#60a5fa' 
+                              }}>
+                              {job.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-white/40">{new Date(job.created_at).toLocaleString()}</td>
+                          <td className="px-4 py-3 text-right">
+                            <button onClick={() => resumeJob(job)} className="px-3 py-1.5 rounded bg-white/10 hover:bg-white/20 text-white font-medium transition-colors">
+                              Resume
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="py-8 text-center rounded-xl" style={{ border: "1px dashed rgba(255,255,255,0.1)" }}>
+                  <p className="text-[11px] text-white/40">No mapping jobs found.</p>
+                </div>
+              )}
             </div>
           </div>
         )}
