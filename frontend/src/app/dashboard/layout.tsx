@@ -166,7 +166,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* User section */}
         <div className="p-6 pb-8">
-          <div className={["flex items-center gap-3", collapsed ? "justify-center" : ""].join(" ")}>
+          <div className={["flex items-center gap-3", collapsed ? "flex-col justify-center" : ""].join(" ")}>
             <div className="w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center text-sm font-semibold flex-shrink-0">
               {initials}
             </div>
@@ -176,6 +176,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <div className="text-xs text-white/40 truncate">Data Engineer</div>
               </div>
             )}
+            <button
+              onClick={() => { auth.logout(); router.replace("/signin"); }}
+              className={["flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-colors", collapsed ? "w-10 h-10 rounded-full" : "w-8 h-8 rounded-lg"].join(" ")}
+              title="Log out"
+            >
+              <Icon path="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </button>
           </div>
           {!collapsed && (
             <div className="mt-6">
