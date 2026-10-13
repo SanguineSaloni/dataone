@@ -22,6 +22,21 @@ databricks_port = int(
 is_databricks = bool(os.getenv("DATABRICKS_APP_PORT"))
 
 if is_databricks:
+    # These three must be configured as Databricks App Settings before first boot.
+    # Set them via:
+    #   Databricks UI  → Apps → <your-app> → Settings tab
+    #   OR: databricks apps update <app-name> --json '{"env":[...]}'
+    #
+    # ┌─────────────────────────┬───────────────────────────────────────────────┐
+    # │ Setting name            │ Value / where to get it                       │
+    # ├─────────────────────────┼───────────────────────────────────────────────┤
+    # │ APP_DATABASE_URL        │ Postgres connection string, e.g.              │
+    # │                         │   postgresql://user:pass@host:5432/dataone    │
+    # │ SECRET_KEY              │ Random 32-byte hex string (used for JWT)      │
+    # │                         │   python -c "import secrets; print(secrets.   │
+    # │                         │   token_hex(32))"                             │
+    # │ ADMIN_DEFAULT_PASSWORD  │ Bootstrap admin password (change after login) │
+    # └─────────────────────────┴───────────────────────────────────────────────┘
     required_settings = (
         "APP_DATABASE_URL",
         "SECRET_KEY",
@@ -31,10 +46,38 @@ if is_databricks:
         name for name in required_settings if not os.getenv(name)
     ]
     if missing_settings:
-        raise RuntimeError(
-            "Missing required Databricks App settings: "
-            + ", ".join(missing_settings)
-        )
+        lines = [
+            "",
+            "=" * 68,
+            "  DataOne — STARTUP FAILED: missing Databricks App Settings",
+            "=" * 68,
+            "",
+            "The following App Settings have not been configured:",
+        ]
+        for s in missing_settings:
+            lines.append(f"  ✗  {s}")
+        lines += [
+            "",
+            "How to fix:",
+            "  1. Open the Databricks workspace UI.",
+            "  2. Go to  Compute → Apps → <your-app-name> → Settings.",
+            "  3. Add each missing setting listed above.",
+            "     (They map to the 'valueFrom' keys in app.yml — see that file for details.)",
+            "",
+            "  Or use the CLI:",
+            "    databricks apps update <app-name> --json \\",
+            "      '{\"env\":[{\"name\":\"APP_DATABASE_URL\",\"value\":\"postgresql://...\"}]}'  ",
+            "",
+            "  Required values:",
+            "    APP_DATABASE_URL       → PostgreSQL connection string",
+            "    SECRET_KEY             → Random 32-byte hex  "
+            "(python -c \"import secrets; print(secrets.token_hex(32))\")",
+            "    ADMIN_DEFAULT_PASSWORD → Bootstrap admin password",
+            "",
+            "=" * 68,
+            "",
+        ]
+        raise RuntimeError("\n".join(lines))
 
 # Single app URL — frontend and backend are served from the same Databricks App
 BACKEND_APP_URL = os.getenv("DATABRICKS_APP_URL") or "https://dataonetest-7474652115156015.aws.databricksapps.com"

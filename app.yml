@@ -1,16 +1,46 @@
+# =============================================================================
+# DataOne — Databricks App manifest (root app.yml)
+# =============================================================================
+# BEFORE DEPLOYING: configure the following App Settings in the Databricks UI:
+#
+#   Compute → Apps → <your-app> → Settings tab
+#
+#   Setting key              Description
+#   ──────────────────────── ────────────────────────────────────────────────
+#   database-url             PostgreSQL connection string
+#                              e.g. postgresql://user:pass@host:5432/dataone
+#   secret-key               Random 32-byte hex for JWT signing
+#                              generate: python -c "import secrets;
+#                                        print(secrets.token_hex(32))"
+#   admin-default-password   Bootstrap admin password (change immediately
+#                              after first login)
+#   dq-ingest-key            (Optional) Shared key for data-quality job ingest
+#   genie-space              (Optional) Databricks Genie Space ID for NL→SQL
+#
+# Or configure via the CLI:
+#   databricks apps update <app-name> --json \
+#     '{"env":[{"name":"APP_DATABASE_URL","value":"postgresql://..."}]}'
+# =============================================================================
+
 command: ["python", "start.py"]
 env:
-  # Existing DataOne application state database.
+  # PostgreSQL connection string for DataOne’s application state database.
+  # REQUIRED — set this in the App Settings UI before starting the app.
   - name: APP_DATABASE_URL
     valueFrom: database-url
-  # JWT signing key and bootstrap-admin password are stored in Databricks Secrets.
+  # JWT signing key — generate with: python -c "import secrets; print(secrets.token_hex(32))"
+  # REQUIRED — set this in the App Settings UI before starting the app.
   - name: SECRET_KEY
     valueFrom: secret-key
+  # Bootstrap admin password for the first login. Change it immediately after.
+  # REQUIRED — set this in the App Settings UI before starting the app.
   - name: ADMIN_DEFAULT_PASSWORD
     valueFrom: admin-default-password
   # Shared key for the Databricks data-quality job -> POST /api/v1/data-quality/ingest
+  # Optional — leave unset to disable the data-quality ingest endpoint.
   - name: DQ_INGEST_KEY
     valueFrom: dq-ingest-key
   # Genie agent that answers natural-language questions (Query Workspace -> Ask Genie)
+  # Optional — leave unset to disable the Genie integration.
   - name: DATABRICKS_GENIE_SPACE_ID
     valueFrom: genie-space
